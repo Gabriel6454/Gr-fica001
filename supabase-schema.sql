@@ -1,13 +1,10 @@
 -- SQL Schema for Supabase with Full Isolation (Multi-tenant)
 -- Execute this script in your Supabase SQL Editor
 
--- 1. Enable RLS on all existing tables
--- We first define the columns needed for isolation
-
 -- 1. Products Table
 CREATE TABLE IF NOT EXISTS products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     name TEXT NOT NULL,
     description TEXT,
     category TEXT,
@@ -26,7 +23,7 @@ CREATE TABLE IF NOT EXISTS products (
 -- 2. Orders Table
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     "customerName" TEXT,
     "customerId" TEXT,
     date TEXT,
@@ -46,7 +43,7 @@ CREATE TABLE IF NOT EXISTS orders (
 -- 3. Categories Table
 CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     title TEXT,
     "iconName" TEXT
 );
@@ -54,7 +51,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- 4. Customers Table
 CREATE TABLE IF NOT EXISTS customers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     name TEXT,
     type TEXT,
     document TEXT,
@@ -72,7 +69,7 @@ CREATE TABLE IF NOT EXISTS customers (
 -- 5. Settings Table
 CREATE TABLE IF NOT EXISTS settings (
     id TEXT PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     name TEXT,
     subtitle TEXT,
     "logoUrl" TEXT,
@@ -87,7 +84,7 @@ CREATE TABLE IF NOT EXISTS settings (
 -- 6. Quick Messages Table
 CREATE TABLE IF NOT EXISTS quick_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     title TEXT,
     content TEXT,
     "audioUrl" TEXT
