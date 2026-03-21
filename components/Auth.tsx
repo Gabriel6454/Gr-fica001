@@ -29,7 +29,17 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           email,
           password
         });
-        if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Credenciais inválidas.' : error.message);
+        
+        if (error) {
+          if (error.message === 'Invalid login credentials') {
+            throw new Error('Credenciais inválidas. Verifique seu e-mail e senha.');
+          } else if (error.message.includes('Email not confirmed')) {
+            throw new Error('E-mail ainda não confirmado. Verifique sua caixa de entrada.');
+          } else {
+            throw error;
+          }
+        }
+        
         if (data.user) {
           onLogin(data.user);
         }
@@ -37,17 +47,28 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         if (password !== confirmPassword) {
             throw new Error('As senhas não coincidem.');
         }
+        if (password.length < 6) {
+            throw new Error('A senha deve ter pelo menos 6 caracteres.');
+        }
+
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { full_name: `${firstName} ${lastName}`.trim() } }
+            options: { 
+              data: { 
+                full_name: `${firstName} ${lastName}`.trim(),
+                created_at: new Date().toISOString()
+              } 
+            }
         });
+
         if (error) throw error;
+
         if (data.user) {
             if (data.session) {
                 onLogin(data.user);
             } else {
-                setError('Conta criada com sucesso! (Pode ser necessário confirmar o email e depois fazer login).');
+                setError('Conta criada! Acesse seu e-mail para confirmar o cadastro antes de entrar.');
                 setIsLogin(true);
             }
         }

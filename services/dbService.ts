@@ -9,7 +9,14 @@ const getUserId = async () => {
 export const dbService = {
   // Products
   async getProducts(): Promise<Product[]> {
-    const { data, error } = await supabase.from('products').select('*');
+    const user_id = await getUserId();
+    if (!user_id) return [];
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('user_id', user_id);
+      
     if (error) {
       console.error('Error fetching products:', error);
       return [];
@@ -18,17 +25,29 @@ export const dbService = {
   },
   async saveProduct(product: Product) {
     const user_id = await getUserId();
+    if (!user_id) return;
+    
     const { error } = await supabase.from('products').upsert({ ...product, user_id });
     if (error) console.error('Error saving product:', error);
   },
   async deleteProduct(id: string) {
-    const { error } = await supabase.from('products').delete().eq('id', id);
+    const user_id = await getUserId();
+    if (!user_id) return;
+    
+    const { error } = await supabase.from('products').delete().eq('id', id).eq('user_id', user_id);
     if (error) console.error('Error deleting product:', error);
   },
 
   // Orders
   async getOrders(): Promise<Order[]> {
-    const { data, error } = await supabase.from('orders').select('*');
+    const user_id = await getUserId();
+    if (!user_id) return [];
+    
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', user_id);
+      
     if (error) {
       console.error('Error fetching orders:', error);
       return [];
@@ -37,17 +56,29 @@ export const dbService = {
   },
   async saveOrder(order: Order) {
     const user_id = await getUserId();
+    if (!user_id) return;
+    
     const { error } = await supabase.from('orders').upsert({ ...order, user_id });
     if (error) console.error('Error saving order:', error);
   },
   async deleteOrder(id: string) {
-    const { error } = await supabase.from('orders').delete().eq('id', id);
+    const user_id = await getUserId();
+    if (!user_id) return;
+    
+    const { error } = await supabase.from('orders').delete().eq('id', id).eq('user_id', user_id);
     if (error) console.error('Error deleting order:', error);
   },
 
   // Categories
   async getCategories(): Promise<Category[]> {
-    const { data, error } = await supabase.from('categories').select('*');
+    const user_id = await getUserId();
+    if (!user_id) return [];
+    
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('user_id', user_id);
+      
     if (error) {
       console.error('Error fetching categories:', error);
       return [];
@@ -56,17 +87,29 @@ export const dbService = {
   },
   async saveCategory(category: Category) {
     const user_id = await getUserId();
+    if (!user_id) return;
+    
     const { error } = await supabase.from('categories').upsert({ ...category, user_id });
     if (error) console.error('Error saving category:', error);
   },
   async deleteCategory(id: string) {
-    const { error } = await supabase.from('categories').delete().eq('id', id);
+    const user_id = await getUserId();
+    if (!user_id) return;
+    
+    const { error } = await supabase.from('categories').delete().eq('id', id).eq('user_id', user_id);
     if (error) console.error('Error deleting category:', error);
   },
 
   // Customers
   async getCustomers(): Promise<Customer[]> {
-    const { data, error } = await supabase.from('customers').select('*');
+    const user_id = await getUserId();
+    if (!user_id) return [];
+    
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('user_id', user_id);
+      
     if (error) {
       console.error('Error fetching customers:', error);
       return [];
@@ -75,11 +118,16 @@ export const dbService = {
   },
   async saveCustomer(customer: Customer) {
     const user_id = await getUserId();
+    if (!user_id) return;
+    
     const { error } = await supabase.from('customers').upsert({ ...customer, user_id });
     if (error) console.error('Error saving customer:', error);
   },
   async deleteCustomer(id: string) {
-    const { error } = await supabase.from('customers').delete().eq('id', id);
+    const user_id = await getUserId();
+    if (!user_id) return;
+    
+    const { error } = await supabase.from('customers').delete().eq('id', id).eq('user_id', user_id);
     if (error) console.error('Error deleting customer:', error);
   },
 
@@ -113,7 +161,10 @@ export const dbService = {
 
   // Quick Messages
   async getQuickMessages(): Promise<QuickMessage[]> {
-    const { data, error } = await supabase.from('quick_messages').select('*');
+    const user_id = await getUserId();
+    if (!user_id) return [];
+    
+    const { data, error } = await supabase.from('quick_messages').select('*').eq('user_id', user_id);
     if (error) {
       console.error('Error fetching quick messages:', error);
       return [];
