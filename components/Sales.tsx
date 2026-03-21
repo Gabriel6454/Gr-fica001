@@ -45,13 +45,9 @@ const Sales: React.FC<SalesProps> = ({ orders, customers, onEditOrder, onDeleteO
     }
   }, [period]);
 
-  // Filtramos apenas os pedidos que foram marcados como "Registrados"
   const registeredOrders = useMemo(() => {
-    return orders.filter(o => o.isRegistered && (
-      (!startDate || o.date >= startDate) &&
-      (!endDate || o.date <= endDate)
-    ));
-  }, [orders, startDate, endDate]);
+    return orders.filter(o => o.isRegistered !== false);
+  }, [orders]);
 
 
   // Cálculos e Filtros para a lista de vendas

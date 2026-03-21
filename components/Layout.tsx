@@ -10,6 +10,7 @@ interface LayoutProps {
   onLogout: () => void;
   settings: StoreSettings;
   currentUser?: { name: string; email: string };
+  isOnline?: boolean;
 }
 
 // Exportando para ser usado no Settings.tsx
@@ -32,7 +33,7 @@ export const DefaultLogo: React.FC<{ className?: string }> = ({ className = "w-6
   </svg>
 );
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout, settings, currentUser }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout, settings, currentUser, isOnline = true }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -138,6 +139,25 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
             );
           })}
         </nav>
+
+        {/* Status Indicator */}
+        <div className={`px-6 pb-4 mb-2 ${isCollapsed && !isMobileMenuOpen ? 'flex justify-center' : 'flex items-center gap-3'}`} title={isOnline ? "Conexão estabelecida com servidor" : "Falha na conexão"}>
+           <div className="relative flex items-center justify-center w-3 h-3 shrink-0">
+             {isOnline ? (
+               <>
+                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50"></span>
+                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+               </>
+             ) : (
+               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
+             )}
+           </div>
+           {(!isCollapsed || isMobileMenuOpen) && (
+             <span className={`text-[9px] font-black uppercase tracking-[0.2em] leading-none mt-0.5 ${isOnline ? 'text-emerald-500/90' : 'text-rose-500/90'}`}>
+               {isOnline ? 'Supabase Sync' : 'Offline / Falha'}
+             </span>
+           )}
+        </div>
 
         {/* Profile with Logout */}
         <div className={`p-6 border-t border-white/5 mt-auto ${isCollapsed && !isMobileMenuOpen ? 'md:flex md:justify-center' : ''}`}>

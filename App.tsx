@@ -20,10 +20,10 @@ import { dbService } from './services/dbService';
 import { supabase } from './services/supabase';
 
 const App: React.FC = () => {
-  // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [isDbOnline, setIsDbOnline] = useState(true);
 
   // App Data State
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -88,18 +88,43 @@ const App: React.FC = () => {
     
     // Check current session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setCurrentUser(session.user);
-        setIsAuthenticated(true);
-      } else {
-        setCurrentUser(null);
-        setIsAuthenticated(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setIsDbOnline(true);
+        if (session) {
+          setCurrentUser(session.user);
+          setIsAuthenticated(true);
+        } else {
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (err) {
+        setIsDbOnline(false);
+        console.error("Erro na conexão com Supabase:", err);
       }
       setIsLoadingAuth(false);
     };
 
     checkSession();
+
+    // Heartbeat simples para monitorar status do Supabase
+    const heartbeat = setInterval(async () => {
+      if (!navigator.onLine) {
+        setIsDbOnline(false);
+        return;
+      }
+      try {
+        const { error } = await supabase.from('settings').select('id').limit(1).single();
+        if (error && error.code !== 'PGRST116') {
+           setIsDbOnline(false);
+        } else {
+           setIsDbOnline(true);
+        }
+      } catch {
+        setIsDbOnline(false);
+      }
+    }, 15000);
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -119,7 +144,10 @@ const App: React.FC = () => {
       setTrackingOrderId(trackingId);
     }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(heartbeat);
+    };
   }, []);
 
   // Sync settings to localStorage for quick UI load
@@ -229,7 +257,8 @@ const App: React.FC = () => {
       paymentMethod: data.paymentMethod || 'pix',
       shippingCost: data.shippingCost || 0,
       transactions: initialTransactions,
-      items: data.items || []
+      items: data.items || [],
+      isRegistered: true
     };
     setOrders(prev => [newOrder, ...prev]);
     await dbService.saveOrder(newOrder);
@@ -432,6 +461,7 @@ const App: React.FC = () => {
       onLogout={handleLogout}
       settings={settings}
       currentUser={currentUser}
+      isOnline={isDbOnline}
     >
       {renderContent()}
     </Layout>
