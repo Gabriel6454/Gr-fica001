@@ -12,7 +12,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   
   // Form States
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +40,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { full_name: name } }
+            options: { data: { full_name: `${firstName} ${lastName}`.trim() } }
         });
         if (error) throw error;
         if (data.user) {
@@ -78,20 +79,38 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
           <form onSubmit={handleAuth} className="space-y-5">
             {!isLogin && (
-              <div className="space-y-1.5 animate-in slide-in-from-left-4 fade-in duration-300">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nome Completo</label>
-                <div className="relative group">
-                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors">
-                      {ICONS.Customers}
-                   </div>
-                   <input 
-                    type="text" 
-                    required={!isLogin}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#030712] border border-slate-800 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700"
-                    placeholder="Seu nome"
-                  />
+              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-left-4 fade-in duration-300">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nome</label>
+                  <div className="relative group">
+                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors">
+                        {ICONS.Customers}
+                     </div>
+                     <input 
+                      type="text" 
+                      required={!isLogin}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full bg-[#030712] border border-slate-800 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700"
+                      placeholder="Nome"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Sobrenome</label>
+                  <div className="relative group">
+                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors">
+                        {ICONS.Customers}
+                     </div>
+                     <input 
+                      type="text" 
+                      required={!isLogin}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="w-full bg-[#030712] border border-slate-800 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700"
+                      placeholder="Sobrenome"
+                    />
+                  </div>
                 </div>
               </div>
             )}

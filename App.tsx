@@ -93,7 +93,10 @@ const App: React.FC = () => {
         if (error) throw error;
         setIsDbOnline(true);
         if (session) {
-          setCurrentUser(session.user);
+          setCurrentUser({
+            ...session.user,
+            name: session.user.user_metadata?.full_name || session.user.email
+          });
           setIsAuthenticated(true);
         } else {
           setCurrentUser(null);
@@ -129,7 +132,10 @@ const App: React.FC = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        setCurrentUser(session.user);
+        setCurrentUser({
+            ...session.user,
+            name: session.user.user_metadata?.full_name || session.user.email
+        });
         setIsAuthenticated(true);
       } else {
         setCurrentUser(null);
@@ -154,7 +160,10 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem('atlas_settings', JSON.stringify(settings)); }, [settings]);
 
   const handleLogin = (user: any) => {
-    setCurrentUser(user);
+    setCurrentUser({
+        ...user,
+        name: user.user_metadata?.full_name || user.email
+    });
     setIsAuthenticated(true);
   };
 
