@@ -17,6 +17,7 @@ import { INITIAL_PRODUCTS, INITIAL_ORDERS, INITIAL_CATEGORIES, INITIAL_CUSTOMERS
 import { Product, Order, OrderStatus, Category, Customer, StoreSettings, PaymentTransaction } from './types';
 import { ICONS } from './constants';
 import { dbService } from './services/dbService';
+import { supabase } from './services/supabase';
 
 const App: React.FC = () => {
   // Auth State
@@ -86,15 +87,30 @@ const App: React.FC = () => {
     document.body.classList.add('bg-[#030712]');
     
     // Check current session
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
-    }
-    setIsLoadingAuth(false);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setCurrentUser(session.user);
+        setIsAuthenticated(true);
+      } else {
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+      }
+      setIsLoadingAuth(false);
+    };
 
-    // Listen for auth changes (no-op for now)
-    const subscription = { unsubscribe: () => {} };
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setCurrentUser(session.user);
+        setIsAuthenticated(true);
+      } else {
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+      }
+    });
 
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -112,13 +128,12 @@ const App: React.FC = () => {
   const handleLogin = (user: any) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(user));
   };
 
   const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('user');
     setProducts([]);
     setOrders([]);
     setCustomers([]);

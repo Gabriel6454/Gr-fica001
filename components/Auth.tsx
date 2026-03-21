@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { ICONS } from '../constants';
+import { supabase } from '../services/supabase';
 
 interface AuthProps {
   onLogin: (user: any) => void;
@@ -24,16 +24,35 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
     try {
       if (isLogin) {
-        if (email === 'gabriellopes01.moc@gmail.com' && password === 'Biel6454!') {
-          onLogin({ email: 'gabriellopes01.moc@gmail.com' });
-        } else {
-          throw new Error('Credenciais inválidas.');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Credenciais inválidas.' : error.message);
+        if (data.user) {
+          onLogin(data.user);
         }
       } else {
-        setError('Cadastro não disponível no momento.');
+        if (password !== confirmPassword) {
+            throw new Error('As senhas não coincidem.');
+        }
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: name } }
+        });
+        if (error) throw error;
+        if (data.user) {
+            if (data.session) {
+                onLogin(data.user);
+            } else {
+                setError('Conta criada com sucesso! (Pode ser necessário confirmar o email e depois fazer login).');
+                setIsLogin(true);
+            }
+        }
       }
     } catch (err: any) {
-      setError(err.message || 'Ocorreu um erro inesperado.');
+        setError(err.message || 'Ocorreu um erro ao processar a autenticação.');
     } finally {
       setLoading(false);
     }
