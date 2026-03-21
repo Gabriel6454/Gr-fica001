@@ -425,8 +425,18 @@ const Catalog: React.FC<CatalogProps> = ({
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [selectedTierIndices, setSelectedTierIndices] = useState<Record<string, number>>({});
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>(window.innerWidth < 1024 ? 'grid' : 'table');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setViewMode('grid');
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const filteredProducts = activeCategoryFilter
     ? products.filter(p => p.category === activeCategoryFilter)

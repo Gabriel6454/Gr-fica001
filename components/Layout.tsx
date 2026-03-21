@@ -52,7 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const containerClasses = "min-h-screen bg-[#020617] text-slate-200 selection:bg-sky-500/30 flex flex-col md:flex-row overflow-x-hidden antialiased";
+  const containerClasses = "min-h-screen bg-[#020617] text-slate-200 selection:bg-sky-500/30 flex flex-col md:flex-row overflow-x-hidden antialiased pb-20 md:pb-0";
 
   const headerClasses = "md:hidden fixed top-0 left-0 right-0 h-16 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5 z-[80] flex items-center justify-between px-4 sm:px-6";
 
@@ -61,6 +61,15 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
   const mainClasses = "flex-1 pt-20 md:pt-6 pb-8 px-4 sm:px-6 md:pl-10 md:pr-6 max-w-full overflow-x-hidden transition-all duration-300";
 
   const menuItems = ALL_MENU_ITEMS;
+  
+  // Tabs mais importantes para o menu inferior no mobile
+  const bottomNavItems = useMemo(() => [
+    { id: 'dashboard', label: 'Início', icon: ICONS.Dashboard },
+    { id: 'orders', label: 'Pedidos', icon: ICONS.Orders },
+    { id: 'sales', label: 'Vendas', icon: ICONS.Sales },
+    { id: 'customers', label: 'Clientes', icon: ICONS.Customers },
+    { id: 'settings', label: 'Ajustes', icon: ICONS.Settings },
+  ], []);
 
   const handleTabChange = (id: string) => {
     setActiveTab(id);
@@ -85,13 +94,33 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
           </div>
           <span className="text-white font-black text-xs tracking-tighter uppercase italic">{settings.name || 'Atlas'}</span>
         </div>
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="p-2 text-slate-400 hover:text-white transition-colors"
-        >
-          {ICONS.Menu}
-        </button>
+        <div className="flex items-center gap-2">
+           <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
+           <button
+             onClick={() => setIsMobileMenuOpen(true)}
+             className="p-2 text-slate-400 hover:text-white transition-colors"
+           >
+             {ICONS.Menu}
+           </button>
+        </div>
       </header>
+
+      {/* Bottom Navigation for Mobile */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#030712]/90 backdrop-blur-2xl border-t border-white/5 z-[80] flex items-center justify-around px-2">
+        {bottomNavItems.map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleTabChange(item.id)}
+              className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all duration-300 ${isActive ? 'text-sky-400 scale-110' : 'text-slate-500'}`}
+            >
+              <div className={`${isActive ? 'glow-sky shadow-sky-500/20' : ''}`}>{item.icon}</div>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {/* Backdrop Mobile */}
       {isMobileMenuOpen && (

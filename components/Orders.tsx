@@ -740,64 +740,128 @@ const Orders: React.FC<OrdersProps> = ({
         <input type="text" placeholder="Rastrear por cliente ou protocolo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#0a111f]/40 border border-white/5 rounded-[28px] py-5 pl-14 pr-8 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700 shadow-2xl backdrop-blur-md" />
       </div>
 
-      <div className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[40px] overflow-hidden shadow-3xl backdrop-blur-xl">
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-b border-white/5 bg-white/5">
-                <th className="py-8 px-10">ID PEDIDO</th>
-                <th className="py-8 px-10">CLIENTE</th>
-                <th className="py-8 px-10">ENTREGA</th>
-                <th className="py-8 px-10">TOTAL / PENDENTE</th>
-                <th className="py-8 px-10">STATUS PRODUÇÃO</th>
-                <th className="py-8 px-10 text-right">AÇÕES</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.02]">
-              {filteredOrders.map((order) => (
-                <tr key={order.id} className="group hover:bg-white/[0.03] transition-all">
-                  <td className="py-6 px-10">
-                    <span className="text-[10px] font-black text-slate-600">#{order.id}</span>
-                  </td>
-                  <td className="py-6 px-10">
-                    <div className="flex flex-col gap-1">
-                      <h4 className="font-bold text-slate-100 text-[13px] uppercase tracking-tight">{order.customerName}</h4>
-                    </div>
-                  </td>
-                  <td className="py-6 px-10">
-                    <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
-                  </td>
-                  <td className="py-6 px-10">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[13px] font-black text-white italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                      {order.remainingAmount > 0 && (
-                        <span className="text-[9px] text-rose-500 font-bold uppercase tracking-widest">Falta R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-                      )}
-                    </div>
-                  </td>
-                   <td className="py-6 px-10">
-                    <button
-                      onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
-                      className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] hover:brightness-110 active:scale-95 cursor-pointer ${getStatusBadgeClass(order.status)}`}
-                      title="Clique para avançar o status"
-                    >
-                      {order.status}
-                    </button>
-                  </td>
-                  <td className="py-6 px-10 text-right">
-                    <div className="flex justify-end gap-2.5 transition-opacity">
-                      <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center" title="WhatsApp">{ICONS.Whatsapp}</button>
-                      {order.remainingAmount > 0 && <button onClick={() => handlePayOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center font-black" title="Liquidar">$</button>}
-                      <button onClick={() => handlePrintOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center" title="Imprimir">{ICONS.Print}</button>
-                      <button onClick={() => handleTrackOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all flex items-center justify-center" title="Workflow">{ICONS.Shipping}</button>
-                      <button onClick={() => handleEditOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all flex items-center justify-center" title="Refinar">{ICONS.Edit}</button>
-                      <button onClick={() => handleDelete(order.id)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center" title="Eliminar">{ICONS.Trash}</button>
-                    </div>
-                  </td>
+      <div className="px-4 sm:px-8">
+        {/* Desktop Table View */}
+        <div className="hidden lg:block glass-card bg-[#0a111f]/40 border border-white/5 rounded-[40px] overflow-hidden shadow-3xl backdrop-blur-xl">
+          <div className="overflow-x-auto no-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-b border-white/5 bg-white/5">
+                  <th className="py-8 px-10">ID PEDIDO</th>
+                  <th className="py-8 px-10">CLIENTE</th>
+                  <th className="py-8 px-10">ENTREGA</th>
+                  <th className="py-8 px-10">TOTAL / PENDENTE</th>
+                  <th className="py-8 px-10">STATUS PRODUÇÃO</th>
+                  <th className="py-8 px-10 text-right">AÇÕES</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/[0.02]">
+                {filteredOrders.map((order) => (
+                  <tr key={order.id} className="group hover:bg-white/[0.03] transition-all">
+                    <td className="py-6 px-10">
+                      <span className="text-[10px] font-black text-slate-600">#{order.id}</span>
+                    </td>
+                    <td className="py-6 px-10">
+                      <div className="flex flex-col gap-1">
+                        <h4 className="font-bold text-slate-100 text-[13px] uppercase tracking-tight">{order.customerName}</h4>
+                      </div>
+                    </td>
+                    <td className="py-6 px-10">
+                      <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
+                    </td>
+                    <td className="py-6 px-10">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[13px] font-black text-white italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                        {order.remainingAmount > 0 && (
+                          <span className="text-[9px] text-rose-500 font-bold uppercase tracking-widest">Falta R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-6 px-10">
+                      <button
+                        onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
+                        className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] hover:brightness-110 active:scale-95 cursor-pointer ${getStatusBadgeClass(order.status)}`}
+                        title="Clique para avançar o status"
+                      >
+                        {order.status}
+                      </button>
+                    </td>
+                    <td className="py-6 px-10 text-right">
+                      <div className="flex justify-end gap-2.5 transition-opacity">
+                        <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center" title="WhatsApp">{ICONS.Whatsapp}</button>
+                        {order.remainingAmount > 0 && <button onClick={() => handlePayOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center font-black" title="Liquidar">$</button>}
+                        <button onClick={() => handlePrintOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center" title="Imprimir">{ICONS.Print}</button>
+                        <button onClick={() => handleTrackOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all flex items-center justify-center" title="Workflow">{ICONS.Shipping}</button>
+                        <button onClick={() => handleEditOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all flex items-center justify-center" title="Refinar">{ICONS.Edit}</button>
+                        <button onClick={() => handleDelete(order.id)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center" title="Eliminar">{ICONS.Trash}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile/Tablet Card View */}
+        <div className="lg:hidden space-y-6 pb-20">
+          {filteredOrders.map((order) => (
+            <div key={order.id} className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[32px] p-6 space-y-6 shadow-2xl backdrop-blur-xl">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black text-slate-600 block leading-none tracking-widest uppercase italic">Protocolo #{order.id}</span>
+                  <h4 className="font-black text-white text-lg uppercase leading-tight tracking-tight">{order.customerName}</h4>
+                </div>
+                <button
+                  onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
+                  className={`px-6 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all shadow-lg ${getStatusBadgeClass(order.status)}`}
+                >
+                  {order.status}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Previsão</span>
+                  <p className="text-xs font-black text-white">{order.deliveryDate}</p>
+                </div>
+                <div className="space-y-1 text-right">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Valor Total</span>
+                  <p className="text-lg font-black text-sky-500 leading-none">R$ {order.total.toFixed(2).replace('.', ',')}</p>
+                </div>
+              </div>
+
+              {order.remainingAmount > 0 && (
+                <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex items-center justify-between">
+                  <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Saldo Pendente</span>
+                  <span className="text-sm font-black text-rose-500 italic">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="flex-1 min-w-[45%] h-12 bg-white/5 border border-white/5 rounded-2xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                  {ICONS.Whatsapp} Zap
+                </button>
+                {order.remainingAmount > 0 && (
+                  <button onClick={() => handlePayOrder(order)} className="flex-1 min-w-[45%] h-12 bg-emerald-500 text-white rounded-2xl transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+                    $ Pagar
+                  </button>
+                )}
+                <button onClick={() => handlePrintOrder(order)} className="flex-1 min-w-[30%] h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                  {ICONS.Print}
+                </button>
+                <button onClick={() => handleTrackOrder(order)} className="flex-1 min-w-[30%] h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                  {ICONS.Shipping}
+                </button>
+                <button onClick={() => handleEditOrder(order)} className="flex-1 min-w-[30%] h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                  {ICONS.Edit}
+                </button>
+                <button onClick={() => handleDelete(order.id)} className="w-12 h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-600 hover:text-rose-500 transition-all flex items-center justify-center">
+                  {ICONS.Trash}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
