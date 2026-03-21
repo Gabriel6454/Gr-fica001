@@ -1,0 +1,5 @@
+{
+  "name": "Gráfica - Gestão",
+  "description": "Uma plataforma completa para gestão de gráficas e materiais impressos, com persistência de dados local.",
+  "requestFramePermissions": []
+}
