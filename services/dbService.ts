@@ -1,6 +1,11 @@
 import { supabase } from './supabase';
 import { Product, Order, Category, Customer, StoreSettings, QuickMessage } from '../types';
 
+const getUserId = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user.id;
+};
+
 export const dbService = {
   // Products
   async getProducts(): Promise<Product[]> {
@@ -12,7 +17,8 @@ export const dbService = {
     return data || [];
   },
   async saveProduct(product: Product) {
-    const { error } = await supabase.from('products').upsert(product);
+    const user_id = await getUserId();
+    const { error } = await supabase.from('products').upsert({ ...product, user_id });
     if (error) console.error('Error saving product:', error);
   },
   async deleteProduct(id: string) {
@@ -30,7 +36,8 @@ export const dbService = {
     return data || [];
   },
   async saveOrder(order: Order) {
-    const { error } = await supabase.from('orders').upsert(order);
+    const user_id = await getUserId();
+    const { error } = await supabase.from('orders').upsert({ ...order, user_id });
     if (error) console.error('Error saving order:', error);
   },
   async deleteOrder(id: string) {
@@ -48,7 +55,8 @@ export const dbService = {
     return data || [];
   },
   async saveCategory(category: Category) {
-    const { error } = await supabase.from('categories').upsert(category);
+    const user_id = await getUserId();
+    const { error } = await supabase.from('categories').upsert({ ...category, user_id });
     if (error) console.error('Error saving category:', error);
   },
   async deleteCategory(id: string) {
@@ -66,7 +74,8 @@ export const dbService = {
     return data || [];
   },
   async saveCustomer(customer: Customer) {
-    const { error } = await supabase.from('customers').upsert(customer);
+    const user_id = await getUserId();
+    const { error } = await supabase.from('customers').upsert({ ...customer, user_id });
     if (error) console.error('Error saving customer:', error);
   },
   async deleteCustomer(id: string) {
@@ -76,19 +85,29 @@ export const dbService = {
 
   // Settings
   async getSettings(): Promise<StoreSettings | null> {
-    const { data, error } = await supabase.from('settings').select('*').eq('id', 'store_config').single();
+    const user_id = await getUserId();
+    if (!user_id) return null;
+
+    const { data, error } = await supabase.from('settings').select('*').eq('user_id', user_id).single();
     if (error) {
       if (error.code !== 'PGRST116') { // not found
         console.error('Error fetching settings:', error);
       }
       return null;
     }
-    // Remove the id wrapper used for the database row
-    const { id, ...settings } = data;
+    // Remove database specific fields
+    const { id, user_id: _, ...settings } = data;
     return settings as StoreSettings;
   },
   async saveSettings(settings: StoreSettings) {
-    const { error } = await supabase.from('settings').upsert({ id: 'store_config', ...settings });
+    const user_id = await getUserId();
+    if (!user_id) return;
+
+    const { error } = await supabase.from('settings').upsert({ 
+        id: `config_${user_id}`, // ID único por usuário
+        user_id, 
+        ...settings 
+    });
     if (error) console.error('Error saving settings:', error);
   },
 
@@ -102,14 +121,19 @@ export const dbService = {
     return data || [];
   },
   async saveQuickMessages(messages: QuickMessage[]) {
-    // Exclui mensagens que não estão na lista (sync) e upsert das atuais
+    const user_id = await getUserId();
+    if (!user_id) return;
+
     if (messages.length > 0) {
       const ids = messages.map(m => m.id);
-      await supabase.from('quick_messages').delete().not('id', 'in', `(${ids.join(',')})`);
-      const { error } = await supabase.from('quick_messages').upsert(messages);
+      // Garantir que só deletamos mensagens DO USUÁRIO que não estão na lista
+      await supabase.from('quick_messages').delete().eq('user_id', user_id).not('id', 'in', `(${ids.join(',')})`);
+      
+      const messagesWithUser = messages.map(m => ({ ...m, user_id }));
+      const { error } = await supabase.from('quick_messages').upsert(messagesWithUser);
       if (error) console.error('Error saving quick messages:', error);
     } else {
-      await supabase.from('quick_messages').delete().neq('id', 'dummy');
+      await supabase.from('quick_messages').delete().eq('user_id', user_id);
     }
   }
 };
