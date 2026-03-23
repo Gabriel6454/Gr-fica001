@@ -436,18 +436,8 @@ const Catalog: React.FC<CatalogProps> = ({
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [selectedTierIndices, setSelectedTierIndices] = useState<Record<string, number>>({});
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>(window.innerWidth < 1024 ? 'grid' : 'table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setViewMode('grid');
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const filteredProducts = activeCategoryFilter
     ? products.filter(p => p.category === activeCategoryFilter)
@@ -573,7 +563,7 @@ const Catalog: React.FC<CatalogProps> = ({
       {viewMode === 'table' ? (
         <div className="bg-[#0a111f]/60 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+            <table className="w-full text-left border-collapse min-w-[640px]">
               <thead>
                 <tr className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/5">
                   <th className="py-5 px-8">Identificação</th>
@@ -754,26 +744,6 @@ const Catalog: React.FC<CatalogProps> = ({
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @media (max-width: 640px) {
-          table { border-spacing: 0 12px; border-collapse: separate; }
-          thead { display: none; }
-          tbody tr { 
-            display: flex; 
-            flex-direction: column; 
-            background: rgba(10, 17, 31, 0.4); 
-            border-radius: 24px; 
-            padding: 20px; 
-            border: 1px solid rgba(255,255,255,0.05); 
-            margin-bottom: 16px; 
-            width: 100%; 
-            transition: none !important; 
-          }
-          tbody td { padding: 0 !important; border: none !important; }
-          tbody td:not(:last-child) { margin-bottom: 16px; }
-          tbody td:last-child { width: 100%; }
-          tbody .flex-wrap { justify-content: flex-start; }
-          tbody .justify-end { justify-content: flex-start; gap: 8px; }
-        }
       `}</style>
     </div>
   );
