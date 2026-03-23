@@ -34,6 +34,7 @@ export interface Order {
   isRegistered?: boolean;
   trackingCode?: string;
   carrier?: string;
+  trackingHistory?: { date: string; status: string; location: string }[];
 }
 
 export enum OrderStatus {

@@ -267,6 +267,7 @@ const App: React.FC = () => {
       shippingCost: data.shippingCost || 0,
       trackingCode: data.trackingCode || '',
       carrier: data.carrier || 'Correios',
+      trackingHistory: data.trackingHistory || [],
       transactions: initialTransactions,
       items: data.items || [],
       isRegistered: true

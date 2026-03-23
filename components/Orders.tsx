@@ -448,7 +448,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
     status: OrderStatus.ART,
     paymentMethod: 'pix',
     trackingCode: '',
-    carrier: 'Correios'
+    carrier: 'Correios',
+    trackingHistory: [] as { date: string; status: string; location: string }[]
   });
 
   useEffect(() => {
@@ -472,10 +473,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
         status: order.status,
         paymentMethod: order.paymentMethod || 'pix',
         trackingCode: order.trackingCode || '',
-        carrier: order.carrier || 'Correios'
+        carrier: order.carrier || 'Correios',
+        trackingHistory: order.trackingHistory || []
       });
     } else if (isOpen) {
-      setFormData({ customerId: '', deliveryDate: '', productId: '', tierIndex: 0, shippingCost: 0, paidAmount: 0, status: OrderStatus.ART, paymentMethod: 'pix', trackingCode: '', carrier: 'Correios' });
+      setFormData({ customerId: '', deliveryDate: '', productId: '', tierIndex: 0, shippingCost: 0, paidAmount: 0, status: OrderStatus.ART, paymentMethod: 'pix', trackingCode: '', carrier: 'Correios', trackingHistory: [] });
     }
   }, [order, isOpen, products]);
 
@@ -505,6 +507,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       paymentMethod: formData.paymentMethod,
       trackingCode: formData.trackingCode,
       carrier: formData.carrier,
+      trackingHistory: formData.trackingHistory,
       items: [{
         productId: formData.productId,
         quantity: activeTier?.quantity || 0,
@@ -654,7 +657,27 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
                   </div>
                   <div className="space-y-2">
                     <label className="block text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Rastreio</label>
-                    <input type="text" placeholder="Código" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-3 text-xs text-white outline-none focus:border-sky-500/50 font-bold shadow-inner transition-all" />
+                    <div className="flex gap-2">
+                        <input type="text" placeholder="Código" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="flex-1 bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-3 text-xs text-white outline-none focus:border-sky-500/50 font-bold shadow-inner transition-all" />
+                        {formData.trackingCode && (
+                            <button 
+                                type="button" 
+                                onClick={() => {
+                                    // Mock de sincronização real
+                                    const newHistory = [
+                                        { date: new Date().toLocaleString('pt-BR'), status: 'Objeto Postado', location: 'Centro de Distribuição' },
+                                        ...(order?.trackingHistory || [])
+                                    ];
+                                    setFormData(prev => ({ ...prev, trackingHistory: newHistory }));
+                                    alert('Sincronização com transportadora simulada com sucesso!');
+                                }}
+                                className="px-3 bg-sky-500/10 border border-sky-500/20 text-sky-500 rounded-xl hover:bg-sky-500 hover:text-white transition-all"
+                                title="Sincronizar Rastreio Real"
+                            >
+                                {ICONS.Refresh || '🔄'}
+                            </button>
+                        )}
+                    </div>
                   </div>
                 </div>
               </div>

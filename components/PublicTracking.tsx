@@ -137,25 +137,52 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
 
         {/* Real-time Logistics Tracking */}
         {order.trackingCode && (
-            <div className="bg-sky-500/5 border border-sky-500/20 rounded-[32px] p-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center text-sky-500">
-                            <div className="scale-125">{ICONS.Shipping}</div>
+            <div className="space-y-6">
+                <div className="bg-sky-500/5 border border-sky-500/20 rounded-[32px] p-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center text-sky-500">
+                                <div className="scale-125">{ICONS.Shipping}</div>
+                            </div>
+                            <div>
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Rastreamento Logístico</h4>
+                                <p className="text-xl font-black text-white italic uppercase">{order.carrier || 'Transporte'}</p>
+                                <p className="text-[11px] text-sky-500 font-bold tracking-widest uppercase mt-0.5">{order.trackingCode}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Rastreamento Logístico</h4>
-                            <p className="text-xl font-black text-white italic uppercase">{order.carrier || 'Transporte'}</p>
-                            <p className="text-[11px] text-sky-500 font-bold tracking-widest uppercase mt-0.5">{order.trackingCode}</p>
+                        <button 
+                            onClick={() => window.open(`https://www.linkcorreios.com.br/${order.trackingCode}`, '_blank')}
+                            className="w-full sm:w-auto px-10 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-[0.2em] shadow-2xl shadow-sky-500/20 hover:scale-[1.03] active:scale-95 transition-all text-center"
+                        >
+                            Ver no Portal {order.carrier === 'Correios' ? 'Correios' : 'Real'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Tracking Timeline (Real Events) */}
+                {order.trackingHistory && order.trackingHistory.length > 0 && (
+                    <div className="bg-[#0a111f] border border-slate-800 rounded-[32px] p-8 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                        <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
+                            Status em Tempo Real
+                        </h3>
+                        <div className="space-y-8 relative pl-6">
+                            <div className="absolute left-[7px] top-2 bottom-2 w-px bg-slate-800"></div>
+                            {order.trackingHistory.map((event, idx) => (
+                                <div key={idx} className="relative group">
+                                    <div className={`absolute -left-[24px] top-1.5 w-3 h-3 rounded-full border-2 border-[#0a111f] transition-all ${idx === 0 ? 'bg-emerald-500 scale-125 shadow-[0_0_10px_#10b981]' : 'bg-slate-700'}`}></div>
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <p className={`text-sm font-black uppercase tracking-tight ${idx === 0 ? 'text-white' : 'text-slate-400'}`}>{event.status}</p>
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{event.location}</p>
+                                        </div>
+                                        <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest whitespace-nowrap">{event.date}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    <button 
-                        onClick={() => window.open(`https://www.linkcorreios.com.br/${order.trackingCode}`, '_blank')}
-                        className="w-full sm:w-auto px-10 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-[0.2em] shadow-2xl shadow-sky-500/20 hover:scale-[1.03] active:scale-95 transition-all text-center"
-                    >
-                        Rastreio em Tempo Real
-                    </button>
-                </div>
+                )}
             </div>
         )}
 

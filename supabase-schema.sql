@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS orders (
     "pdfUrl" TEXT,
     "isRegistered" BOOLEAN,
     "trackingCode" TEXT,
-    "carrier" TEXT
+    "carrier" TEXT,
+    "trackingHistory" JSONB
 );
 
 -- 3. Categories Table
