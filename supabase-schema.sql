@@ -37,7 +37,9 @@ CREATE TABLE IF NOT EXISTS orders (
     transactions JSONB,
     items JSONB,
     "pdfUrl" TEXT,
-    "isRegistered" BOOLEAN
+    "isRegistered" BOOLEAN,
+    "trackingCode" TEXT,
+    "carrier" TEXT
 );
 
 -- 3. Categories Table

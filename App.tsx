@@ -265,6 +265,8 @@ const App: React.FC = () => {
       paid: data.paid || false,
       paymentMethod: data.paymentMethod || 'pix',
       shippingCost: data.shippingCost || 0,
+      trackingCode: data.trackingCode || '',
+      carrier: data.carrier || 'Correios',
       transactions: initialTransactions,
       items: data.items || [],
       isRegistered: true

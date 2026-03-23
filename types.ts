@@ -32,6 +32,8 @@ export interface Order {
   items: { productId: string; quantity: number; price: number; cost?: number }[];
   pdfUrl?: string; // URL ou Base64 do PDF anexado
   isRegistered?: boolean;
+  trackingCode?: string;
+  carrier?: string;
 }
 
 export enum OrderStatus {

@@ -157,6 +157,28 @@ export const TrackingModal: React.FC<{
               </div>
             ))}
           </div>
+
+          {order.trackingCode && (
+            <div className="mt-12 p-8 bg-sky-500/5 border border-sky-500/20 rounded-[32px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center text-sky-500">
+                    <div className="scale-125">{ICONS.Shipping}</div>
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-black uppercase tracking-widest text-sky-500">{order.carrier || 'Transportadora'}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Código: {order.trackingCode}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => window.open(`https://www.linkcorreios.com.br/${order.trackingCode}`, '_blank')}
+                  className="w-full sm:w-auto px-8 py-3 bg-sky-500 text-white font-black uppercase rounded-xl text-[10px] tracking-[0.2em] shadow-xl shadow-sky-500/20 hover:scale-105 active:scale-95 transition-all"
+                >
+                  Rastrear em Tempo Real
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -424,7 +446,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
     shippingCost: 0,
     paidAmount: 0,
     status: OrderStatus.ART,
-    paymentMethod: 'pix'
+    paymentMethod: 'pix',
+    trackingCode: '',
+    carrier: 'Correios'
   });
 
   useEffect(() => {
@@ -446,10 +470,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
         shippingCost: order.shippingCost || 0,
         paidAmount: order.total - order.remainingAmount,
         status: order.status,
-        paymentMethod: order.paymentMethod || 'pix'
+        paymentMethod: order.paymentMethod || 'pix',
+        trackingCode: order.trackingCode || '',
+        carrier: order.carrier || 'Correios'
       });
     } else if (isOpen) {
-      setFormData({ customerId: '', deliveryDate: '', productId: '', tierIndex: 0, shippingCost: 0, paidAmount: 0, status: OrderStatus.ART, paymentMethod: 'pix' });
+      setFormData({ customerId: '', deliveryDate: '', productId: '', tierIndex: 0, shippingCost: 0, paidAmount: 0, status: OrderStatus.ART, paymentMethod: 'pix', trackingCode: '', carrier: 'Correios' });
     }
   }, [order, isOpen, products]);
 
@@ -477,6 +503,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       remainingAmount: remainingValue,
       paid: remainingValue <= 0,
       paymentMethod: formData.paymentMethod,
+      trackingCode: formData.trackingCode,
+      carrier: formData.carrier,
       items: [{
         productId: formData.productId,
         quantity: activeTier?.quantity || 0,
@@ -603,6 +631,31 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
                       {method.label}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-white/5 bg-white/5 p-6 rounded-3xl">
+                <div className="flex items-center gap-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_#f97316]"></span>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">LOGÍSTICA / ENVIO</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Transportadora</label>
+                    <select value={formData.carrier} onChange={e => setFormData({ ...formData, carrier: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-3 text-xs text-white outline-none focus:border-sky-500/50 appearance-none font-bold shadow-inner transition-all">
+                      <option value="Correios" className="bg-[#0f172a] text-white">Correios</option>
+                      <option value="SEDEX" className="bg-[#0f172a] text-white">SEDEX</option>
+                      <option value="PAC" className="bg-[#0f172a] text-white">PAC</option>
+                      <option value="Jadlog" className="bg-[#0f172a] text-white">Jadlog</option>
+                      <option value="Azul Cargo" className="bg-[#0f172a] text-white">Azul Cargo</option>
+                      <option value="Outro" className="bg-[#0f172a] text-white">Outro</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Rastreio</label>
+                    <input type="text" placeholder="Código" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-3 text-xs text-white outline-none focus:border-sky-500/50 font-bold shadow-inner transition-all" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -767,7 +820,14 @@ const Orders: React.FC<OrdersProps> = ({
                       </div>
                     </td>
                     <td className="py-6 px-10">
-                      <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
+                        {order.trackingCode && (
+                          <div className="w-5 h-5 bg-sky-500/10 rounded-md flex items-center justify-center text-sky-500 animate-pulse" title={`Rastreio: ${order.trackingCode}`}>
+                            <div className="scale-75">{ICONS.Shipping}</div>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="py-6 px-10">
                       <div className="flex flex-col gap-1">

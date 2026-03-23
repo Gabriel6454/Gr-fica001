@@ -135,6 +135,30 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
             </div>
         </div>
 
+        {/* Real-time Logistics Tracking */}
+        {order.trackingCode && (
+            <div className="bg-sky-500/5 border border-sky-500/20 rounded-[32px] p-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center text-sky-500">
+                            <div className="scale-125">{ICONS.Shipping}</div>
+                        </div>
+                        <div>
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Rastreamento Logístico</h4>
+                            <p className="text-xl font-black text-white italic uppercase">{order.carrier || 'Transporte'}</p>
+                            <p className="text-[11px] text-sky-500 font-bold tracking-widest uppercase mt-0.5">{order.trackingCode}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => window.open(`https://www.linkcorreios.com.br/${order.trackingCode}`, '_blank')}
+                        className="w-full sm:w-auto px-10 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-[0.2em] shadow-2xl shadow-sky-500/20 hover:scale-[1.03] active:scale-95 transition-all text-center"
+                    >
+                        Rastreio em Tempo Real
+                    </button>
+                </div>
+            </div>
+        )}
+
         {/* Resumo do Pedido */}
         <div className="bg-[#0a111f] border border-slate-800 rounded-[32px] p-8">
             <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
