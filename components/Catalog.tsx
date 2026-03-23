@@ -368,7 +368,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
                           type="number"
                           value={tier.quantity}
                           onChange={e => updateTier(idx, 'quantity', Number(e.target.value))}
-                          className="w-16 bg-[#0a111f] border border-white/5 rounded-md px-2 py-1 text-xs font-black text-sky-500 outline-none focus:border-sky-500/50"
+                          className="w-24 bg-[#0a111f] border border-white/5 rounded-md px-2 py-1 text-xs font-black text-sky-500 outline-none focus:border-sky-500/50"
                         />
                         <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">un</span>
                       </div>
