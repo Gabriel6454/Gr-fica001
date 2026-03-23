@@ -135,9 +135,10 @@ interface ProductModalProps {
   onSave: (prod: Partial<Product>) => void;
   categories: Category[];
   product?: Product;
+  onManageCategories: () => void;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, categories, product }) => {
+const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, categories, product, onManageCategories }) => {
   const initialTiers = [
     { quantity: 100, costPrice: 0, margin: 2.0, salePrice: 0 },
     { quantity: 250, costPrice: 0, margin: 1.8, salePrice: 0 },
@@ -283,11 +284,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Segmentação</label>
-                  <div className="relative">
-                    <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none appearance-none focus:border-sky-500/50 transition-all shadow-inner">
-                      {categories.map(cat => <option key={cat.id} value={cat.title}>{cat.title}</option>)}
-                    </select>
-                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none scale-100">{ICONS.ChevronDown}</div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none appearance-none focus:border-sky-500/50 transition-all shadow-inner">
+                        {categories.map(cat => <option key={cat.id} value={cat.title}>{cat.title}</option>)}
+                      </select>
+                      <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none scale-100">{ICONS.ChevronDown}</div>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={onManageCategories}
+                      className="px-4 bg-sky-500/10 border border-sky-500/20 text-sky-500 rounded-2xl hover:bg-sky-500 hover:text-white transition-all shadow-lg"
+                      title="Gerenciar Categorias"
+                    >
+                      {ICONS.Plus}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -487,6 +498,7 @@ const Catalog: React.FC<CatalogProps> = ({
         }}
         categories={categories}
         product={editingProduct}
+        onManageCategories={() => setIsCategoryModalOpen(true)}
       />
       {previewProduct && (
         <PriceTableImage 
@@ -523,14 +535,6 @@ const Catalog: React.FC<CatalogProps> = ({
           <div className="h-8 w-px bg-slate-800 hidden sm:block"></div>
 
           <div className="flex gap-3">
-            <button
-              onClick={() => setIsCategoryModalOpen(true)}
-              className="px-10 py-4 bg-slate-900 border border-white/10 text-slate-400 font-black uppercase rounded-2xl text-[11px] tracking-widest hover:text-white hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-black/20"
-            >
-              <div className="flex items-center gap-2">
-                {ICONS.Settings} Categorias
-              </div>
-            </button>
             <button
               onClick={handleOpenAddProduct}
               className="flex items-center justify-center gap-2 px-10 py-4 bg-gradient-to-br from-sky-500 to-sky-600 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95"
