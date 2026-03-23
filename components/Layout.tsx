@@ -13,7 +13,6 @@ interface LayoutProps {
   isOnline?: boolean;
 }
 
-// Exportando para ser usado no Settings.tsx
 export const ALL_MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: ICONS.Dashboard },
   { id: 'customers', label: 'Clientes', icon: ICONS.Customers },
@@ -26,49 +25,51 @@ export const ALL_MENU_ITEMS = [
   { id: 'settings', label: 'Configurações', icon: ICONS.Settings },
 ];
 
-// Componente de Logo Padrão (Ícone de Gestão)
 export const DefaultLogo: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout, settings, currentUser, isOnline = true }) => {
+const Layout: React.FC<LayoutProps> = ({
+  children, activeTab, setActiveTab, onLogout, settings, currentUser, isOnline = true
+}) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Auto-detect device and adjust layout
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768 && window.innerWidth < 1024) {
+      const w = window.innerWidth;
+      if (w >= 768 && w < 1024) {
+        // Tablet: sidebar collapsed (ícones apenas)
         setIsCollapsed(true);
-      } else {
+        setIsMobileMenuOpen(false);
+      } else if (w >= 1024) {
+        // Desktop: sidebar expandida
         setIsCollapsed(false);
+        setIsMobileMenuOpen(false);
       }
+      // Mobile (<768): sidebar controlada por isMobileMenuOpen
     };
 
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Executa ao montar
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleResize, { passive: true });
+    handleResize();
 
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
   }, []);
 
-  const containerClasses = "min-h-screen bg-[#020617] text-slate-200 selection:bg-sky-500/30 flex flex-col md:flex-row overflow-x-hidden antialiased pb-20 md:pb-0";
-
-  const headerClasses = "md:hidden fixed top-0 left-0 right-0 h-16 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5 z-[80] flex items-center justify-between px-4 sm:px-6";
-
-  const sidebarClasses = `fixed md:sticky top-0 left-0 bottom-0 glass-card bg-[#030712]/60 h-screen flex flex-col z-[100] transition-all duration-500 ease-in-out ${isMobileMenuOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'} ${isCollapsed ? 'md:w-20' : 'md:w-64'}`;
-
-  const mainClasses = "flex-1 pt-20 md:pt-6 pb-8 px-4 sm:px-6 md:pl-10 md:pr-6 max-w-full overflow-x-hidden transition-all duration-300";
-
-  const menuItems = ALL_MENU_ITEMS;
-  
-  // Tabs mais importantes para o menu inferior no mobile
+  // Bottom nav items (mobile)
   const bottomNavItems = useMemo(() => [
     { id: 'dashboard', label: 'Início', icon: ICONS.Dashboard },
-    { id: 'orders', label: 'Pedidos', icon: ICONS.Orders },
-    { id: 'sales', label: 'Vendas', icon: ICONS.Sales },
+    { id: 'orders',    label: 'Pedidos', icon: ICONS.Orders },
+    { id: 'sales',     label: 'Vendas', icon: ICONS.Sales },
     { id: 'customers', label: 'Clientes', icon: ICONS.Customers },
-    { id: 'settings', label: 'Ajustes', icon: ICONS.Settings },
+    { id: 'settings',  label: 'Ajustes', icon: ICONS.Settings },
   ], []);
 
   const handleTabChange = (id: string) => {
@@ -84,114 +85,177 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
   }, [currentUser]);
 
   return (
-    <div className={containerClasses} style={{ zoom: settings.systemScale || 1 }}>
-
-      {/* Mobile Top Bar */}
-      <header className={headerClasses}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
-            <DefaultLogo className="w-6 h-6" />
+    <div
+      className="min-h-screen bg-[#020617] text-slate-200 selection:bg-sky-500/30 flex flex-col md:flex-row overflow-x-hidden antialiased"
+      style={{ zoom: settings.systemScale || 1 }}
+    >
+      {/* ── Mobile Top Bar ── */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-[80] flex items-center justify-between px-4 bg-[#020617]/85 backdrop-blur-xl border-b border-white/5"
+        style={{ height: '3.75rem', paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-sky-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-sky-500/30 shrink-0">
+            {settings.logoUrl && settings.logoUrl.length > 10
+              ? <img src={settings.logoUrl} className="w-full h-full object-cover rounded-xl" alt="Logo" />
+              : <DefaultLogo className="w-5 h-5" />
+            }
           </div>
-          <span className="text-white font-black text-xs tracking-tighter uppercase italic">{settings.name || 'Atlas'}</span>
+          <span className="text-white font-black text-xs tracking-tighter uppercase italic leading-none">
+            {settings.name || 'Atlas'}
+          </span>
         </div>
+
         <div className="flex items-center gap-2">
-           <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
-           <button
-             onClick={() => setIsMobileMenuOpen(true)}
-             className="p-2 text-slate-400 hover:text-white transition-colors"
-           >
-             {ICONS.Menu}
-           </button>
+          <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="btn-touch p-2 text-slate-400 hover:text-white transition-colors rounded-xl"
+            aria-label="Abrir menu"
+          >
+            {ICONS.Menu}
+          </button>
         </div>
       </header>
 
-      {/* Bottom Navigation for Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#030712]/90 backdrop-blur-2xl border-t border-white/5 z-[80] flex items-center justify-around px-2">
+      {/* ── Bottom Navigation (mobile only) ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-[80] flex items-center justify-around bg-[#030712]/92 backdrop-blur-2xl border-t border-white/5 bottom-nav-safe"
+        style={{ height: 'calc(3.75rem + env(safe-area-inset-bottom))', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         {bottomNavItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => handleTabChange(item.id)}
-              className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all duration-300 ${isActive ? 'text-sky-400 scale-110' : 'text-slate-500'}`}
+              className={`btn-touch flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-2xl transition-all duration-200 flex-1 ${
+                isActive ? 'text-sky-400' : 'text-slate-500'
+              }`}
+              aria-label={item.label}
             >
-              <div className={`${isActive ? 'glow-sky shadow-sky-500/20' : ''}`}>{item.icon}</div>
-              <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
+              <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'scale-100'}`}>
+                {item.icon}
+              </div>
+              <span className={`text-[9px] font-black uppercase tracking-wider leading-none ${isActive ? 'opacity-100' : 'opacity-50'}`}>
+                {item.label}
+              </span>
+              {isActive && (
+                <span className="absolute bottom-[env(safe-area-inset-bottom)] w-8 h-0.5 bg-sky-500 rounded-full blur-sm" />
+              )}
             </button>
           );
         })}
       </nav>
 
-      {/* Backdrop Mobile */}
+      {/* ── Mobile Backdrop ── */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[90] md:hidden transition-all duration-500" onClick={() => setIsMobileMenuOpen(false)} />
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
       )}
 
-      {/* Sidebar */}
-      <aside className={sidebarClasses}>
-        <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden md:flex absolute -right-3 top-24 w-6 h-6 bg-sky-500 rounded-full border border-sky-400 items-center justify-center text-[#030712] shadow-xl z-[110] hover:scale-110 active:scale-95 transition-all">
-          <div className={`transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'} scale-75`}>{ICONS.Chevron}</div>
+      {/* ── Sidebar ── */}
+      <aside
+        className={[
+          'fixed md:sticky top-0 left-0 bottom-0 h-screen z-[100]',
+          'glass-card bg-[#030712]/70 flex flex-col',
+          'transition-all duration-300 ease-in-out',
+          // Mobile: escondida ou visível
+          isMobileMenuOpen ? 'translate-x-0 w-72' : '-translate-x-full',
+          // Tablet/Desktop override
+          'md:translate-x-0',
+          isCollapsed ? 'md:w-[4.5rem]' : 'md:w-64',
+        ].join(' ')}
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        {/* Collapse toggle (desktop) */}
+        <button
+          onClick={() => setIsCollapsed(c => !c)}
+          className="hidden md:flex absolute -right-3 top-24 w-6 h-6 bg-sky-500 rounded-full border border-sky-400 items-center justify-center text-[#030712] shadow-xl z-[110] hover:scale-110 active:scale-95 transition-all"
+        >
+          <div className={`transition-transform duration-300 scale-75 ${isCollapsed ? '' : 'rotate-180'}`}>
+            {ICONS.Chevron}
+          </div>
         </button>
 
         {/* Logo */}
-        <div className={`p-8 mb-4 flex items-center ${isCollapsed ? 'md:justify-center' : 'gap-4'}`}>
-          <div className="w-12 h-12 bg-sky-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-2xl shadow-sky-500/40 overflow-hidden relative group/logo">
-            {settings.logoUrl && settings.logoUrl.length > 10 ? (
-              <img src={settings.logoUrl} className="w-full h-full object-cover" alt="Logo" />
-            ) : (
-              <DefaultLogo className="w-7 h-7" />
-            )}
-            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
+        <div className={`px-5 pt-6 pb-4 flex items-center gap-4 shrink-0 ${isCollapsed && !isMobileMenuOpen ? 'md:justify-center' : ''}`}>
+          <div className="w-11 h-11 bg-sky-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-2xl shadow-sky-500/40 overflow-hidden">
+            {settings.logoUrl && settings.logoUrl.length > 10
+              ? <img src={settings.logoUrl} className="w-full h-full object-cover" alt="Logo" />
+              : <DefaultLogo className="w-6 h-6" />
+            }
           </div>
           {(!isCollapsed || isMobileMenuOpen) && (
-            <div className="animate-in fade-in slide-in-from-left-2 duration-500">
-              <span className="text-white font-black text-xl tracking-tighter block leading-none italic uppercase italic">{settings.name || 'Atlas'}</span>
-              <span className="text-[9px] text-sky-500 font-black uppercase tracking-[0.4em] mt-1 block">GESTÃO</span>
+            <div className="animate-in fade-in slide-in-from-left-2 duration-300 overflow-hidden">
+              <span className="text-white font-black text-lg tracking-tighter block leading-none italic uppercase">
+                {settings.name || 'Atlas'}
+              </span>
+              <span className="text-[9px] text-sky-500 font-black uppercase tracking-[0.4em] block mt-0.5">
+                GESTÃO
+              </span>
             </div>
           )}
         </div>
 
         {/* Menu Items */}
-        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto no-scrollbar">
-          {menuItems.map((item) => {
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar py-2">
+          {ALL_MENU_ITEMS.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => handleTabChange(item.id)}
-                className={`w-full flex items-center rounded-2xl transition-all duration-300 group relative ${isCollapsed && !isMobileMenuOpen ? 'md:justify-center px-0 py-4' : 'px-5 py-3.5 gap-4'} ${isActive ? 'bg-sky-500/10 text-sky-400 glow-sky' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
+                className={[
+                  'w-full flex items-center rounded-2xl transition-all duration-200 relative group',
+                  isCollapsed && !isMobileMenuOpen ? 'md:justify-center px-0 py-3.5' : 'px-4 py-3 gap-3.5',
+                  isActive ? 'bg-sky-500/10 text-sky-400' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5',
+                ].join(' ')}
+                title={isCollapsed && !isMobileMenuOpen ? item.label : undefined}
               >
-                <div className={`${isActive ? 'text-sky-400' : 'text-slate-500 group-hover:text-slate-300'} transition-colors shrink-0 scale-110`}>{item.icon}</div>
-                {(!isCollapsed || isMobileMenuOpen) && <span className={`text-[13px] tracking-tight truncate ${isActive ? 'font-black' : 'font-semibold'}`}>{item.label}</span>}
-                {isActive && <div className="absolute left-0 w-1 h-6 bg-sky-500 rounded-r-full shadow-[0_0_15px_#0ea5e9]"></div>}
+                <div className={`shrink-0 transition-colors ${isActive ? 'text-sky-400' : 'group-hover:text-slate-300'}`}>
+                  {item.icon}
+                </div>
+                {(!isCollapsed || isMobileMenuOpen) && (
+                  <span className={`text-[13px] tracking-tight truncate ${isActive ? 'font-black' : 'font-semibold'}`}>
+                    {item.label}
+                  </span>
+                )}
+                {isActive && (
+                  <div className="absolute left-0 w-1 h-6 bg-sky-500 rounded-r-full shadow-[0_0_12px_#0ea5e9]" />
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Status Indicator */}
-        <div className={`px-6 pb-4 mb-2 ${isCollapsed && !isMobileMenuOpen ? 'flex justify-center' : 'flex items-center gap-3'}`} title={isOnline ? "Conexão estabelecida com servidor" : "Falha na conexão"}>
-           <div className="relative flex items-center justify-center w-3 h-3 shrink-0">
-             {isOnline ? (
-               <>
-                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50"></span>
-                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
-               </>
-             ) : (
-               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
-             )}
-           </div>
-           {(!isCollapsed || isMobileMenuOpen) && (
-             <span className={`text-[9px] font-black uppercase tracking-[0.2em] leading-none mt-0.5 ${isOnline ? 'text-emerald-500/90' : 'text-rose-500/90'}`}>
-               {isOnline ? 'Supabase Sync' : 'Offline / Falha'}
-             </span>
-           )}
+        {/* Status */}
+        <div
+          className={`px-4 pb-3 flex items-center gap-2.5 ${isCollapsed && !isMobileMenuOpen ? 'md:justify-center' : ''}`}
+          title={isOnline ? 'Conexão ativa' : 'Sem conexão'}
+        >
+          <div className="relative flex items-center justify-center w-3 h-3 shrink-0">
+            {isOnline ? (
+              <>
+                <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-40" />
+                <span className="relative rounded-full h-2 w-2 bg-emerald-500" />
+              </>
+            ) : (
+              <span className="relative rounded-full h-2 w-2 bg-rose-500" />
+            )}
+          </div>
+          {(!isCollapsed || isMobileMenuOpen) && (
+            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isOnline ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
+              {isOnline ? 'Supabase Sync' : 'Offline / Falha'}
+            </span>
+          )}
         </div>
 
-        {/* Profile with Logout */}
-        <div className={`p-6 border-t border-white/5 mt-auto ${isCollapsed && !isMobileMenuOpen ? 'md:flex md:justify-center' : ''}`}>
-          <div className={`flex items-center bg-slate-900/40 rounded-2xl border border-slate-800/50 group/profile ${isCollapsed && !isMobileMenuOpen ? 'p-2' : 'p-3 gap-3 w-full'}`}>
-            <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-[12px] font-black text-sky-500 shrink-0">
+        {/* Profile */}
+        <div className={`px-3 pb-4 border-t border-white/5 pt-3 shrink-0 ${isCollapsed && !isMobileMenuOpen ? 'md:flex md:justify-center' : ''}`}>
+          <div className={`flex items-center bg-slate-900/40 rounded-2xl border border-slate-800/50 ${isCollapsed && !isMobileMenuOpen ? 'p-2' : 'p-2.5 gap-3 w-full'}`}>
+            <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-[11px] font-black text-sky-500 shrink-0">
               {userInitials}
             </div>
             {(!isCollapsed || isMobileMenuOpen) && (
@@ -209,8 +273,23 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
         </div>
       </aside>
 
-      <main className={mainClasses}>
-        <div className="max-w-full ml-0">{children}</div>
+      {/* ── Main Content ── */}
+      <main
+        className="flex-1 min-w-0 overflow-x-hidden"
+        style={{
+          paddingTop: 'calc(3.75rem)',     // mobile header height
+          paddingBottom: 'calc(3.75rem + env(safe-area-inset-bottom))', // bottom nav
+        }}
+      >
+        {/* Remove top/bottom padding for md+ (sidebar handles layout) */}
+        <style>{`
+          @media (min-width: 768px) {
+            main { padding-top: 1.5rem !important; padding-bottom: 2rem !important; }
+          }
+        `}</style>
+        <div className="px-4 sm:px-6 md:px-8 lg:px-10 max-w-full">
+          {children}
+        </div>
       </main>
     </div>
   );

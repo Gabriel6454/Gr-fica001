@@ -655,36 +655,37 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
       {activePaymentOrder && <PaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} order={activePaymentOrder} onConfirm={onReceivePayment} />}
       {activeTrackingOrder && <TrackingModal isOpen={isTrackingModalOpen} onClose={() => setIsTrackingModalOpen(false)} order={activeTrackingOrder} customers={customers} />}
 
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 py-8 border-b border-slate-800/50 mb-10 px-4 sm:px-8">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 border-b border-slate-800/50 mb-6 px-4 sm:px-6 md:px-8">
+        <div className="space-y-0.5">
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none uppercase">Painel de <span className="text-sky-500">Controle</span></h1>
-          <p className="text-slate-500 text-[11px] sm:text-sm font-medium uppercase tracking-widest">Gestão de produção em tempo real</p>
+          <p className="text-slate-500 text-xs sm:text-sm font-medium uppercase tracking-widest">Gestão de produção em tempo real</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800/50 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-2xl border border-slate-800/50 w-full sm:w-auto overflow-x-auto no-scrollbar tabs-scroll">
             {[
-              { id: 'today', label: 'Hoje' },
-              { id: 'last7', label: '7D' },
-              { id: 'last30', label: '30D' },
+              { id: 'today',     label: 'Hoje' },
+              { id: 'last7',     label: '7D' },
+              { id: 'last30',    label: '30D' },
               { id: 'thisMonth', label: 'Mês' },
-              { id: 'all', label: 'Tudo' },
-              { id: 'custom', label: '...' },
+              { id: 'all',       label: 'Tudo' },
+              { id: 'custom',    label: '...' },
             ].map((p) => (
               <button
                 key={p.id}
                 onClick={() => setPeriod(p.id)}
-                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${period === p.id
-                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
-                  : 'text-slate-500 hover:text-white hover:bg-slate-800'
-                  }`}
+                className={`shrink-0 flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                  period === p.id
+                    ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
+                    : 'text-slate-500 hover:text-white hover:bg-slate-800'
+                }`}
               >
                 {p.label}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {period === 'custom' && (
               <div className="flex flex-1 items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
                 <input
@@ -702,21 +703,22 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
               </div>
             )}
 
-            <button onClick={() => setIsSalesModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-black uppercase rounded-2xl text-[9px] sm:text-[10px] tracking-widest shadow-xl transition-all active:scale-95">
-              <div className="scale-100 sm:scale-110">{ICONS.Eye}</div>
-              Vendas
+            <button onClick={() => setIsSalesModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-black uppercase rounded-2xl text-[9px] sm:text-[10px] tracking-widest shadow-xl transition-all active:scale-95">
+              {ICONS.Eye}
+              <span>Vendas</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 pb-4 px-4 sm:px-8">
-        <KpiCard label="Vendas" value={`R$ ${(totalSales || 0).toFixed(0)}`} subtext="Faturamento Bruto" icon={ICONS.Up} iconBgClass="bg-[#14b8a6]" glowColor="#14b8a6" valueColorClass="text-[#14b8a6]" />
-        <KpiCard label="Custo" value={`R$ ${(totalCost || 0).toFixed(0)}`} subtext="Gasto Materiais" icon={ICONS.Products} iconBgClass="bg-[#ef4444]" glowColor="#ef4444" valueColorClass="text-[#ef4444]" />
-        <KpiCard label="Lucro" value={`R$ ${(totalProfit || 0).toFixed(0)}`} subtext="Margem Líquida" icon={ICONS.Success} iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
-        <KpiCard label="Ativos" value={activeOrdersCount.toString()} subtext="Pedidos em Aberto" icon={ICONS.Orders} iconBgClass="bg-[#f59e0b]" glowColor="#f59e0b" valueColorClass="text-[#f59e0b]" />
-        <KpiCard label="Clientes" value={uniqueBuyersCount.toString()} subtext="Base Ativa" icon={ICONS.Customers} iconBgClass="bg-[#3b82f6]" glowColor="#3b82f6" valueColorClass="text-[#3b82f6]" />
-        <KpiCard label="Finalizados" value={finishedOrdersCount.toString()} subtext="Entregues" icon={ICONS.Success} iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
+      {/* KPI Grid: 2 cols mobile → 3 tablet → 6 desktop */}
+      <div className="kpi-grid pb-4 px-4 sm:px-6 md:px-8">
+        <KpiCard label="Vendas"     value={`R$ ${(totalSales   || 0).toFixed(0)}`} subtext="Faturamento Bruto" icon={ICONS.Up}       iconBgClass="bg-[#14b8a6]" glowColor="#14b8a6" valueColorClass="text-[#14b8a6]" />
+        <KpiCard label="Custo"      value={`R$ ${(totalCost    || 0).toFixed(0)}`} subtext="Gasto Materiais"  icon={ICONS.Products} iconBgClass="bg-[#ef4444]" glowColor="#ef4444" valueColorClass="text-[#ef4444]" />
+        <KpiCard label="Lucro"      value={`R$ ${(totalProfit  || 0).toFixed(0)}`} subtext="Margem Líquida"   icon={ICONS.Success}  iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
+        <KpiCard label="Ativos"     value={activeOrdersCount.toString()}            subtext="Pedidos em Aberto" icon={ICONS.Orders}   iconBgClass="bg-[#f59e0b]" glowColor="#f59e0b" valueColorClass="text-[#f59e0b]" />
+        <KpiCard label="Clientes"   value={uniqueBuyersCount.toString()}            subtext="Base Ativa"       icon={ICONS.Customers}iconBgClass="bg-[#3b82f6]" glowColor="#3b82f6" valueColorClass="text-[#3b82f6]" />
+        <KpiCard label="Finalizados"value={finishedOrdersCount.toString()}          subtext="Entregues"        icon={ICONS.Success}  iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
       </div>
 
       <div className="flex flex-col md:flex-row overflow-x-auto lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 items-start gap-6 -mx-4 px-4 md:mx-0 md:px-0 pb-10 no-scrollbar">

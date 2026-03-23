@@ -254,61 +254,60 @@ const Customers: React.FC<CustomersProps> = ({ customers, onAddCustomer, onEditC
         customer={editingCustomer}
       />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8 border-b border-white/5 mb-10 px-8">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black text-white tracking-tight leading-none uppercase italic">Base de <span className="text-sky-500">Clientes</span></h1>
-          <p className="text-slate-500 text-sm font-medium">Gestão de contatos e histórico de parcerias</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 border-b border-white/5 mb-6 px-4 sm:px-6 md:px-8">
+        <div className="space-y-0.5">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none uppercase italic">Base de <span className="text-sky-500">Clientes</span></h1>
+          <p className="text-slate-500 text-xs sm:text-sm font-medium">Gestão de contatos e histórico de parcerias</p>
         </div>
-        <button onClick={handleOpenAdd} className="flex items-center justify-center gap-2 px-10 py-4 bg-gradient-to-br from-sky-500 to-sky-600 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95">
+        <button onClick={handleOpenAdd} className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-sky-500 to-sky-600 text-white font-black uppercase rounded-2xl text-[10px] sm:text-[11px] tracking-widest shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto">
           {ICONS.Plus} Cadastrar Cliente
         </button>
       </div>
 
-      <div className="glass-card bg-[#0a111f]/40 rounded-[40px] overflow-hidden shadow-2xl">
+      <div className="glass-card bg-[#0a111f]/40 rounded-[28px] sm:rounded-[40px] overflow-hidden shadow-2xl mx-4 sm:mx-6 md:mx-8">
         <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse" style={{ minWidth: '560px' }}>
             <thead>
-              <tr className="text-slate-500 text-[11px] font-black uppercase tracking-[0.2em] bg-white/5 backdrop-blur-md">
-                <th className="py-8 px-10">Cliente</th>
-                <th className="py-8 px-10">Tipo</th>
-                <th className="py-8 px-10">Identificação</th>
-                <th className="py-8 px-10">Localidade</th>
-                <th className="py-8 px-10 text-right">Controle</th>
+              <tr className="text-slate-500 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] bg-white/5 backdrop-blur-md">
+                <th className="py-5 px-5 sm:px-8">Cliente</th>
+                <th className="py-5 px-5 sm:px-8">Tipo</th>
+                <th className="py-5 px-5 sm:px-8 hidden sm:table-cell">Identificação</th>
+                <th className="py-5 px-5 sm:px-8">Localidade</th>
+                <th className="py-5 px-5 sm:px-8 text-right">Controle</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {customers.map((customer) => (
                 <tr key={customer.id} className="group hover:bg-slate-800/10 transition-all">
-                  <td className="py-5 px-8">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-500 font-black text-xs">
+                  <td className="py-4 px-5 sm:px-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-500 font-black text-xs shrink-0">
                         {customer.name.substring(0, 2).toUpperCase()}
                       </div>
-                      <div>
-                        <h4 className="font-bold text-white text-sm">{customer.name}</h4>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{customer.email}</p>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-white text-sm truncate max-w-[120px] sm:max-w-none">{customer.name}</h4>
+                        <p className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[120px] sm:max-w-none">{customer.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-5 px-8">
-                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${customer.type === 'PF' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-purple-500/10 text-purple-500 border-purple-500/20'
-                      }`}>
+                  <td className="py-4 px-5 sm:px-8">
+                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${customer.type === 'PF' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-purple-500/10 text-purple-500 border-purple-500/20'}` }>
                       {customer.type}
                     </span>
                   </td>
-                  <td className="py-5 px-8 text-sm text-slate-400 font-medium">
+                  <td className="py-4 px-5 sm:px-8 text-sm text-slate-400 font-medium hidden sm:table-cell">
                     {customer.document}
                   </td>
-                  <td className="py-5 px-8">
+                  <td className="py-4 px-5 sm:px-8">
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-white">{customer.phone}</span>
-                      <span className="text-[9px] text-slate-500 uppercase font-black truncate max-w-[180px]">
-                        {customer.city}/{customer.state} • {customer.cep}
+                      <span className="text-xs sm:text-sm font-bold text-white">{customer.phone}</span>
+                      <span className="text-[9px] text-slate-500 uppercase font-black truncate max-w-[120px] sm:max-w-[180px]">
+                        {customer.city}/{customer.state}
                       </span>
                     </div>
                   </td>
-                  <td className="py-5 px-8 text-right">
-                    <div className="flex justify-end gap-2 transition-all">
+                  <td className="py-4 px-5 sm:px-8 text-right">
+                    <div className="flex justify-end gap-1.5 sm:gap-2">
                       <button onClick={() => handleOpenEdit(customer)} className="p-2.5 bg-[#0d1729] border border-slate-800/60 rounded-xl text-slate-400 hover:text-white transition-all">
                         {ICONS.Edit}
                       </button>

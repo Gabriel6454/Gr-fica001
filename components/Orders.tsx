@@ -792,43 +792,46 @@ const Orders: React.FC<OrdersProps> = ({
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8 border-b border-white/5 mb-10 px-8">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black text-white tracking-tight leading-none uppercase">Gestão de <span className="text-sky-500">Pedidos</span></h1>
-          <p className="text-slate-500 text-sm font-medium">Fluxo de produção e recebimentos financeiros</p>
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 border-b border-white/5 mb-6 px-4 sm:px-6 md:px-8">
+        <div className="space-y-0.5">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none uppercase">Gestão de <span className="text-sky-500">Pedidos</span></h1>
+          <p className="text-slate-500 text-xs sm:text-sm font-medium">Fluxo de produção e recebimentos financeiros</p>
         </div>
-        <button onClick={handleNewOrder} className="group relative flex items-center justify-center gap-3 px-10 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95">
-          {ICONS.Plus} CRIAR NOVO PEDIDO
+        <button onClick={handleNewOrder} className="flex items-center justify-center gap-2 px-6 py-3 bg-sky-500 text-white font-black uppercase rounded-2xl text-[10px] sm:text-[11px] tracking-widest shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto">
+          {ICONS.Plus} <span>Criar Novo Pedido</span>
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 px-8">
+      {/* Tabs – scroll horizontal no mobile */}
+      <div className="tabs-scroll flex items-center gap-2 px-4 sm:px-6 md:px-8 pb-1">
         {[
-          { id: 'producao', label: 'Evolução Arte/Produção', icon: ICONS.Settings, color: 'sky', count: orders.filter(o => o.status === OrderStatus.ART || o.status === OrderStatus.PRODUCTION).length },
-          { id: 'logistica', label: 'Logística / Envio', icon: ICONS.Shipping, color: 'purple', count: orders.filter(o => o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED).length },
-          { id: 'finalizados', label: 'Histórico Concluído', icon: ICONS.Success, color: 'emerald', count: orders.filter(o => o.status === OrderStatus.COMPLETED).length },
+          { id: 'producao',   label: 'Arte/Produção',    icon: ICONS.Settings, color: 'sky',     count: orders.filter(o => o.status === OrderStatus.ART || o.status === OrderStatus.PRODUCTION).length },
+          { id: 'logistica',  label: 'Logística',         icon: ICONS.Shipping,  color: 'purple',  count: orders.filter(o => o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED).length },
+          { id: 'finalizados',label: 'Histórico',          icon: ICONS.Success,   color: 'emerald', count: orders.filter(o => o.status === OrderStatus.COMPLETED).length },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${
-              activeTab === tab.id 
-                ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20` 
+            className={`shrink-0 px-4 sm:px-5 py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === tab.id
+                ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20`
                 : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-white/5'
             }`}
           >
-            {tab.icon} {tab.label}
-            <span className={`px-2 py-0.5 rounded-md text-[9px] ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-500'}`}>
+            {tab.icon}
+            <span className="hidden xs:inline">{tab.label}</span>
+            <span className="inline xs:hidden">{tab.label.split('/')[0]}</span>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-500'}`}>
               {tab.count}
             </span>
           </button>
         ))}
       </div>
 
-      <div className="relative group px-8">
-        <div className="absolute left-14 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors scale-125">{ICONS.Search}</div>
-        <input type="text" placeholder="Rastrear por cliente ou protocolo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#0a111f]/40 border border-white/5 rounded-[28px] py-5 pl-14 pr-8 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700 shadow-2xl backdrop-blur-md" />
+      <div className="relative group px-4 sm:px-6 md:px-8">
+        <div className="absolute left-10 sm:left-14 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors">{ICONS.Search}</div>
+        <input type="text" placeholder="Buscar por cliente ou ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#0a111f]/40 border border-white/5 rounded-[24px] py-3.5 sm:py-4 pl-10 sm:pl-14 pr-5 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700 shadow-xl backdrop-blur-md" />
       </div>
 
       <div className="px-4 sm:px-8">

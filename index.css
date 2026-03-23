@@ -3,70 +3,195 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --glass-bg: rgba(3, 7, 18, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-glow: rgba(14, 165, 233, 0.1);
+
+    /* Responsive spacing tokens */
+    --page-px: 1rem;
+    --page-py: 1rem;
+    --card-radius: 1.25rem;
+    --modal-radius: 1.5rem;
+    --btn-h: 2.75rem;
+    --font-base: 0.875rem;
+    --font-sm: 0.75rem;
+    --font-xs: 0.6875rem;
+  }
+
+  @media (min-width: 768px) {
     :root {
-        --glass-bg: rgba(3, 7, 18, 0.45);
-        --glass-border: rgba(255, 255, 255, 0.05);
-        --glass-glow: rgba(14, 165, 233, 0.1);
+      --page-px: 1.5rem;
+      --page-py: 1.25rem;
+      --card-radius: 1.75rem;
+      --modal-radius: 2rem;
+      --font-base: 0.9375rem;
     }
+  }
 
-    body {
-        @apply bg-[#020617] text-slate-200 antialiased;
-        background-image:
-            radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 40%),
-            radial-gradient(circle at 100% 100%, rgba(79, 70, 229, 0.05) 0%, transparent 40%);
-        font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  @media (min-width: 1024px) {
+    :root {
+      --page-px: 2.5rem;
+      --page-py: 1.5rem;
+      --card-radius: 2rem;
+      --modal-radius: 2.5rem;
     }
+  }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
 
-    ::-webkit-scrollbar-track {
-        @apply bg-transparent;
-    }
+  body {
+    @apply bg-[#020617] text-slate-200 antialiased;
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(79, 70, 229, 0.05) 0%, transparent 40%);
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+    overflow-x: hidden;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 
-    ::-webkit-scrollbar-thumb {
-        @apply bg-slate-800/50 rounded-full hover:bg-slate-700/50 transition-colors;
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-800/50 rounded-full;
+  }
+
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Prevent iOS auto-zoom on inputs */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  @media (min-width: 768px) {
+    input, select, textarea {
+      font-size: inherit;
     }
+  }
+
+  input[type="date"] {
+    appearance: none;
+    -webkit-appearance: none;
+  }
 }
 
 @layer components {
-    .glass-card {
-        @apply bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] shadow-2xl;
-    }
+  .glass-card {
+    @apply bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] shadow-2xl;
+  }
 
-    .glass-morphism {
-        @apply bg-white/5 backdrop-blur-md border border-white/10;
-    }
+  .glass-morphism {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
 
-    .premium-gradient {
-        @apply bg-gradient-to-br from-white/5 to-transparent;
-    }
+  .premium-gradient {
+    @apply bg-gradient-to-br from-white/5 to-transparent;
+  }
 
-    .glow-sky {
-        @apply shadow-lg shadow-sky-500/20;
-    }
+  .glow-sky    { @apply shadow-lg shadow-sky-500/20; }
+  .glow-emerald{ @apply shadow-lg shadow-emerald-500/20; }
+  .glow-rose   { @apply shadow-lg shadow-rose-500/20; }
+  .glow-orange { @apply shadow-lg shadow-orange-500/20; }
 
-    .glow-emerald {
-        @apply shadow-lg shadow-emerald-500/20;
-    }
+  /* Page padding respeitando tokens */
+  .page-wrapper {
+    padding-left: var(--page-px);
+    padding-right: var(--page-px);
+    padding-top: var(--page-py);
+    padding-bottom: var(--page-py);
+    max-width: 100%;
+  }
 
-    .glow-rose {
-        @apply shadow-lg shadow-rose-500/20;
-    }
+  /* Minimum 44px touch target */
+  .btn-touch {
+    min-height: var(--btn-h);
+    min-width: var(--btn-h);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-    .glow-orange {
-        @apply shadow-lg shadow-orange-500/20;
-    }
+  /* Modal com safe area no bottom */
+  .modal-safe-bottom {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+
+  /* Bottom nav com safe area */
+  .bottom-nav-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-
+/* Scrollbar hide */
+.no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* KPI Grid responsivo */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .kpi-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Tabs scroll horizontal no mobile */
+.tabs-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs-scroll::-webkit-scrollbar { display: none; }
+
+/* Spring animation */
+@keyframes spring-in {
+  0%   { opacity: 0; transform: scale(0.92) translateY(10px); }
+  60%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-spring-in {
+  animation: spring-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Mobile content offset */
+@media (max-width: 767px) {
+  .mobile-pt { padding-top: 4rem; }
+  .mobile-pb { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
 }
