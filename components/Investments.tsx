@@ -647,10 +647,12 @@ const Investments: React.FC = () => {
               </div>
             )}
 
-            <button onClick={handleCalc}
-              className="w-full py-5 bg-gradient-to-br from-sky-500 to-indigo-600 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 text-[11px]">
-              Calcular Simulação
-            </button>
+            <div className="flex justify-center pt-4">
+              <button onClick={handleCalc}
+                className="w-full sm:w-auto px-16 py-4 bg-gradient-to-br from-sky-500 to-indigo-600 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 text-[11px]">
+                Calcular Simulação
+              </button>
+            </div>
 
             {/* Results */}
             {r0 && (

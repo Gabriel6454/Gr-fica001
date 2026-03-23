@@ -473,17 +473,16 @@ const Catalog: React.FC<CatalogProps> = ({
     onDeleteProduct(product.id);
   };
 
-  // Removido exportação de imagem
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-700 max-w-[1600px] mx-auto px-4 sm:px-8 pb-20 mt-4">
       <CategoryModal
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         categories={categories}
         onReorder={onReorderCategories}
         onSave={(data) => {
-          onAddCategory(data);
+          if (data.id) onEditCategory(data.id, data);
+          else onAddCategory(data);
         }}
         onDelete={onDeleteCategory}
       />
@@ -500,6 +499,7 @@ const Catalog: React.FC<CatalogProps> = ({
         product={editingProduct}
         onManageCategories={() => setIsCategoryModalOpen(true)}
       />
+
       {previewProduct && (
         <PriceTableImage 
           product={previewProduct} 
@@ -508,127 +508,143 @@ const Catalog: React.FC<CatalogProps> = ({
         />
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8 border-b border-white/5 mb-10 px-8">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Portfólio de <span className="text-sky-500">Soluções</span></h1>
-          <p className="text-slate-500 text-sm font-medium">Catálogo de produtos e serviços</p>
+      {/* Hero Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pt-6 pb-10 border-b border-white/5">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-sky-500 rounded-full"></div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase italic">
+              Portfólio <span className="text-sky-500/80">Soluções</span>
+            </h1>
+          </div>
+          <p className="text-slate-400 text-sm font-bold uppercase tracking-[0.2em] ml-5">
+            Gerencie seus produtos com elegância e eficiência
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-          <div className="flex bg-[#030712] border border-slate-800/80 p-1.5 rounded-[18px] shadow-inner">
+          <div className="flex bg-[#030712]/80 backdrop-blur-md border border-white/5 p-1 rounded-2xl shadow-2xl">
             <button
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-[11px] font-black uppercase tracking-widest ${viewMode === 'table' ? 'bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-white'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest ${viewMode === 'table' ? 'bg-white text-black shadow-lg' : 'text-slate-500 hover:text-slate-200'}`}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
               Lista
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-[11px] font-black uppercase tracking-widest ${viewMode === 'grid' ? 'bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-white'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest ${viewMode === 'grid' ? 'bg-white text-black shadow-lg' : 'text-slate-500 hover:text-slate-200'}`}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
               Grade
             </button>
           </div>
 
-          <div className="h-8 w-px bg-slate-800 hidden sm:block"></div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleOpenAddProduct}
-              className="flex items-center justify-center gap-2 px-10 py-4 bg-gradient-to-br from-sky-500 to-sky-600 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95"
-            >
-              {ICONS.Plus} Novo Produto
-            </button>
-          </div>
+          <button
+            onClick={handleOpenAddProduct}
+            className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-br from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-xl shadow-sky-500/20 transition-all active:scale-95 group"
+          >
+            <span className="group-hover:rotate-90 transition-transform duration-300">{ICONS.Plus}</span>
+            ADICIONAR PRODUTO
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 overflow-x-auto pb-4 no-scrollbar px-8">
+      {/* Categories Filter */}
+      <div className="flex items-center gap-2.5 overflow-x-auto py-2 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveCategoryFilter(null)}
-          className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${!activeCategoryFilter ? 'bg-white text-black' : 'bg-[#0a111f] text-slate-500 hover:text-slate-300'}`}
+          className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${!activeCategoryFilter ? 'bg-white border-white text-black shadow-lg shadow-white/5' : 'bg-[#0a111f]/40 border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-300'}`}
         >
-          Todos Itens
+          Todos os Materiais
         </button>
         {categories.map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCategoryFilter(cat.title)}
-            className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategoryFilter === cat.title ? 'bg-gradient-to-r from-sky-400 to-sky-600 border-sky-400 text-white shadow-lg shadow-sky-500/10' : 'bg-[#0a111f] border-slate-800 text-slate-500 hover:border-slate-700'}`}
+            className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategoryFilter === cat.title ? 'bg-sky-500 border-sky-400 text-white shadow-lg shadow-sky-500/20' : 'bg-[#0a111f]/40 border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-300'}`}
           >
             {cat.title}
           </button>
         ))}
       </div>
 
+      {/* Main Content Area */}
       {viewMode === 'table' ? (
-        <div className="bg-[#0a111f]/40 border border-slate-800/60 rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-[#0a111f]/60 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-800/30 bg-slate-900/20">
-                  <th className="py-6 px-10">Material / Item</th>
-                  <th className="py-6 px-10">Variações</th>
-                  <th className="py-6 px-10">Preço Atual</th>
-                  <th className="py-6 px-10 text-right">Ações</th>
+                <tr className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/5">
+                  <th className="py-5 px-8">Identificação</th>
+                  <th className="py-5 px-8">Lotes & Quantidades</th>
+                  <th className="py-5 px-8">Preço de Tabela</th>
+                  <th className="py-5 px-8 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-900/40">
+              <tbody className="divide-y divide-white/5">
                 {filteredProducts.map(product => {
                   const tierIndex = selectedTierIndices[product.id] || 0;
                   const activeTier = product.priceTiers?.[tierIndex] || { quantity: 0, salePrice: 0 };
                   return (
-                    <tr key={product.id} className="group hover:bg-slate-800/20 transition-all">
-                      <td className="py-6 px-10">
+                    <tr key={product.id} className="group hover:bg-white/[0.02] transition-colors">
+                      <td className="py-5 px-8">
                         <div className="flex items-center gap-5">
-                          <div className="w-14 h-14 rounded-2xl bg-[#030712] border border-slate-800 overflow-hidden shrink-0 shadow-lg flex items-center justify-center">
+                          <div className="w-14 h-14 rounded-2xl bg-[#030712] border border-white/5 overflow-hidden shrink-0 shadow-lg group-hover:border-sky-500/30 transition-all duration-500">
                             {product.imageUrl ? (
-                              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
+                              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
                             ) : (
-                              <div className="text-slate-700 scale-75">{ICONS.Palette}</div>
+                              <div className="w-full h-full flex items-center justify-center text-slate-700 group-hover:text-sky-500 transition-colors">
+                                {ICONS.Palette}
+                              </div>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <h3 className="text-base font-bold text-white uppercase leading-none truncate group-hover:text-sky-400 transition-colors">{product.name}</h3>
-                            <span className="inline-block mt-2 text-[8px] text-sky-500 font-black uppercase tracking-[0.15em] bg-sky-500/5 px-2 py-0.5 rounded border border-sky-500/10">{product.category}</span>
+                            <h3 className="text-sm font-black text-white uppercase tracking-tight truncate group-hover:text-sky-400 transition-colors">{product.name}</h3>
+                            <span className="inline-block mt-1 text-[8px] text-sky-500 font-black uppercase tracking-[0.2em] bg-sky-500/5 px-2 py-0.5 rounded border border-sky-500/10">{product.category}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="py-6 px-10">
-                        <div className="flex flex-wrap gap-2.5">
+                      <td className="py-5 px-8">
+                        <div className="flex flex-wrap gap-1.5">
                           {product.priceTiers?.map((tier, idx) => (
                             <button
                               key={idx}
                               onClick={() => handleTierSelect(product.id, idx)}
-                              className={`px-4 py-2.5 text-[11px] font-black rounded-[14px] transition-all duration-300 relative overflow-hidden group/btn ${tierIndex === idx ? 'bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white shadow-[0_4px_20px_-4px_rgba(14,165,233,0.5)] scale-105' : 'bg-[#030712] text-slate-500 hover:text-slate-200'}`}
+                              className={`px-3 py-1.5 text-[10px] font-black rounded-lg border transition-all duration-300 ${tierIndex === idx ? 'bg-sky-500 border-sky-400 text-white shadow-lg' : 'bg-[#030712] border-white/5 text-slate-500 hover:text-slate-300'}`}
                             >
                               {tier.quantity}
-                              {tierIndex === idx && <div className="absolute inset-0 bg-white/10 group-hover/btn:bg-white/20 transition-colors"></div>}
                             </button>
                           ))}
                         </div>
                       </td>
-                      <td className="py-6 px-10">
+                      <td className="py-5 px-8">
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Total Lote</span>
-                          <span className="text-lg font-black text-emerald-500 tracking-tighter">R$ {activeTier.salePrice.toFixed(2).replace('.', ',')}</span>
+                          <span className="text-[9px] text-slate-600 font-black uppercase tracking-widest mb-0.5">Valor Atual</span>
+                          <span className="text-lg font-black text-emerald-400 tracking-tighter">
+                             R$ {activeTier.salePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-6 px-10 text-right">
-                        <div className="flex justify-end gap-3">
+                      <td className="py-5 px-8 text-right">
+                        <div className="flex justify-end gap-2">
                           <button 
                             onClick={() => setPreviewProduct(product)}
-                            className="w-10 h-10 flex items-center justify-center bg-[#0d1729] border border-slate-800 rounded-2xl text-sky-500 hover:text-sky-400 hover:border-sky-500/40 transition-all shadow-sm"
-                            title="Exportar Tabela"
+                            className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/5 rounded-xl text-sky-400 hover:bg-sky-500 hover:text-white transition-all shadow-sm"
+                            title="Exportar"
                           >
                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                           </button>
-                          <button onClick={() => handleOpenEditProduct(product)} className="w-10 h-10 flex items-center justify-center bg-[#0d1729] border border-slate-800 rounded-2xl text-slate-400 hover:text-sky-500 hover:border-sky-500/40 transition-all shadow-sm">
+                          <button 
+                            onClick={() => handleOpenEditProduct(product)} 
+                            className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white transition-all shadow-sm"
+                          >
                             {ICONS.Edit}
                           </button>
-                          <button onClick={() => confirmDeleteProduct(product)} className="w-10 h-10 flex items-center justify-center bg-[#0d1729] border border-slate-800 rounded-2xl text-slate-400 hover:text-rose-500 hover:border-rose-500/40 transition-all shadow-sm">
+                          <button 
+                            onClick={() => confirmDeleteProduct(product)} 
+                            className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 transition-all shadow-sm"
+                          >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
                           </button>
                         </div>
@@ -641,70 +657,77 @@ const Catalog: React.FC<CatalogProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-8">
           {filteredProducts.map(product => {
             const tierIndex = selectedTierIndices[product.id] || 0;
             const activeTier = product.priceTiers?.[tierIndex] || { quantity: 0, salePrice: 0 };
             return (
-              <div key={product.id} className="bg-[#0a111f]/60 border border-slate-800/40 rounded-[40px] overflow-hidden shadow-xl group hover:border-sky-500/30 hover:bg-[#0a111f]/80 transition-all duration-500 flex flex-col relative">
-                <div className="aspect-[4/3] relative overflow-hidden bg-[#030712]">
+              <div key={product.id} className="group bg-[#0a111f]/60 backdrop-blur-md border border-white/5 rounded-[32px] overflow-hidden hover:border-sky-500/20 hover:bg-[#0a111f]/80 transition-all duration-500 flex flex-col shadow-xl">
+                <div className="aspect-[1.2/1] relative overflow-hidden bg-[#030712] border-b border-white/5">
                   {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-all duration-1000" />
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-all duration-1000" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-800">
-                      <div className="scale-[2] opacity-20">{ICONS.Palette}</div>
+                    <div className="w-full h-full flex items-center justify-center text-slate-800 group-hover:text-sky-500 transition-colors">
+                      <div className="scale-[1.5]">{ICONS.Palette}</div>
                     </div>
                   )}
-                  <div className="absolute top-5 left-5">
-                    <span className="px-4 py-1.5 bg-black/70 backdrop-blur-xl border border-white/10 rounded-2xl text-[9px] font-black text-white uppercase tracking-widest shadow-2xl">
+                  
+                  <div className="absolute top-4 left-4">
+                    <span className="px-3 py-1 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl text-[8px] font-black text-white uppercase tracking-widest">
                       {product.category}
                     </span>
                   </div>
-                  <div className="absolute top-5 right-5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0 flex gap-2">
+
+                  <div className="absolute inset-x-4 bottom-4 flex justify-between gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                     <button 
                       onClick={() => setPreviewProduct(product)}
-                      className="w-10 h-10 bg-black/70 backdrop-blur-xl border border-white/10 rounded-2xl text-sky-400 hover:bg-sky-500 hover:text-white transition-all shadow-2xl flex items-center justify-center"
-                      title="Exportar Tabela"
+                      className="flex-1 py-2 bg-white/95 text-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-2xl flex items-center justify-center gap-2 hover:bg-sky-500 hover:text-white transition-all"
                     >
-                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                      PDF
                     </button>
-                    <button onClick={() => handleOpenEditProduct(product)} className="w-10 h-10 bg-black/70 backdrop-blur-xl border border-white/10 rounded-2xl text-white hover:bg-sky-500 hover:text-black transition-all shadow-2xl flex items-center justify-center">
+                    <button 
+                      onClick={() => handleOpenEditProduct(product)} 
+                      className="w-10 h-10 bg-sky-500 text-white rounded-xl shadow-2xl flex items-center justify-center hover:bg-sky-400 transition-all"
+                    >
                       {ICONS.Edit}
                     </button>
-                    <button onClick={() => confirmDeleteProduct(product)} className="w-10 h-10 bg-black/70 backdrop-blur-xl border border-white/10 rounded-2xl text-white hover:bg-rose-500 transition-all shadow-2xl flex items-center justify-center">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                    <button 
+                      onClick={() => confirmDeleteProduct(product)}
+                      className="w-10 h-10 bg-white/10 backdrop-blur-sm text-white rounded-xl flex items-center justify-center hover:bg-rose-500 transition-all"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /></svg>
                     </button>
                   </div>
                 </div>
 
-                <div className="p-8 space-y-6 flex-1 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-black text-white uppercase tracking-tight leading-none group-hover:text-sky-400 transition-colors">{product.name}</h3>
-                    <p className="text-[11px] text-slate-500 font-medium line-clamp-2 leading-relaxed">{product.description}</p>
+                <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tight group-hover:text-sky-400 transition-colors leading-tight mb-1.5">{product.name}</h3>
+                    <p className="text-[10px] text-slate-500 font-medium line-clamp-2 leading-relaxed min-h-[30px]">{product.description}</p>
                   </div>
 
-                  <div className="space-y-6 pt-6 border-t border-slate-800/40">
-                    <div className="flex flex-wrap gap-2.5">
+                  <div className="space-y-4 pt-3 border-t border-white/5">
+                    <div className="flex flex-wrap gap-1.5">
                       {product.priceTiers?.map((tier, idx) => (
                         <button
                           key={idx}
                           onClick={() => handleTierSelect(product.id, idx)}
-                          className={`px-4 py-2.5 text-[11px] font-black rounded-[14px] transition-all border duration-300 relative overflow-hidden group/btn ${tierIndex === idx ? 'bg-gradient-to-br from-[#38bdf8] to-[#0284c7] border-white/20 text-white shadow-[0_4px_20px_-4px_rgba(14,165,233,0.5)] scale-105' : 'bg-[#030712] border-white/5 text-slate-600 hover:text-slate-200 hover:border-white/15'}`}
+                          className={`flex-1 min-w-[45px] py-1.5 text-[9px] font-black rounded-lg border transition-all duration-300 ${tierIndex === idx ? 'bg-sky-500 border-sky-400 text-white' : 'bg-[#030712] border-white/5 text-slate-600 hover:text-slate-300'}`}
                         >
                           {tier.quantity}
-                          {tierIndex === idx && <div className="absolute inset-0 bg-white/10 group-hover/btn:bg-white/20 transition-colors"></div>}
                         </button>
                       ))}
                     </div>
 
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
-                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block">Lote Selecionado</span>
-                        <span className="text-3xl font-black text-emerald-500 tracking-tighter block leading-none">
-                          R$ {activeTier.salePrice.toFixed(2).replace('.', ',')}
+                    <div className="flex items-end justify-between">
+                      <div className="space-y-0.5">
+                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest block">Lote Final</span>
+                        <span className="text-2xl font-black text-emerald-400 tracking-tighter block leading-none">
+                          R$ {activeTier.salePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
-                      <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-700 opacity-40 group-hover:opacity-100 transition-opacity">
+                      <div className="w-9 h-9 rounded-xl bg-[#030712] border border-white/5 flex items-center justify-center text-slate-700 opacity-40 group-hover:opacity-100 transition-opacity">
                         {ICONS.Products}
                       </div>
                     </div>
@@ -716,23 +739,40 @@ const Catalog: React.FC<CatalogProps> = ({
         </div>
       )}
 
+      {/* Empty State */}
       {filteredProducts.length === 0 && (
-        <div className="py-40 text-center flex flex-col items-center justify-center bg-[#0a111f]/20 border border-slate-800/40 border-dashed rounded-[50px] animate-in fade-in zoom-in-95">
-          <div className="w-24 h-24 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-slate-700 mb-8 shadow-inner">
-            <div className="scale-[2.5]">{ICONS.Products}</div>
+        <div className="py-24 text-center bg-[#0a111f]/20 border border-white/5 border-dashed rounded-[40px] animate-in fade-in zoom-in-95">
+          <div className="w-16 h-16 bg-[#030712] border border-white/5 rounded-2xl flex items-center justify-center text-slate-700 mx-auto mb-6 shadow-inner">
+            <div className="scale-125">{ICONS.Products}</div>
           </div>
-          <p className="text-base font-black uppercase tracking-[0.3em] text-slate-600">Catálogo vazio para este filtro</p>
-          <button onClick={handleOpenAddProduct} className="mt-8 px-10 py-4 bg-gradient-to-r from-sky-500 to-sky-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-2xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95">Cadastrar Primeiro Produto</button>
+          <h3 className="text-base font-black text-white uppercase tracking-widest">Nenhum item encontrado</h3>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2 px-10">Tente ajustar seus filtros ou cadastre um novo produto.</p>
         </div>
       )}
 
+      {/* Simple Table Styles Enhancement */}
       <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @media (max-width: 640px) {
+          table { border-spacing: 0 12px; border-collapse: separate; }
+          thead { display: none; }
+          tbody tr { 
+            display: flex; 
+            flex-direction: column; 
+            background: rgba(10, 17, 31, 0.4); 
+            border-radius: 24px; 
+            padding: 20px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            margin-bottom: 16px; 
+            width: 100%; 
+            transition: none !important; 
+          }
+          tbody td { padding: 0 !important; border: none !important; }
+          tbody td:not(:last-child) { margin-bottom: 16px; }
+          tbody td:last-child { width: 100%; }
+          tbody .flex-wrap { justify-content: flex-start; }
+          tbody .justify-end { justify-content: flex-start; gap: 8px; }
         }
       `}</style>
     </div>
