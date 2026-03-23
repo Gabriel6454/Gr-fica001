@@ -73,23 +73,7 @@ export const PaymentModal: React.FC<{
           </div>
 
           <div className="space-y-3">
-            <div className="flex justify-between items-end px-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">Valor do Recebimento</label>
-              <div className="flex gap-2 mb-1">
-                <button 
-                  onClick={() => setAmount(order.remainingAmount / 2)}
-                  className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 active:scale-95"
-                >
-                  Pagar Metade
-                </button>
-                <button 
-                  onClick={() => setAmount(order.remainingAmount)}
-                  className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 active:scale-95"
-                >
-                  Quitar Tudo
-                </button>
-              </div>
-            </div>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block px-1">Valor do Recebimento</label>
             <div className="relative">
               <span className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500 font-black text-xl">R$</span>
               <input
@@ -546,7 +530,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
   };
 
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
       <div className="glass-card bg-[#0a1224]/90 border border-white/10 w-full max-w-[1100px] rounded-[48px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col h-full sm:h-auto max-h-[98vh] sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200 relative">
         <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[40%] h-[30%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none"></div>
@@ -556,7 +540,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/20">{order ? ICONS.Edit : ICONS.Plus}</div>
             <div>
               <h2 className="text-2xl font-black text-white italic uppercase tracking-tight">{order ? 'Refinar' : 'Gerar Novo'} <span className="text-sky-400">Pedido</span></h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Console de Operação Industrial v2.0</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Console de Operação Industrial</p>
             </div>
           </div>
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all border border-white/5">{ICONS.X}</button>
@@ -572,10 +556,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Cliente</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Selecione o Cliente</label>
                 <div className="relative group">
-                  <select value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
-                    <option value="">Selecionar cliente...</option>
+                  <select value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
+                    <option value="">Buscar na base...</option>
                     {customers.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a] text-white">{c.name}</option>)}
                   </select>
                   <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
@@ -585,12 +569,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Prazo de Entrega</label>
-                  <input type="date" value={formData.deliveryDate} onChange={e => setFormData({ ...formData, deliveryDate: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 font-bold transition-all shadow-xl" />
+                  <input type="date" value={formData.deliveryDate} onChange={e => setFormData({ ...formData, deliveryDate: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 font-bold transition-all shadow-xl" />
                 </div>
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Status Operacional</label>
-                  <div className="relative group">
-                    <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as OrderStatus })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
+                   <div className="relative group">
+                    <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as OrderStatus })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
                       {Object.values(OrderStatus).map(st => <option key={st} value={st} className="bg-[#0f172a] text-white">{st}</option>)}
                     </select>
                     <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
@@ -603,7 +587,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
           <div className="space-y-8 md:border-r border-white/5 md:pr-10">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_#a855f7]"></span>
-              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">ESPECIFICAÇÕES</h3>
+              <h3 className="text-[11px] font-black text-purple-400 uppercase tracking-[0.2em]">ESPECIFICAÇÕES</h3>
             </div>
 
             <div className="space-y-8">
@@ -637,56 +621,32 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
           <div className="space-y-8">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_#10b981]"></span>
-              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">CAPITAL & FLUXO</h3>
+              <h3 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.2em]">CAPITAL & FLUXO</h3>
             </div>
 
             <div className="space-y-8">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Frete</label>
-                  <div className="relative">
+                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
-                    <input type="number" step="0.01" value={formData.shippingCost} onChange={e => setFormData({ ...formData, shippingCost: Number(e.target.value) })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] pl-10 pr-4 py-4 text-sm text-white font-black outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-xl" />
+                    <input type="number" step="0.01" value={formData.shippingCost} onChange={e => setFormData({ ...formData, shippingCost: Number(e.target.value) })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] pl-10 pr-4 py-4 text-sm text-white font-black outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-xl" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-end px-1">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Entrada</label>
-                    <div className="flex gap-1.5 mb-1">
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const productPrice = selectedProduct?.priceTiers?.[formData.tierIndex]?.price || 0;
-                          setFormData({ ...formData, paidAmount: (productPrice + formData.shippingCost) / 2 });
-                        }}
-                        className="text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"
-                      >
-                        50%
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const productPrice = selectedProduct?.priceTiers?.[formData.tierIndex]?.price || 0;
-                          setFormData({ ...formData, paidAmount: productPrice + formData.shippingCost });
-                        }}
-                        className="text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"
-                      >
-                        Total
-                      </button>
-                    </div>
-                  </div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Entrada</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
-                    <input type="number" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: Number(e.target.value) })} className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-[20px] pl-10 pr-4 py-4 text-sm text-emerald-400 font-black outline-none focus:border-emerald-500 shadow-xl" />
+                    <input type="number" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: Number(e.target.value) })} className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-[24px] pl-10 pr-4 py-4 text-sm text-emerald-400 font-black outline-none focus:border-emerald-500 shadow-xl" />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 text-center">Forma de Pagamento</label>
                 <div className="grid grid-cols-3 gap-2">
                   {PAYMENT_METHODS.slice(0, 6).map(method => (
-                    <button key={method.id} onClick={() => setFormData({ ...formData, paymentMethod: method.id })} className={`flex flex-col items-center justify-center py-3 rounded-2xl border transition-all gap-1.5 ${formData.paymentMethod === method.id ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-500/20 scale-[1.05]' : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'}`}>
+                    <button key={method.id} onClick={() => setFormData({ ...formData, paymentMethod: method.id })} className={`flex flex-col items-center justify-center py-3 rounded-[24px] border transition-all gap-1.5 ${formData.paymentMethod === method.id ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-500/20 scale-[1.05]' : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'}`}>
                       <span className="text-lg">{method.icon}</span>
                       <span className="text-[8px] font-black uppercase tracking-widest">{method.label}</span>
                     </button>
@@ -694,26 +654,27 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
                 </div>
               </div>
 
-                <div className="bg-orange-500/5 border border-orange-500/20 rounded-[32px] p-6 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400">{ICONS.Shipping}</div>
-                    <h3 className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em]">LOGÍSTICA</h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="relative">
-                      <select value={formData.carrier} onChange={e => setFormData({ ...formData, carrier: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 appearance-none font-bold shadow-xl pr-10">
-                        <option value="Correios">Correios</option>
-                        <option value="SEDEX">SEDEX</option>
-                        <option value="PAC">PAC</option>
-                        <option value="Jadlog">Jadlog</option>
-                        <option value="Azul Cargo">Azul Cargo</option>
-                        <option value="Retirada">Retirada Local</option>
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
-                    </div>
-                    <input type="text" placeholder="Cód. Rastreio" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 font-bold shadow-xl" />
-                  </div>
+              <div className="bg-orange-500/5 border border-orange-500/20 rounded-[32px] p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400">{ICONS.Shipping}</div>
+                  <h3 className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em]">LOGÍSTICA</h3>
                 </div>
+                
+                <div className="grid grid-cols-1 gap-2">
+                   <div className="relative">
+                    <select value={formData.carrier} onChange={e => setFormData({ ...formData, carrier: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 appearance-none font-bold shadow-xl pr-10">
+                      <option value="Correios">Correios</option>
+                      <option value="SEDEX">SEDEX</option>
+                      <option value="PAC">PAC</option>
+                      <option value="Jadlog">Jadlog</option>
+                      <option value="Azul Cargo">Azul Cargo</option>
+                      <option value="Retirada">Retirada Local</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
+                  </div>
+                  <input type="text" placeholder="Cód. Rastreio" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 font-bold shadow-xl" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -738,8 +699,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
           </div>
 
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            <button onClick={onClose} className="flex-1 sm:flex-none px-10 py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl hover:bg-white/10 transition-all text-[11px] tracking-widest">Descartar</button>
-            <button onClick={handleSubmit} className="flex-[2] sm:flex-none px-16 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl hover:bg-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-all text-[11px] tracking-widest active:scale-95">
+            <button onClick={onClose} className="flex-1 sm:flex-none px-10 py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl hover:bg-white/10 transition-all text-[11px] tracking-widest min-h-[56px] min-w-[140px]">Descartar</button>
+            <button onClick={handleSubmit} className="flex-[2] sm:flex-none px-16 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl hover:bg-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-all text-[11px] tracking-widest active:scale-95 min-h-[56px] min-w-[200px]">
               {order ? 'Salvar Alterações' : 'Confirmar Pedido'}
             </button>
           </div>
