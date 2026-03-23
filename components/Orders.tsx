@@ -747,14 +747,21 @@ const Orders: React.FC<OrdersProps> = ({
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<'producao' | 'logistica' | 'finalizados'>('producao');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'todos' | 'finalizados'>('todos');
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm);
-    const matchesTab = activeTab === 'todos'
-      ? o.status !== OrderStatus.COMPLETED
-      : (activeTab === 'finalizados' && o.status === OrderStatus.COMPLETED);
+    const isFinished = o.status === OrderStatus.COMPLETED;
+    const isLogistic = o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED;
+    const isProduction = o.status === OrderStatus.ART || o.status === OrderStatus.PRODUCTION;
+
+    const matchesTab = activeTab === 'producao' 
+        ? isProduction 
+        : activeTab === 'logistica' 
+            ? isLogistic 
+            : isFinished;
+
     return matchesSearch && matchesTab;
   });
 
@@ -797,18 +804,26 @@ const Orders: React.FC<OrdersProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-4 px-8">
-        <button
-          onClick={() => setActiveTab('todos')}
-          className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'todos' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-white/5'}`}
-        >
-          Fluxo Ativo
-        </button>
-        <button
-          onClick={() => setActiveTab('finalizados')}
-          className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'finalizados' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-white/5'}`}
-        >
-          Histórico Finalizado
-        </button>
+        {[
+          { id: 'producao', label: 'Evolução Arte/Produção', icon: ICONS.Settings, color: 'sky', count: orders.filter(o => o.status === OrderStatus.ART || o.status === OrderStatus.PRODUCTION).length },
+          { id: 'logistica', label: 'Logística / Envio', icon: ICONS.Shipping, color: 'purple', count: orders.filter(o => o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED).length },
+          { id: 'finalizados', label: 'Histórico Concluído', icon: ICONS.Success, color: 'emerald', count: orders.filter(o => o.status === OrderStatus.COMPLETED).length },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${
+              activeTab === tab.id 
+                ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20` 
+                : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-white/5'
+            }`}
+          >
+            {tab.icon} {tab.label}
+            <span className={`px-2 py-0.5 rounded-md text-[9px] ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-500'}`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       <div className="relative group px-8">
@@ -823,11 +838,33 @@ const Orders: React.FC<OrdersProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-b border-white/5 bg-white/5">
-                  <th className="py-8 px-10">ID PEDIDO</th>
+                  <th className="py-8 px-10">ID</th>
                   <th className="py-8 px-10">CLIENTE</th>
-                  <th className="py-8 px-10">ENTREGA</th>
-                  <th className="py-8 px-10">TOTAL / PENDENTE</th>
-                  <th className="py-8 px-10">STATUS PRODUÇÃO</th>
+                  
+                  {activeTab === 'producao' && (
+                    <>
+                      <th className="py-8 px-10">PRAZO ENTREGA</th>
+                      <th className="py-8 px-10">TOTAL / PENDENTE</th>
+                      <th className="py-8 px-10">STATUS PRODUÇÃO</th>
+                    </>
+                  )}
+
+                  {activeTab === 'logistica' && (
+                    <>
+                      <th className="py-8 px-10">TRANSPORTADORA</th>
+                      <th className="py-8 px-10">CÓDIGO RASTREIO</th>
+                      <th className="py-8 px-10">STATUS ENVIO</th>
+                    </>
+                  )}
+
+                  {activeTab === 'finalizados' && (
+                    <>
+                      <th className="py-8 px-10">DATA FINALIZAÇÃO</th>
+                      <th className="py-8 px-10">TOTAL PAGO</th>
+                      <th className="py-8 px-10">PAGAMENTO</th>
+                    </>
+                  )}
+
                   <th className="py-8 px-10 text-right">AÇÕES</th>
                 </tr>
               </thead>
@@ -835,48 +872,77 @@ const Orders: React.FC<OrdersProps> = ({
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="group hover:bg-white/[0.03] transition-all">
                     <td className="py-6 px-10">
-                      <span className="text-[10px] font-black text-slate-600">#{order.id}</span>
+                      <span className="text-[10px] font-black text-slate-600">#{order.id.substring(0,6)}</span>
                     </td>
                     <td className="py-6 px-10">
                       <div className="flex flex-col gap-1">
                         <h4 className="font-bold text-slate-100 text-[13px] uppercase tracking-tight">{order.customerName}</h4>
                       </div>
                     </td>
-                    <td className="py-6 px-10">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
-                        {order.trackingCode && (
-                          <div className="w-5 h-5 bg-sky-500/10 rounded-md flex items-center justify-center text-sky-500 animate-pulse" title={`Rastreio: ${order.trackingCode}`}>
-                            <div className="scale-75">{ICONS.Shipping}</div>
+
+                    {activeTab === 'producao' && (
+                      <>
+                        <td className="py-6 px-10">
+                          <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
+                        </td>
+                        <td className="py-6 px-10">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[13px] font-black text-white italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                            {order.remainingAmount > 0 && (
+                              <span className="text-[9px] text-rose-500 font-bold uppercase tracking-widest">Falta R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-6 px-10">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[13px] font-black text-white italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                        {order.remainingAmount > 0 && (
-                          <span className="text-[9px] text-rose-500 font-bold uppercase tracking-widest">Falta R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-6 px-10">
-                      <button
-                        onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
-                        className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] hover:brightness-110 active:scale-95 cursor-pointer ${getStatusBadgeClass(order.status)}`}
-                        title="Clique para avançar o status"
-                      >
-                        {order.status}
-                      </button>
-                    </td>
+                        </td>
+                        <td className="py-6 px-10">
+                          <button onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))} className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] ${getStatusBadgeClass(order.status)}`}>
+                            {order.status}
+                          </button>
+                        </td>
+                      </>
+                    )}
+
+                    {activeTab === 'logistica' && (
+                      <>
+                        <td className="py-6 px-10">
+                          <span className="text-[11px] text-sky-500 font-black uppercase tracking-widest">{order.carrier || 'Correios'}</span>
+                        </td>
+                        <td className="py-6 px-10">
+                           <div className="flex items-center gap-3">
+                             <span className="text-[11px] text-slate-400 font-black font-mono">{order.trackingCode || 'Sem código'}</span>
+                             {order.trackingCode && <div className="w-5 h-5 bg-sky-500/10 rounded-md flex items-center justify-center text-sky-500 animate-pulse">{ICONS.Shipping}</div>}
+                           </div>
+                        </td>
+                        <td className="py-6 px-10">
+                          <button onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))} className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] ${getStatusBadgeClass(order.status)}`}>
+                            {order.status}
+                          </button>
+                        </td>
+                      </>
+                    )}
+
+                    {activeTab === 'finalizados' && (
+                      <>
+                        <td className="py-6 px-10">
+                          <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
+                        </td>
+                        <td className="py-6 px-10">
+                          <span className="text-[13px] font-black text-emerald-500 italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                        </td>
+                        <td className="py-6 px-10">
+                           <span className="bg-emerald-500/10 text-emerald-500 text-[9px] font-black px-4 py-1.5 rounded-full border border-emerald-500/20 uppercase tracking-widest">
+                             {order.paymentMethod || 'PIX'} - PAGO
+                           </span>
+                        </td>
+                      </>
+                    )}
+
                     <td className="py-6 px-10 text-right">
-                      <div className="flex justify-end gap-2.5 transition-opacity">
-                        <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center" title="WhatsApp">{ICONS.Whatsapp}</button>
-                        {order.remainingAmount > 0 && <button onClick={() => handlePayOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center font-black" title="Liquidar">$</button>}
-                        <button onClick={() => handlePrintOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center" title="Imprimir">{ICONS.Print}</button>
-                        <button onClick={() => handleTrackOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all flex items-center justify-center" title="Workflow">{ICONS.Shipping}</button>
-                        <button onClick={() => handleEditOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all flex items-center justify-center" title="Refinar">{ICONS.Edit}</button>
-                        <button onClick={() => handleDelete(order.id)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center" title="Eliminar">{ICONS.Trash}</button>
+                      <div className="flex justify-end gap-2.5">
+                        <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center">{ICONS.Whatsapp}</button>
+                        <button onClick={() => handlePrintOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center">{ICONS.Print}</button>
+                        <button onClick={() => handleTrackOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center">{ICONS.Shipping}</button>
+                        <button onClick={() => handleEditOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center">{ICONS.Edit}</button>
+                        <button onClick={() => handleDelete(order.id)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 transition-all flex items-center justify-center">{ICONS.Trash}</button>
                       </div>
                     </td>
                   </tr>
@@ -886,35 +952,69 @@ const Orders: React.FC<OrdersProps> = ({
           </div>
         </div>
 
-        {/* Mobile/Tablet Card View */}
         <div className="lg:hidden space-y-6 pb-20">
           {filteredOrders.map((order) => (
             <div key={order.id} className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[32px] p-6 space-y-6 shadow-2xl backdrop-blur-xl">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-black text-slate-600 block leading-none tracking-widest uppercase italic">Protocolo #{order.id}</span>
+                  <span className="text-[10px] font-black text-slate-600 block leading-none tracking-widest uppercase italic">ID #{order.id.substring(0,6)}</span>
                   <h4 className="font-black text-white text-lg uppercase leading-tight tracking-tight">{order.customerName}</h4>
                 </div>
-                <button
-                  onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
-                  className={`px-6 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all shadow-lg ${getStatusBadgeClass(order.status)}`}
-                >
-                  {order.status}
-                </button>
+                {activeTab !== 'finalizados' && (
+                  <button
+                    onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
+                    className={`px-6 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all shadow-lg ${getStatusBadgeClass(order.status)}`}
+                  >
+                    {order.status}
+                  </button>
+                )}
+                {activeTab === 'finalizados' && (
+                   <span className="px-6 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-500/30 bg-emerald-500/10 text-emerald-500">
+                     CONCLUÍDO
+                   </span>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Previsão</span>
-                  <p className="text-xs font-black text-white">{order.deliveryDate}</p>
+              {activeTab === 'producao' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Previsão</span>
+                    <p className="text-xs font-black text-white">{order.deliveryDate}</p>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Total</span>
+                    <p className="text-lg font-black text-sky-500 leading-none">R$ {order.total.toFixed(2).replace('.', ',')}</p>
+                  </div>
                 </div>
-                <div className="space-y-1 text-right">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Valor Total</span>
-                  <p className="text-lg font-black text-sky-500 leading-none">R$ {order.total.toFixed(2).replace('.', ',')}</p>
-                </div>
-              </div>
+              )}
 
-              {order.remainingAmount > 0 && (
+              {activeTab === 'logistica' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Transporte</span>
+                    <p className="text-xs font-black text-sky-400">{order.carrier || 'Correios'}</p>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Rastreio</span>
+                    <p className="text-xs font-black text-slate-200 font-mono tracking-tighter">{order.trackingCode || 'N/A'}</p>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'finalizados' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Pagamento</span>
+                    <p className="text-xs font-black text-emerald-500">{order.paymentMethod || 'PIX'}</p>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Valor Pago</span>
+                    <p className="text-lg font-black text-emerald-500 leading-none">R$ {order.total.toFixed(2).replace('.', ',')}</p>
+                  </div>
+                </div>
+              )}
+
+              {order.remainingAmount > 0 && activeTab !== 'finalizados' && (
                 <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex items-center justify-between">
                   <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Saldo Pendente</span>
                   <span className="text-sm font-black text-rose-500 italic">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
