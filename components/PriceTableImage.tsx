@@ -184,30 +184,30 @@ const PriceTableImage: React.FC<PriceTableImageProps> = ({ product, settings, on
         </div>
 
         {/* Action Buttons (Not in capture) */}
-        <div className="grid grid-cols-1 gap-3 px-4 mb-10">
+        <div className="flex justify-center px-4 mb-10">
           <button 
             disabled={isDownloading}
             onClick={handleDownload}
-            className="w-full py-5 bg-gradient-to-br from-sky-400 to-sky-600 text-white font-black rounded-3xl shadow-2xl shadow-sky-500/20 flex items-center justify-center gap-4 uppercase text-[12px] tracking-widest hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed group/save"
+            className="w-fit px-8 py-3.5 bg-gradient-to-br from-sky-400 to-sky-600 text-white font-black rounded-full shadow-xl shadow-sky-500/20 flex items-center justify-center gap-3 uppercase text-[11px] tracking-widest hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed group/save"
           >
             {isDownloading ? (
                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (
               <>
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center group-hover/save:scale-110 transition-transform">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center group-hover/save:scale-110 transition-transform">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </div>
                 <span>Salvar Tabela como Imagem</span>
               </>
             )}
           </button>
-          <div className="flex flex-col items-center gap-2 mt-2">
+        </div>
+        <div className="flex flex-col items-center gap-2 mt-2">
             <p className="text-[9px] text-slate-500 text-center font-bold uppercase tracking-[0.2em]">Visual em alta definição otimizado para WhatsApp</p>
             <div className="flex gap-1">
               {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-slate-800"></div>)}
             </div>
           </div>
-        </div>
       </div>
     </div>
   );

@@ -516,14 +516,14 @@ const Catalog: React.FC<CatalogProps> = ({
           <div className="flex bg-[#030712]/80 backdrop-blur-md border border-white/5 p-1 rounded-2xl shadow-2xl">
             <button
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest ${viewMode === 'table' ? 'bg-white text-black shadow-lg' : 'text-slate-500 hover:text-slate-200'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest ${viewMode === 'table' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-slate-200'}`}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
               Lista
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest ${viewMode === 'grid' ? 'bg-white text-black shadow-lg' : 'text-slate-500 hover:text-slate-200'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest ${viewMode === 'grid' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-slate-200'}`}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
               Grade
@@ -544,7 +544,7 @@ const Catalog: React.FC<CatalogProps> = ({
       <div className="flex items-center gap-2.5 overflow-x-auto py-2 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveCategoryFilter(null)}
-          className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${!activeCategoryFilter ? 'bg-white border-white text-black shadow-lg shadow-white/5' : 'bg-[#0a111f]/40 border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-300'}`}
+          className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${!activeCategoryFilter ? 'bg-sky-500 border-sky-400 text-white shadow-lg shadow-sky-500/20' : 'bg-[#0a111f]/40 border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-300'}`}
         >
           Todos os Materiais
         </button>
