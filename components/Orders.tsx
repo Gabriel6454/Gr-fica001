@@ -73,7 +73,23 @@ export const PaymentModal: React.FC<{
           </div>
 
           <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block px-1">Valor do Recebimento</label>
+            <div className="flex justify-between items-end px-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">Valor do Recebimento</label>
+              <div className="flex gap-2 mb-1">
+                <button 
+                  onClick={() => setAmount(order.remainingAmount / 2)}
+                  className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 active:scale-95"
+                >
+                  Pagar Metade
+                </button>
+                <button 
+                  onClick={() => setAmount(order.remainingAmount)}
+                  className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 active:scale-95"
+                >
+                  Quitar Tudo
+                </button>
+              </div>
+            </div>
             <div className="relative">
               <span className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500 font-black text-xl">R$</span>
               <input
@@ -530,21 +546,23 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
   };
 
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="glass-card bg-[#070b14]/60 border border-white/5 w-full max-w-[1000px] rounded-[40px] shadow-3xl overflow-hidden flex flex-col h-full sm:h-auto max-h-[98vh] sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="glass-card bg-[#0a1224]/90 border border-white/10 w-full max-w-[1100px] rounded-[48px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col h-full sm:h-auto max-h-[98vh] sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200 relative">
+        <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-[40%] h-[30%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-        <div className="px-8 sm:px-12 py-6 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-md">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-500 shadow-inner">{order ? ICONS.Edit : ICONS.Plus}</div>
+        <div className="px-8 sm:px-12 py-8 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl relative z-10">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/20">{order ? ICONS.Edit : ICONS.Plus}</div>
             <div>
-              <h2 className="text-2xl font-black text-white italic uppercase italic">{order ? 'Refinar' : 'Gerar Novo'} <span className="text-sky-500">Pedido</span></h2>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em] mt-1">Console de Operação Industrial</p>
+              <h2 className="text-2xl font-black text-white italic uppercase tracking-tight">{order ? 'Refinar' : 'Gerar Novo'} <span className="text-sky-400">Pedido</span></h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Console de Operação Industrial v2.0</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-slate-500 hover:text-white transition-all border border-white/5">{ICONS.X}</button>
+          <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all border border-white/5">{ICONS.X}</button>
         </div>
 
-        <div className="flex-1 p-8 sm:p-12 grid grid-cols-1 md:grid-cols-3 gap-10 overflow-y-auto no-scrollbar bg-gradient-to-b from-transparent to-white/[0.02]">
+        <div className="flex-1 p-8 sm:p-12 grid grid-cols-1 md:grid-cols-3 gap-10 overflow-y-auto no-scrollbar bg-gradient-to-b from-transparent to-white/[0.02] relative z-10">
 
           <div className="space-y-8 md:border-r border-white/5 md:pr-10">
             <div className="flex items-center gap-3">
@@ -554,23 +572,29 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Selecione o Cliente</label>
-                <select value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-4 text-xs text-white outline-none focus:border-sky-500/50 appearance-none font-bold shadow-inner transition-all">
-                  <option value="">Buscar na base...</option>
-                  {customers.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a] text-white">{c.name}</option>)}
-                </select>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Cliente</label>
+                <div className="relative group">
+                  <select value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
+                    <option value="">Selecionar cliente...</option>
+                    {customers.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a] text-white">{c.name}</option>)}
+                  </select>
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Prazo de Entrega</label>
-                  <input type="date" value={formData.deliveryDate} onChange={e => setFormData({ ...formData, deliveryDate: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-4 text-xs text-white outline-none focus:border-sky-500/50 font-bold shadow-inner transition-all" />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Prazo de Entrega</label>
+                  <input type="date" value={formData.deliveryDate} onChange={e => setFormData({ ...formData, deliveryDate: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 font-bold transition-all shadow-xl" />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Status Operacional</label>
-                  <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as OrderStatus })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-4 text-xs text-white outline-none focus:border-sky-500/50 appearance-none font-bold shadow-inner transition-all">
-                    {Object.values(OrderStatus).map(st => <option key={st} value={st} className="bg-[#0f172a] text-white">{st}</option>)}
-                  </select>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Status Operacional</label>
+                  <div className="relative group">
+                    <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as OrderStatus })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
+                      {Object.values(OrderStatus).map(st => <option key={st} value={st} className="bg-[#0f172a] text-white">{st}</option>)}
+                    </select>
+                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -584,21 +608,24 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
 
             <div className="space-y-8">
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Item do Portfólio</label>
-                <select value={formData.productId} onChange={e => setFormData({ ...formData, productId: e.target.value, tierIndex: 0 })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-4 text-xs text-white outline-none focus:border-sky-500/50 appearance-none font-bold shadow-inner transition-all">
-                  <option value="">Selecione o serviço...</option>
-                  {products.map(p => <option key={p.id} value={p.id} className="bg-[#0f172a] text-white">{p.name}</option>)}
-                </select>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Produto / Serviço</label>
+                <div className="relative group">
+                  <select value={formData.productId} onChange={e => setFormData({ ...formData, productId: e.target.value, tierIndex: 0 })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 appearance-none font-bold transition-all shadow-xl">
+                    <option value="">Escolher serviço...</option>
+                    {products.map(p => <option key={p.id} value={p.id} className="bg-[#0f172a] text-white">{p.name}</option>)}
+                  </select>
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
+                </div>
               </div>
 
               {selectedProduct && (
                 <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-3">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Lote de Produção</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Quantidade (Lote)</label>
                   <div className="grid grid-cols-2 gap-3">
                     {selectedProduct.priceTiers?.map((tier, idx) => (
-                      <button key={idx} onClick={() => setFormData({ ...formData, tierIndex: idx })} className={`py-4 rounded-2xl border text-xs font-black transition-all duration-500 relative overflow-hidden group/btn ${formData.tierIndex === idx ? 'bg-sky-500 border-sky-400 text-white shadow-xl shadow-sky-500/20 scale-[1.02]' : 'bg-[#030712]/40 border-white/5 text-slate-500 hover:text-white hover:bg-white/5'}`}>
-                        {tier.quantity} un
-                        {formData.tierIndex === idx && <div className="absolute inset-0 bg-white/10"></div>}
+                      <button key={idx} onClick={() => setFormData({ ...formData, tierIndex: idx })} className={`py-4 rounded-2xl border text-xs font-black transition-all duration-300 relative overflow-hidden flex flex-col items-center justify-center ${formData.tierIndex === idx ? 'bg-purple-600 border-purple-400 text-white shadow-xl shadow-purple-500/20 scale-[1.03] z-10' : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10 hover:border-white/20'}`}>
+                        <span className="text-sm">{tier.quantity}</span>
+                        <span className="text-[8px] opacity-70 uppercase tracking-widest mt-0.5">unidades</span>
                       </button>
                     ))}
                   </div>
@@ -614,96 +641,106 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
             </div>
 
             <div className="space-y-8">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-sky-500 uppercase tracking-[0.2em] px-1">Frete (R$)</label>
-                  <input type="number" step="0.01" value={formData.shippingCost} onChange={e => setFormData({ ...formData, shippingCost: Number(e.target.value) })} className="w-full bg-[#030712]/40 border border-sky-500/20 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-sky-500/50 font-black shadow-inner transition-all" />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Frete</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
+                    <input type="number" step="0.01" value={formData.shippingCost} onChange={e => setFormData({ ...formData, shippingCost: Number(e.target.value) })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] pl-10 pr-4 py-4 text-sm text-white font-black outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-xl" />
+                  </div>
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <label className="block text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] px-1">Entrada Inicial (R$)</label>
-                  <input type="number" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: Number(e.target.value) })} className="w-full bg-[#030712]/40 border border-emerald-500/20 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-emerald-500/50 font-black shadow-inner transition-all" />
+                <div className="space-y-2">
+                  <div className="flex justify-between items-end px-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Entrada</label>
+                    <div className="flex gap-1.5 mb-1">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const productPrice = selectedProduct?.priceTiers?.[formData.tierIndex]?.price || 0;
+                          setFormData({ ...formData, paidAmount: (productPrice + formData.shippingCost) / 2 });
+                        }}
+                        className="text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"
+                      >
+                        50%
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const productPrice = selectedProduct?.priceTiers?.[formData.tierIndex]?.price || 0;
+                          setFormData({ ...formData, paidAmount: productPrice + formData.shippingCost });
+                        }}
+                        className="text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"
+                      >
+                        Total
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
+                    <input type="number" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: Number(e.target.value) })} className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-[20px] pl-10 pr-4 py-4 text-sm text-emerald-400 font-black outline-none focus:border-emerald-500 shadow-xl" />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Canal de Recebimento</label>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 text-center">Forma de Pagamento</label>
                 <div className="grid grid-cols-3 gap-2">
                   {PAYMENT_METHODS.slice(0, 6).map(method => (
-                    <button key={method.id} onClick={() => setFormData({ ...formData, paymentMethod: method.id })} className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-[9px] font-black uppercase tracking-[0.1em] transition-all gap-1.5 ${formData.paymentMethod === method.id ? 'bg-sky-500 border-sky-400 text-white shadow-xl shadow-sky-500/20' : 'bg-[#030712]/40 border-white/5 text-slate-500 hover:text-white'}`}>
+                    <button key={method.id} onClick={() => setFormData({ ...formData, paymentMethod: method.id })} className={`flex flex-col items-center justify-center py-3 rounded-2xl border transition-all gap-1.5 ${formData.paymentMethod === method.id ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-500/20 scale-[1.05]' : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'}`}>
                       <span className="text-lg">{method.icon}</span>
-                      {method.label}
+                      <span className="text-[8px] font-black uppercase tracking-widest">{method.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-4 pt-6 border-t border-white/5 bg-white/5 p-6 rounded-3xl">
-                <div className="flex items-center gap-3">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_#f97316]"></span>
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">LOGÍSTICA / ENVIO</h3>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Transportadora</label>
-                    <select value={formData.carrier} onChange={e => setFormData({ ...formData, carrier: e.target.value })} className="w-full bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-3 text-xs text-white outline-none focus:border-sky-500/50 appearance-none font-bold shadow-inner transition-all">
-                      <option value="Correios" className="bg-[#0f172a] text-white">Correios</option>
-                      <option value="SEDEX" className="bg-[#0f172a] text-white">SEDEX</option>
-                      <option value="PAC" className="bg-[#0f172a] text-white">PAC</option>
-                      <option value="Jadlog" className="bg-[#0f172a] text-white">Jadlog</option>
-                      <option value="Azul Cargo" className="bg-[#0f172a] text-white">Azul Cargo</option>
-                      <option value="Outro" className="bg-[#0f172a] text-white">Outro</option>
-                    </select>
+                <div className="bg-orange-500/5 border border-orange-500/20 rounded-[32px] p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400">{ICONS.Shipping}</div>
+                    <h3 className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em]">LOGÍSTICA</h3>
                   </div>
-                  <div className="space-y-2">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Rastreio</label>
-                    <div className="flex gap-2">
-                        <input type="text" placeholder="Código" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="flex-1 bg-[#030712]/40 border border-white/5 rounded-2xl px-5 py-3 text-xs text-white outline-none focus:border-sky-500/50 font-bold shadow-inner transition-all" />
-                        {formData.trackingCode && (
-                            <button 
-                                type="button" 
-                                onClick={() => {
-                                    // Mock de sincronização real
-                                    const newHistory = [
-                                        { date: new Date().toLocaleString('pt-BR'), status: 'Objeto Postado', location: 'Centro de Distribuição' },
-                                        ...(order?.trackingHistory || [])
-                                    ];
-                                    setFormData(prev => ({ ...prev, trackingHistory: newHistory }));
-                                    alert('Sincronização com transportadora simulada com sucesso!');
-                                }}
-                                className="px-3 bg-sky-500/10 border border-sky-500/20 text-sky-500 rounded-xl hover:bg-sky-500 hover:text-white transition-all"
-                                title="Sincronizar Rastreio Real"
-                            >
-                                {ICONS.Refresh || '🔄'}
-                            </button>
-                        )}
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="relative">
+                      <select value={formData.carrier} onChange={e => setFormData({ ...formData, carrier: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 appearance-none font-bold shadow-xl pr-10">
+                        <option value="Correios">Correios</option>
+                        <option value="SEDEX">SEDEX</option>
+                        <option value="PAC">PAC</option>
+                        <option value="Jadlog">Jadlog</option>
+                        <option value="Azul Cargo">Azul Cargo</option>
+                        <option value="Retirada">Retirada Local</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
                     </div>
+                    <input type="text" placeholder="Cód. Rastreio" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 font-bold shadow-xl" />
                   </div>
                 </div>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="px-10 py-8 bg-white/5 border-t border-white/5 backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-8 shadow-[0_-15px_40px_rgba(0,0,0,0.5)]">
-          <div className="flex gap-12 w-full sm:w-auto justify-between sm:justify-start">
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">TOTAL DO PEDIDO</span>
-              <p className="text-3xl font-black text-white italic uppercase italic tracking-tighter">R$ {totalValue.toFixed(2).replace('.', ',')}</p>
+        <div className="px-10 py-10 bg-white/5 border-t border-white/10 backdrop-blur-3xl flex flex-col sm:flex-row items-center justify-between gap-10 shadow-[0_-20px_80px_rgba(0,0,0,0.4)] relative z-20">
+          <div className="flex flex-wrap gap-12 w-full sm:w-auto justify-between sm:justify-start">
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">MONTANTE TOTAL</span>
+              <p className="text-4xl font-black text-white tracking-tighter">
+                <span className="text-lg opacity-40 mr-1.5 not-italic">R$</span>
+                {totalValue.toFixed(2).replace('.', ',')}
+              </p>
             </div>
-            <div className="h-12 w-px bg-white/5 hidden sm:block"></div>
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] block">EM ABERTO</span>
-              <p className={`text-3xl font-black italic uppercase italic tracking-tighter ${remainingValue <= 0 ? 'text-emerald-500 glow-emerald' : 'text-rose-500'}`}>
-                R$ {Math.max(0, remainingValue).toFixed(2).replace('.', ',')}
+            <div className="h-14 w-px bg-white/10 hidden sm:block"></div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] block">SALDO DEVEDOR</span>
+              <p className={`text-4xl font-black tracking-tighter ${remainingValue <= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+                <span className="text-lg opacity-40 mr-1.5 not-italic">R$</span>
+                {Math.max(0, remainingValue).toFixed(2).replace('.', ',')}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            <button onClick={onClose} className="flex-1 sm:flex-none px-10 py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl hover:bg-white/10 transition-all text-[11px] tracking-widest">Cancelar</button>
+            <button onClick={onClose} className="flex-1 sm:flex-none px-10 py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl hover:bg-white/10 transition-all text-[11px] tracking-widest">Descartar</button>
             <button onClick={handleSubmit} className="flex-[2] sm:flex-none px-16 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl hover:bg-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-all text-[11px] tracking-widest active:scale-95">
-              {order ? 'Salvar Alterações' : 'Gerar Pedido'}
+              {order ? 'Salvar Alterações' : 'Confirmar Pedido'}
             </button>
           </div>
         </div>
