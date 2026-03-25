@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"npm run server\"",
+    "server": "node backend/server.js",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
@@ -12,6 +13,10 @@
   "dependencies": {
     "@google/genai": "^1.34.0",
     "@supabase/supabase-js": "^2.99.3",
+    "concurrently": "^9.2.1",
+    "correios-brasil": "^3.0.6",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.562.0",
     "motion": "^12.35.0",

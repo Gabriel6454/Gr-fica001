@@ -171,10 +171,13 @@ export const TrackingModal: React.FC<{
                   </div>
                 </div>
                 <button 
-                  onClick={() => window.open(`https://www.linkcorreios.com.br/${order.trackingCode}`, '_blank')}
-                  className="w-full sm:w-auto px-8 py-3 bg-sky-500 text-white font-black uppercase rounded-xl text-[10px] tracking-[0.2em] shadow-xl shadow-sky-500/20 hover:scale-105 active:scale-95 transition-all"
+                  onClick={() => window.open(`/?tracking=${order.trackingCode}`, '_blank')}
+                  className="w-full sm:w-auto px-8 py-3 bg-sky-500 text-white font-black uppercase rounded-xl text-[10px] tracking-[0.2em] shadow-xl shadow-sky-500/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
                 >
-                  Rastrear em Tempo Real
+                  <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                    <span className="scale-75">{ICONS.Shipping}</span>
+                  </div>
+                  Página Pública (Cliente)
                 </button>
               </div>
             </div>

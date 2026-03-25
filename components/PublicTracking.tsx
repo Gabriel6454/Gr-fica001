@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order, OrderStatus, StoreSettings } from '../types';
 import { ICONS } from '../constants';
 import { DefaultLogo } from './Layout';
@@ -11,6 +10,10 @@ interface PublicTrackingProps {
 }
 
 const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBackToAdmin }) => {
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState(0);
+  const [realTimeEvents, setRealTimeEvents] = useState(order.trackingHistory || []);
+
   const steps = [
     { status: 'created', label: 'Pedido Recebido', sub: 'Aguardando início', icon: ICONS.Orders },
     { status: OrderStatus.ART, label: 'Criação de Arte', sub: 'Em desenvolvimento', icon: ICONS.Palette },
@@ -18,6 +21,7 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
     { status: OrderStatus.SHIPPING, label: 'Em Transporte', sub: 'Saiu para entrega', icon: ICONS.Shipping },
     { status: OrderStatus.DELIVERED, label: 'Entregue', sub: 'Recebido pelo cliente', icon: ICONS.Success },
   ];
+
 
   const getStatusIndex = (status: string) => {
     if (status === OrderStatus.COMPLETED) return 3; 
@@ -27,6 +31,59 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
     if (status === OrderStatus.ART) return 1;
     return 0;
   };
+
+  const fetchRealTimeTracking = async () => {
+    if (!order.trackingCode) return;
+    
+    setIsSearching(true);
+    setSearchProgress(0);
+    
+    // Progress animation
+    const progressInterval = setInterval(() => {
+      setSearchProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 100);
+
+    try {
+      // Connect to our new backend API running concurrently
+      const response = await fetch(`http://localhost:3001/api/track/${order.trackingCode}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.events && data.events.length > 0) {
+           setRealTimeEvents(data.events);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch tracking data', error);
+    } finally {
+      clearInterval(progressInterval);
+      setSearchProgress(100);
+      setTimeout(() => {
+        setIsSearching(false);
+      }, 500);
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch
+    if (order.trackingCode) {
+      fetchRealTimeTracking();
+    }
+    
+    // Polling every 60 seconds
+    const pollInterval = setInterval(() => {
+        if (order.trackingCode && order.status !== OrderStatus.DELIVERED && order.status !== OrderStatus.COMPLETED) {
+            fetchRealTimeTracking();
+        }
+    }, 60000);
+
+    return () => clearInterval(pollInterval);
+  }, [order.trackingCode, order.status]);
 
   const currentIndex = getStatusIndex(order.status);
 
@@ -145,30 +202,45 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
                                 <div className="scale-125">{ICONS.Shipping}</div>
                             </div>
                             <div>
-                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Rastreamento Logístico</h4>
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Conectado via API Correios</h4>
                                 <p className="text-xl font-black text-white italic uppercase">{order.carrier || 'Transporte'}</p>
                                 <p className="text-[11px] text-sky-500 font-bold tracking-widest uppercase mt-0.5">{order.trackingCode}</p>
                             </div>
                         </div>
                         <button 
-                            onClick={() => window.open(`https://www.linkcorreios.com.br/${order.trackingCode}`, '_blank')}
-                            className="w-full sm:w-auto px-10 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-[0.2em] shadow-2xl shadow-sky-500/20 hover:scale-[1.03] active:scale-95 transition-all text-center"
+                            onClick={fetchRealTimeTracking}
+                            className={`w-full sm:w-auto px-10 py-4 ${isSearching ? 'bg-slate-700 pointer-events-none' : 'bg-sky-500'} text-white font-black uppercase rounded-2xl text-[11px] tracking-[0.2em] shadow-2xl shadow-sky-500/20 hover:scale-[1.03] active:scale-95 transition-all text-center flex items-center justify-center gap-2`}
                         >
-                            Ver no Portal {order.carrier === 'Correios' ? 'Correios' : 'Real'}
+                            {isSearching ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    Sincronizando...
+                                </>
+                            ) : (
+                                <>Atualizar Status</>
+                            )}
                         </button>
                     </div>
+                    {isSearching && (
+                        <div className="mt-6 w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-sky-500 transition-all duration-300" style={{ width: `${searchProgress}%` }}></div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Tracking Timeline (Real Events) */}
-                {order.trackingHistory && order.trackingHistory.length > 0 && (
+                {realTimeEvents && realTimeEvents.length > 0 && (
                     <div className="bg-[#0a111f] border border-slate-800 rounded-[32px] p-8 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                        <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
-                            Status em Tempo Real
+                        <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-8 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <span className={`w-2 h-2 rounded-full ${isSearching ? 'bg-sky-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`}></span>
+                                Status em Tempo Real
+                            </div>
+                            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Atualização Automática Ativa</span>
                         </h3>
                         <div className="space-y-8 relative pl-6">
                             <div className="absolute left-[7px] top-2 bottom-2 w-px bg-slate-800"></div>
-                            {order.trackingHistory.map((event, idx) => (
+                            {realTimeEvents.map((event, idx) => (
                                 <div key={idx} className="relative group">
                                     <div className={`absolute -left-[24px] top-1.5 w-3 h-3 rounded-full border-2 border-[#0a111f] transition-all ${idx === 0 ? 'bg-emerald-500 scale-125 shadow-[0_0_10px_#10b981]' : 'bg-slate-700'}`}></div>
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -185,6 +257,7 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
                 )}
             </div>
         )}
+
 
         {/* Resumo do Pedido */}
         <div className="bg-[#0a111f] border border-slate-800 rounded-[32px] p-8">

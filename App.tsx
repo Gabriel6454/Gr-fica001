@@ -51,6 +51,7 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
 
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
+  const [isSearchingPublic, setIsSearchingPublic] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Load from LocalStorage when authenticated
@@ -435,18 +436,18 @@ const App: React.FC = () => {
   }
 
   if (trackingOrderId) {
-    const trackedOrder = orders.find(o => o.id === trackingOrderId);
+    const trackedOrder = orders.find(o => String(o.id) === String(trackingOrderId) || (o.trackingCode && o.trackingCode.toLowerCase() === trackingOrderId.toLowerCase()));
     if (!trackedOrder) {
       return (
-        <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center text-center p-6 space-y-4">
-          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-slate-500 mb-4">
-             {ICONS.Search}
+        <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center text-center p-6 space-y-4 font-['Inter',sans-serif]">
+          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-slate-500 mb-4 shadow-xl">
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
-          <h1 className="text-2xl font-black text-white">Pedido não encontrado</h1>
-          <p className="text-slate-500">O link pode estar expirado ou incorreto.</p>
-          <a href="/" className="px-6 py-3 bg-sky-500 text-white font-bold rounded-xl uppercase text-xs tracking-widest hover:bg-sky-400 transition-all">
+          <h1 className="text-2xl font-black text-white uppercase tracking-tight">Rastreamento Inativo</h1>
+          <p className="text-slate-500 font-medium max-w-sm">O código informado não foi encontrado em nossa base de produção ou logística.</p>
+          <button onClick={() => { window.history.pushState({}, '', window.location.pathname); setTrackingOrderId(null); setIsSearchingPublic(false); }} className="px-8 py-3 bg-sky-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-sky-400 transition-all shadow-lg shadow-sky-500/20 active:scale-95">
             Voltar ao Início
-          </a>
+          </button>
         </div>
       );
     }
