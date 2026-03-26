@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { Order, OrderStatus, Customer } from '../types';
-import { ICONS } from '../constants';
+import { ICONS, formatOrderId } from '../constants';
 import { PAYMENT_METHODS } from './Orders';
 
 interface SalesProps {
@@ -80,7 +80,7 @@ const Sales: React.FC<SalesProps> = ({ orders, customers, onEditOrder, onDeleteO
 
 
   const handleDeleteSale = (orderId: string) => {
-    if (window.confirm(`Deseja realmente excluir esta venda registrada? O pedido #${orderId} será removido permanentemente.`)) {
+    if (window.confirm(`Deseja realmente excluir esta venda registrada? O pedido #${formatOrderId(orderId)} será removido permanentemente.`)) {
       onDeleteOrder(orderId);
     }
   };
@@ -246,7 +246,7 @@ const Sales: React.FC<SalesProps> = ({ orders, customers, onEditOrder, onDeleteO
                 <div className="flex items-start justify-between gap-6">
                   <div className="flex items-center gap-5">
                     <div className="w-16 h-16 rounded-[24px] bg-[#030712]/60 border border-white/5 flex items-center justify-center text-sky-500 font-black text-xs shadow-inner group-hover:scale-105 transition-transform">
-                      #{order.id.slice(-4).toUpperCase()}
+                      #{formatOrderId(order.id)}
                     </div>
                     <div>
                       <h3 className="text-white font-black text-lg italic uppercase italic tracking-tight mb-2">{order.customerName}</h3>

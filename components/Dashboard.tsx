@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ICONS } from '../constants';
+import { ICONS, formatOrderId } from '../constants';
 import { Product, Order, OrderStatus, Customer, StoreSettings } from '../types';
 import { OrderModal, OrderPrintModal, PaymentModal, TrackingModal, contactCustomer } from './Orders';
 import {
@@ -138,7 +138,7 @@ const SalesModal: React.FC<SalesModalProps> = ({ isOpen, onClose, orders, onOpen
               <tbody className="divide-y divide-slate-900/40 text-slate-200">
                 {orders.map((order) => (
                   <tr key={order.id} className="group hover:bg-slate-800/10 transition-all">
-                    <td className="py-4 sm:py-5 px-2 sm:px-4"><span className="text-xs sm:text-sm font-bold opacity-80 group-hover:opacity-100">#{order.id.substring(0, 6)}</span></td>
+                    <td className="py-4 sm:py-5 px-2 sm:px-4"><span className="text-xs sm:text-sm font-bold opacity-80 group-hover:opacity-100">#{formatOrderId(order.id)}</span></td>
                     <td className="py-4 sm:py-5 px-2 sm:px-4"><span className="text-xs sm:text-sm font-bold text-sky-500 cursor-pointer hover:underline">{order.customerName}</span></td>
                     <td className="py-4 sm:py-5 px-2 sm:px-4"><span className="text-xs sm:text-sm font-black">R$ {(order.total || 0).toFixed(2).replace('.', ',')}</span></td>
                     <td className="py-4 sm:py-5 px-2 sm:px-4 text-right">
@@ -309,7 +309,7 @@ const OrderCard: React.FC<{
             </button>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-[9px] text-slate-600 font-bold">#{order.id.substring(0, 4)}</span>
+            <span className="text-[9px] text-slate-600 font-bold">#{formatOrderId(order.id)}</span>
             <svg
               className={`w-3.5 h-3.5 text-slate-600 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}

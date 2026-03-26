@@ -203,14 +203,26 @@ const App: React.FC = () => {
     const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
     setOrders(updatedOrders);
     const order = updatedOrders.find(o => o.id === orderId);
-    if (order) await dbService.saveOrder(order);
+    if (order) {
+      try {
+        await dbService.saveOrder(order);
+      } catch (err: any) {
+        alert(`Erro ao salvar status no Supabase: ${err.message || 'Erro desconhecido'}`);
+      }
+    }
   };
 
   const handleEditOrder = async (orderId: string, updates: Partial<Order>) => {
     const updatedOrders = orders.map(o => o.id === orderId ? { ...o, ...updates } : o);
     setOrders(updatedOrders);
     const order = updatedOrders.find(o => o.id === orderId);
-    if (order) await dbService.saveOrder(order);
+    if (order) {
+      try {
+        await dbService.saveOrder(order);
+      } catch (err: any) {
+        alert(`Erro ao editar pedido no Supabase: ${err.message || 'Erro desconhecido'}`);
+      }
+    }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -235,31 +247,36 @@ const App: React.FC = () => {
   };
 
   const handleReceivePayment = async (orderId: string, amount: number, method: string) => {
-    let updatedOrder: Order | null = null;
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId) {
-        const newTransaction: PaymentTransaction = {
-          id: Date.now().toString(),
-          date: new Date().toISOString(),
-          amount: amount,
-          method: method
-        };
-        const currentTransactions = o.transactions || [];
-        const updatedTransactions = [...currentTransactions, newTransaction];
-        const totalPaid = updatedTransactions.reduce((sum, t) => sum + t.amount, 0);
-        const newRemaining = Math.max(0, o.total - totalPaid);
-        updatedOrder = { 
-          ...o, 
-          transactions: updatedTransactions,
-          remainingAmount: newRemaining, 
-          paid: newRemaining <= 0,
-          paymentMethod: method 
-        };
-        return updatedOrder;
-      }
-      return o;
-    }));
-    if (updatedOrder) await dbService.saveOrder(updatedOrder);
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    if (!orderToUpdate) return;
+
+    const newTransaction: PaymentTransaction = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      amount: amount,
+      method: method
+    };
+    
+    const currentTransactions = orderToUpdate.transactions || [];
+    const updatedTransactions = [...currentTransactions, newTransaction];
+    const totalPaid = updatedTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const newRemaining = Math.max(0, orderToUpdate.total - totalPaid);
+    
+    const updatedOrder: Order = { 
+      ...orderToUpdate, 
+      transactions: updatedTransactions,
+      remainingAmount: newRemaining, 
+      paid: newRemaining <= 0,
+      paymentMethod: method 
+    };
+
+    setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+    
+    try {
+      await dbService.saveOrder(updatedOrder);
+    } catch (err: any) {
+      alert(`Erro ao registrar pagamento no Supabase: ${err.message || 'Erro desconhecido'}`);
+    }
   };
 
   const handleCreateOrder = async (data: Partial<Order>) => {
@@ -292,8 +309,14 @@ const App: React.FC = () => {
       items: data.items || [],
       isRegistered: true
     };
-    setOrders(prev => [newOrder, ...prev]);
-    await dbService.saveOrder(newOrder);
+    
+    try {
+      setOrders(prev => [newOrder, ...prev]);
+      await dbService.saveOrder(newOrder);
+    } catch (err: any) {
+      console.error('Falha ao criar pedido no Supabase:', err);
+      alert(`⚠️ ERRO CRÍTICO: Não foi possível salvar no banco de dados. \n\nMotivo: ${err.message || 'Erro no servidor'}\n\nTente atualizar a página ou verificar sua conexão.`);
+    }
   };
 
   const handleAttachPdf = async (orderId: string, pdfUrl: string) => {

@@ -110,3 +110,12 @@ export const ACTION_ITEMS = [
   { id: 'edit', label: 'Editar', icon: ICONS.Edit },
   { id: 'whatsapp', label: 'WhatsApp', icon: ICONS.Whatsapp },
 ];
+
+export const formatOrderId = (id: string) => {
+  if (!id) return '';
+  // Se for um UUID, retorna apenas os primeiros 8 caracteres
+  if (id.includes('-')) {
+    return id.split('-')[0].toUpperCase();
+  }
+  return id.toUpperCase();
+};

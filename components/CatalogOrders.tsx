@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { CatalogOrder, CatalogOrderStatus } from '../types';
-import { ICONS } from '../constants';
+import { ICONS, formatOrderId } from '../constants';
 
 interface CatalogOrdersProps {
   catalogOrders: CatalogOrder[];
@@ -39,7 +39,7 @@ const CatalogOrders: React.FC<CatalogOrdersProps> = ({ catalogOrders, onUpdateSt
           <div key={order.id} className="bg-[#0a111f] border border-slate-800/60 rounded-[32px] p-8 space-y-6 shadow-2xl hover:border-sky-500/30 transition-all group">
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">{order.id}</span>
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">{formatOrderId(order.id)}</span>
                 <h3 className="text-xl font-black text-white group-hover:text-sky-400 transition-colors mt-1">{order.customerName}</h3>
                 <p className="text-xs text-sky-500 font-bold">{order.customerPhone}</p>
               </div>

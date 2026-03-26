@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Order, OrderStatus, Product, Customer, StoreSettings } from '../types';
-import { ICONS } from '../constants';
+import { ICONS, formatOrderId } from '../constants';
 import { DefaultLogo } from './Layout';
 
 const TRACKING_STEPS = [
@@ -24,7 +24,7 @@ const getStatusIndex = (status: string) => {
 
 export const contactCustomer = (order: Order, customer?: Customer) => {
   const phone = customer?.phone?.replace(/\D/g, '') || '';
-  const text = `Olá ${order.customerName}, tudo bem? Gostaria de falar sobre o pedido #${order.id}.`;
+  const text = `Olá ${order.customerName}, tudo bem? Gostaria de falar sobre o pedido #${formatOrderId(order.id)}.`;
 
   const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
@@ -60,7 +60,7 @@ export const PaymentModal: React.FC<{
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-2xl font-black text-white italic uppercase italic">Quitar <span className="text-emerald-500">Saldo</span></h3>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Pedido #{order.id} • {order.customerName}</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Pedido #{formatOrderId(order.id)} • {order.customerName}</p>
           </div>
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-slate-500 hover:text-white transition-all border border-white/5">{ICONS.X}</button>
         </div>
@@ -135,7 +135,7 @@ export const TrackingModal: React.FC<{
             </div>
             <div>
               <h2 className="text-2xl font-black text-white italic uppercase italic">Fluxo de <span className="text-sky-500">Produção</span></h2>
-              <p className="text-sky-500/80 font-bold text-sm tracking-widest uppercase">Protocolo #{order.id}</p>
+              <p className="text-sky-500/80 font-bold text-sm tracking-widest uppercase">Protocolo #{formatOrderId(order.id)}</p>
             </div>
           </div>
           <button onClick={onClose} className="absolute top-8 right-8 text-slate-500 hover:text-white bg-white/5 w-10 h-10 flex items-center justify-center rounded-xl border border-white/5 transition-all">{ICONS.X}</button>
@@ -254,7 +254,7 @@ export const OrderPrintModal: React.FC<{
             <div className="text-right">
               <div className="mb-4">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Pedido nº</span>
-                <span className="text-3xl font-black text-slate-900 tracking-tighter">#{order.id}</span>
+                <span className="text-3xl font-black text-slate-900 tracking-tighter">#{formatOrderId(order.id)}</span>
               </div>
               <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Data: {new Date().toLocaleDateString('pt-BR')}</p>
             </div>

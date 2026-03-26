@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Order, OrderStatus, StoreSettings } from '../types';
-import { ICONS } from '../constants';
+import { ICONS, formatOrderId } from '../constants';
 import { DefaultLogo } from './Layout';
 
 interface PublicTrackingProps {
@@ -130,7 +130,7 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
                 <div className="flex justify-between items-start mb-8">
                     <div>
                         <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest bg-sky-500/10 px-3 py-1 rounded-full border border-sky-500/20">
-                            #{order.id}
+                            #{formatOrderId(order.id)}
                         </span>
                         <h2 className="text-2xl font-black text-white mt-4 uppercase tracking-tight">Olá, {order.customerName.split(' ')[0]}</h2>
                         <p className="text-sm text-slate-400 font-medium">Acompanhe a evolução do seu material.</p>

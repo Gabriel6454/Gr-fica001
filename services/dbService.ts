@@ -25,10 +25,13 @@ export const dbService = {
   },
   async saveProduct(product: Product) {
     const user_id = await getUserId();
-    if (!user_id) return;
+    if (!user_id) throw new Error('Usuário não autenticado');
     
     const { error } = await supabase.from('products').upsert({ ...product, user_id });
-    if (error) console.error('Error saving product:', error);
+    if (error) {
+      console.error('Error saving product:', error);
+      throw error;
+    }
   },
   async deleteProduct(id: string) {
     const user_id = await getUserId();
@@ -56,10 +59,16 @@ export const dbService = {
   },
   async saveOrder(order: Order) {
     const user_id = await getUserId();
-    if (!user_id) return;
+    if (!user_id) throw new Error('Usuário não autenticado');
     
+    console.log('Salvando pedido no Supabase:', order.id);
     const { error } = await supabase.from('orders').upsert({ ...order, user_id });
-    if (error) console.error('Error saving order:', error);
+    
+    if (error) {
+      console.error('Erro detalhado do Supabase ao salvar pedido:', error);
+      throw error;
+    }
+    return true;
   },
   async deleteOrder(id: string) {
     const user_id = await getUserId();
@@ -118,10 +127,13 @@ export const dbService = {
   },
   async saveCustomer(customer: Customer) {
     const user_id = await getUserId();
-    if (!user_id) return;
+    if (!user_id) throw new Error('Usuário não autenticado');
     
     const { error } = await supabase.from('customers').upsert({ ...customer, user_id });
-    if (error) console.error('Error saving customer:', error);
+    if (error) {
+       console.error('Error saving customer:', error);
+       throw error;
+    }
   },
   async deleteCustomer(id: string) {
     const user_id = await getUserId();
