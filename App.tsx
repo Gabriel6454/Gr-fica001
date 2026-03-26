@@ -255,7 +255,7 @@ const App: React.FC = () => {
       });
     }
     const newOrder: Order = {
-      id: Math.floor(100000 + Math.random() * 900000).toString(),
+      id: crypto.randomUUID(),
       customerName: data.customerName || 'Cliente Avulso',
       customerId: data.customerId,
       date: data.date || new Date().toISOString().split('T')[0],
@@ -286,7 +286,7 @@ const App: React.FC = () => {
 
   // --- Handlers de Produtos ---
   const handleAddProduct = async (prod: Partial<Product>) => {
-    const newProduct = { ...prod, id: Math.random().toString(), totalSold: 0, totalProfit: 0 } as Product;
+    const newProduct = { ...prod, id: crypto.randomUUID(), totalSold: 0, totalProfit: 0 } as Product;
     setProducts(prev => [...prev, newProduct]);
     await dbService.saveProduct(newProduct);
   };
@@ -303,7 +303,7 @@ const App: React.FC = () => {
 
   // --- Handlers de Categorias ---
   const handleAddCategory = async (cat: Partial<Category>) => {
-    const newCategory = { ...cat, id: Math.random().toString() } as Category;
+    const newCategory = { ...cat, id: crypto.randomUUID() } as Category;
     setCategories(prev => [...prev, newCategory]);
     await dbService.saveCategory(newCategory);
   };
@@ -327,7 +327,7 @@ const App: React.FC = () => {
 
   // --- Handlers de Clientes ---
   const handleAddCustomer = async (cust: Partial<Customer>) => {
-    const newCustomer = { ...cust, id: Math.random().toString() } as Customer;
+    const newCustomer = { ...cust, id: crypto.randomUUID() } as Customer;
     setCustomers(prev => [...prev, newCustomer]);
     await dbService.saveCustomer(newCustomer);
   };

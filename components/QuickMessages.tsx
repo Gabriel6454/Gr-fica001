@@ -38,7 +38,7 @@ const QuickMessages: React.FC = () => {
       setEditingId(null);
     } else {
       const newMessage: QuickMessage = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         ...formData,
         content: formData.content || ''
       };
