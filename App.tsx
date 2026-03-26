@@ -141,6 +141,10 @@ const App: React.FC = () => {
       } else {
         setCurrentUser(null);
         setIsAuthenticated(false);
+        setProducts([]);
+        setOrders([]);
+        setCustomers([]);
+        setCategories(INITIAL_CATEGORIES);
       }
     });
 
@@ -165,6 +169,11 @@ const App: React.FC = () => {
         ...user,
         name: user.user_metadata?.full_name || user.email
     });
+    // Limpar dados locais antes de carregar do Supabase para o novo usuário
+    setProducts([]);
+    setOrders([]);
+    setCustomers([]);
+    setCategories(INITIAL_CATEGORIES);
     setIsAuthenticated(true);
   };
 
