@@ -138,3 +138,22 @@ CREATE POLICY "Users can see only their own quick_messages" ON quick_messages FO
 CREATE POLICY "Users can insert their own quick_messages" ON quick_messages FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their own quick_messages" ON quick_messages FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own quick_messages" ON quick_messages FOR DELETE USING (auth.uid() = user_id);
+
+-- 7. FIIs (Investments Wallet) Table
+CREATE TABLE IF NOT EXISTS fiis (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
+    ticker TEXT NOT NULL,
+    sector TEXT,
+    shares NUMERIC,
+    "avgPrice" NUMERIC,
+    "currentPrice" NUMERIC,
+    "lastDividend" NUMERIC
+);
+
+ALTER TABLE fiis ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can see only their own fiis" ON fiis FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own fiis" ON fiis FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own fiis" ON fiis FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own fiis" ON fiis FOR DELETE USING (auth.uid() = user_id);

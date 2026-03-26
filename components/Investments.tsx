@@ -1,4 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { dbService } from '../services/dbService';
+import { PortfolioFII } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FundConfig {
@@ -227,18 +229,6 @@ const FundForm: React.FC<{
     )}
   </div>
 );
-
-// ─── Portfolio Types ──────────────────────────────────────────────────────────
-interface PortfolioFII {
-  id: string;
-  ticker: string;
-  sector: string;
-  shares: number;
-  avgPrice: number;
-  currentPrice: number;
-  lastDividend: number;
-}
-
 const SECTORS = ['Papel', 'Tijolo', 'Híbrido', 'CRI/CRA', 'Fundo de Fundos', 'Logística', 'Shoppings', 'Lajes Corp.', 'Residencial', 'Agro'];
 const SECTOR_COLORS: Record<string, string> = {
   'Papel': 'bg-sky-500/20 text-sky-400',
@@ -259,6 +249,23 @@ const PortfolioView: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'ticker' | 'patrimony' | 'dividend' | 'dy' | 'result'>('patrimony');
   const [activeView, setActiveView] = useState<'lista' | 'dividendos'>('lista');
+  const [loading, setLoading] = useState(true);
+
+  // Load from Supabase on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const data = await dbService.getFiis();
+        setFiis(data);
+      } catch (err) {
+        console.error("Erro ao carregar carteira:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   // Form state
   const [form, setForm] = useState({ ticker: '', sector: 'Papel', shares: '', avgPrice: '', currentPrice: '', lastDividend: '' });
@@ -270,10 +277,10 @@ const PortfolioView: React.FC = () => {
   const avgDY = fiis.length > 0 ? fiis.reduce((s, f) => s + (f.lastDividend / f.currentPrice) * 100, 0) / fiis.length : 0;
   const totalResult = totalPatrimony - totalCost;
 
-  const addOrUpdate = () => {
+  const addOrUpdate = async () => {
     if (!form.ticker || !form.shares || !form.avgPrice) return;
     const entry: PortfolioFII = {
-      id: editingId ?? Date.now().toString(),
+      id: editingId ?? crypto.randomUUID(),
       ticker: form.ticker.toUpperCase(),
       sector: form.sector,
       shares: Number(form.shares),
@@ -281,13 +288,37 @@ const PortfolioView: React.FC = () => {
       currentPrice: Number(form.currentPrice) || Number(form.avgPrice),
       lastDividend: Number(form.lastDividend),
     };
-    if (editingId) {
-      setFiis((p) => p.map((f) => (f.id === editingId ? entry : f)));
-      setEditingId(null);
-    } else {
-      setFiis((p) => [...p, entry]);
+
+    try {
+      if (editingId) {
+        setFiis((p) => p.map((f) => (f.id === editingId ? entry : f)));
+        setEditingId(null);
+      } else {
+        setFiis((p) => [...p, entry]);
+      }
+      await dbService.saveFii(entry);
+      resetForm();
+    } catch (err) {
+      alert("Erro ao salvar no banco de dados. Verifique o console.");
     }
-    resetForm();
+  };
+
+  const handleReset = async () => {
+    if (confirm("Deseja realmente ZERAR TODA a sua carteira de investimentos? Esta ação não pode ser desfeita.")) {
+      try {
+        await dbService.resetFiis();
+        setFiis([]);
+      } catch (err) {
+        alert("Erro ao redefinir carteira.");
+      }
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Excluir este fundo da carteira?")) {
+      await dbService.deleteFii(id);
+      setFiis((p) => p.filter((x) => x.id !== id));
+    }
   };
 
   const startEdit = (f: PortfolioFII) => {
@@ -311,6 +342,15 @@ const PortfolioView: React.FC = () => {
   const SortBtn: React.FC<{ field: typeof sortBy; label: string }> = ({ field, label }) => (
     <button onClick={() => setSortBy(field)} className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg transition-all ${sortBy === field ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-slate-300'}`}>{label}</button>
   );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-4">
+        <div className="w-8 h-8 border-2 border-sky-500/20 border-t-sky-500 rounded-full animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest">Carregando Carteira Cloud...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -389,15 +429,23 @@ const PortfolioView: React.FC = () => {
       {/* View Toggle + Sort */}
       {fiis.length > 0 && (
         <>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex gap-2 bg-[#0a111f] rounded-2xl p-1.5 border border-white/5">
-              {[{ id: 'lista', label: 'Lista' }, { id: 'dividendos', label: 'Dividendos' }].map((t) => (
-                <button key={t.id} onClick={() => setActiveView(t.id as any)}
-                  className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeView === t.id ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-white'}`}>
-                  {t.label}
-                </button>
-              ))}
+            <div className="flex gap-4 items-center">
+              <div className="flex gap-2 bg-[#0a111f] rounded-2xl p-1.5 border border-white/5">
+                {[{ id: 'lista', label: 'Lista' }, { id: 'dividendos', label: 'Dividendos' }].map((t) => (
+                  <button key={t.id} onClick={() => setActiveView(t.id as any)}
+                    className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeView === t.id ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-white'}`}>
+                    {t.label}
+                  </button>
+                ))}
             </div>
+            
+            <button 
+              onClick={handleReset}
+              className="px-5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-rose-500/20"
+            >
+              Redefinir Carteira
+            </button>
+          </div>
             {activeView === 'lista' && (
               <div className="flex items-center gap-2 text-[9px]">
                 <span className="text-slate-600 font-black uppercase tracking-widest">Ordenar:</span>
@@ -408,7 +456,6 @@ const PortfolioView: React.FC = () => {
                 <SortBtn field="ticker" label="Ticker" />
               </div>
             )}
-          </div>
 
           {/* Table View */}
           {activeView === 'lista' && (
@@ -461,7 +508,7 @@ const PortfolioView: React.FC = () => {
                         <td className="py-4 px-6 text-right">
                           <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => startEdit(f)} className="text-sky-500/60 hover:text-sky-500 transition-colors text-xs">✏️</button>
-                            <button onClick={() => setFiis((p) => p.filter((x) => x.id !== f.id))} className="text-rose-500/50 hover:text-rose-500 transition-colors text-xs">✕</button>
+                            <button onClick={() => handleDelete(f.id)} className="text-rose-500/50 hover:text-rose-500 transition-colors text-xs">✕</button>
                           </div>
                         </td>
                       </tr>

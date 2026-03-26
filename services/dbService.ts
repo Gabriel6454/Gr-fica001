@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Product, Order, Category, Customer, StoreSettings, QuickMessage } from '../types';
+import { Product, Order, Category, Customer, StoreSettings, QuickMessage, PortfolioFII } from '../types';
 
 const getUserId = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -196,7 +196,48 @@ export const dbService = {
       const { error } = await supabase.from('quick_messages').upsert(messagesWithUser);
       if (error) console.error('Error saving quick messages:', error);
     } else {
-      await supabase.from('quick_messages').delete().eq('user_id', user_id);
+      const { error } = await supabase.from('quick_messages').delete().eq('user_id', user_id);
+      if (error) console.error('Error deleting quick messages:', error);
     }
+  },
+
+  // FIIs (Wallet)
+  async getFiis(): Promise<PortfolioFII[]> {
+    const user_id = await getUserId();
+    if (!user_id) return [];
+    
+    const { data, error } = await supabase
+      .from('fiis')
+      .select('*')
+      .eq('user_id', user_id);
+      
+    if (error) {
+      console.error('Error fetching FIIs:', error);
+      return [];
+    }
+    return data || [];
+  },
+  async saveFii(fii: PortfolioFII) {
+    const user_id = await getUserId();
+    if (!user_id) throw new Error('Usuário não autenticado');
+    
+    const { error } = await supabase.from('fiis').upsert({ ...fii, user_id });
+    if (error) {
+       console.error('Error saving FII:', error);
+       throw error;
+    }
+  },
+  async deleteFii(id: string) {
+    const user_id = await getUserId();
+    if (!user_id) return;
+    
+    const { error } = await supabase.from('fiis').delete().eq('id', id).eq('user_id', user_id);
+    if (error) console.error('Error deleting FII:', error);
+  },
+  async resetFiis() {
+    const user_id = await getUserId();
+    if (!user_id) return;
+    const { error } = await supabase.from('fiis').delete().eq('user_id', user_id);
+    if (error) console.error('Error resetting FIIs:', error);
   }
 };

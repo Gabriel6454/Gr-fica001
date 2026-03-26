@@ -155,3 +155,13 @@ export interface QuickMessage {
   content: string;
   audioUrl?: string;
 }
+
+export interface PortfolioFII {
+  id: string;
+  ticker: string;
+  sector: string;
+  shares: number;
+  avgPrice: number;
+  currentPrice: number;
+  lastDividend: number;
+}
