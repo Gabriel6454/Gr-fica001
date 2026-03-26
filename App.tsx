@@ -56,11 +56,12 @@ const App: React.FC = () => {
 
   // Load from LocalStorage when authenticated
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !currentUser?.id) return;
 
     const fetchData = async () => {
       try {
-        console.log('Starting LocalStorage fetch...');
+        setIsSyncing(true);
+        console.log('Starting Supabase fetch for user:', currentUser.id);
         const [dbProducts, dbOrders, dbCategories, dbCustomers, dbSettings] = await Promise.all([
           dbService.getProducts(),
           dbService.getOrders(),
@@ -69,7 +70,12 @@ const App: React.FC = () => {
           dbService.getSettings()
         ]);
         
-        console.log('LocalStorage fetch successful:', { dbProducts, dbOrders, dbCategories, dbCustomers, dbSettings });
+        console.log('Supabase fetch successful:', { 
+            products: dbProducts.length, 
+            orders: dbOrders.length, 
+            categories: dbCategories.length, 
+            customers: dbCustomers.length 
+        });
 
         setProducts(dbProducts.length > 0 ? dbProducts : INITIAL_PRODUCTS);
         setOrders(dbOrders);
@@ -77,12 +83,14 @@ const App: React.FC = () => {
         setCustomers(dbCustomers);
         if (dbSettings) setSettings(dbSettings);
       } catch (error) {
-        console.error('Error fetching data from LocalStorage:', error);
+        console.error('Error fetching data from Supabase:', error);
+      } finally {
+        setIsSyncing(false);
       }
     };
 
     fetchData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentUser?.id]);
 
   useEffect(() => {
     document.body.classList.add('bg-[#030712]');
@@ -96,6 +104,7 @@ const App: React.FC = () => {
         if (session) {
           setCurrentUser({
             ...session.user,
+            id: session.user.id,
             name: session.user.user_metadata?.full_name || session.user.email
           });
           setIsAuthenticated(true);
@@ -135,6 +144,7 @@ const App: React.FC = () => {
       if (session) {
         setCurrentUser({
             ...session.user,
+            id: session.user.id,
             name: session.user.user_metadata?.full_name || session.user.email
         });
         setIsAuthenticated(true);
