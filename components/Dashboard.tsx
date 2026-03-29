@@ -197,11 +197,12 @@ const OrderCard: React.FC<{
   onPay: (order: Order) => void;
   onTrack: (order: Order) => void;
   onFinalize: (order: Order) => void;
+  products: Product[];
   customers: Customer[];
   isDragging?: boolean;
   onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
   isCollapsed?: boolean;
-}> = ({ order, onDelete, onEdit, onPrint, onPay, onTrack, onFinalize, customers, isDragging, onStatusChange, isCollapsed: initialCollapsed }) => {
+}> = ({ order, onDelete, onEdit, onPrint, onPay, onTrack, onFinalize, products, customers, isDragging, onStatusChange, isCollapsed: initialCollapsed }) => {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed ?? true);
 
   useEffect(() => {
@@ -210,8 +211,13 @@ const OrderCard: React.FC<{
 
   const getNextStatus = (current: OrderStatus): OrderStatus => {
     const statuses = [
+      OrderStatus.QUOTATION,
+      OrderStatus.WAITING_PAYMENT,
+      OrderStatus.WAITING_FILE,
       OrderStatus.ART,
+      OrderStatus.WAITING_APPROVAL,
       OrderStatus.PRODUCTION,
+      OrderStatus.READY_FOR_PICKUP,
       OrderStatus.SHIPPING,
       OrderStatus.DELIVERED,
       OrderStatus.COMPLETED
@@ -231,11 +237,17 @@ const OrderCard: React.FC<{
 
   const statusConfig = (status: OrderStatus) => {
     switch (status) {
-      case OrderStatus.ART: return { dot: 'bg-orange-400', glow: 'rgba(251,146,60,0.18)', border: 'rgba(251,146,60,0.35)', badge: 'text-orange-300 bg-orange-500/10 border-orange-500/25', accent: 'text-orange-400', label: 'Criando Arte' };
-      case OrderStatus.PRODUCTION: return { dot: 'bg-sky-400', glow: 'rgba(56,189,248,0.18)', border: 'rgba(56,189,248,0.35)', badge: 'text-sky-300 bg-sky-500/10 border-sky-500/25', accent: 'text-sky-400', label: 'Em Produ\u00e7\u00e3o' };
+      case OrderStatus.QUOTATION: return { dot: 'bg-slate-400', glow: 'rgba(148,163,184,0.18)', border: 'rgba(148,163,184,0.35)', badge: 'text-slate-300 bg-slate-500/10 border-slate-500/25', accent: 'text-slate-400', label: 'Orçamento' };
+      case OrderStatus.WAITING_PAYMENT: return { dot: 'bg-amber-400', glow: 'rgba(251,191,36,0.18)', border: 'rgba(251,191,36,0.35)', badge: 'text-amber-300 bg-amber-500/10 border-amber-500/25', accent: 'text-amber-400', label: 'Aguard. Pagamento' };
+      case OrderStatus.WAITING_FILE: return { dot: 'bg-indigo-400', glow: 'rgba(129,140,248,0.18)', border: 'rgba(129,140,248,0.35)', badge: 'text-indigo-300 bg-indigo-500/10 border-indigo-500/25', accent: 'text-indigo-400', label: 'Aguard. Arquivo' };
+      case OrderStatus.ART: return { dot: 'bg-orange-400', glow: 'rgba(251,146,60,0.18)', border: 'rgba(251,146,60,0.35)', badge: 'text-orange-300 bg-orange-500/10 border-orange-500/25', accent: 'text-orange-400', label: 'Em Arte' };
+      case OrderStatus.WAITING_APPROVAL: return { dot: 'bg-pink-400', glow: 'rgba(244,114,182,0.18)', border: 'rgba(244,114,182,0.35)', badge: 'text-pink-300 bg-pink-500/10 border-pink-500/25', accent: 'text-pink-400', label: 'Aguard. Aprovação' };
+      case OrderStatus.PRODUCTION: return { dot: 'bg-sky-400', glow: 'rgba(56,189,248,0.18)', border: 'rgba(56,189,248,0.35)', badge: 'text-sky-300 bg-sky-500/10 border-sky-500/25', accent: 'text-sky-400', label: 'Em Produção' };
+      case OrderStatus.READY_FOR_PICKUP: return { dot: 'bg-emerald-400', glow: 'rgba(52,211,153,0.18)', border: 'rgba(52,211,153,0.35)', badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/25', accent: 'text-emerald-400', label: 'Pronto p/ Retirada' };
       case OrderStatus.SHIPPING: return { dot: 'bg-violet-400', glow: 'rgba(167,139,250,0.18)', border: 'rgba(167,139,250,0.35)', badge: 'text-violet-300 bg-violet-500/10 border-violet-500/25', accent: 'text-violet-400', label: 'Em Transporte' };
       case OrderStatus.DELIVERED: return { dot: 'bg-cyan-400', glow: 'rgba(34,211,238,0.18)', border: 'rgba(34,211,238,0.35)', badge: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/25', accent: 'text-cyan-400', label: 'Entregue' };
-      case OrderStatus.COMPLETED: return { dot: 'bg-emerald-400', glow: 'rgba(52,211,153,0.18)', border: 'rgba(52,211,153,0.35)', badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/25', accent: 'text-emerald-400', label: 'Conclu\u00eddo' };
+      case OrderStatus.COMPLETED: return { dot: 'bg-emerald-400', glow: 'rgba(52,211,153,0.18)', border: 'rgba(52,211,153,0.35)', badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/25', accent: 'text-emerald-400', label: 'Concluído' };
+      case OrderStatus.CANCELLED: return { dot: 'bg-rose-600', glow: 'rgba(225,29,72,0.18)', border: 'rgba(225,29,72,0.35)', badge: 'text-rose-300 bg-rose-500/10 border-rose-500/25', accent: 'text-rose-600', label: 'Cancelado' };
       default: return { dot: 'bg-slate-500', glow: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.2)', badge: 'text-slate-400 bg-slate-500/10 border-slate-500/20', accent: 'text-slate-400', label: status };
     }
   };
@@ -261,40 +273,33 @@ const OrderCard: React.FC<{
     return acc + (item.price - cost);
   }, 0);
 
+  const profitMargin = order.total > 0 ? (orderProfit / order.total) * 100 : 0;
   const shippingCost = order.shippingCost || 0;
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`group/card relative w-full box-border rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300 ${isDragging ? 'opacity-40 scale-95' : 'hover:-translate-y-0.5'}`}
+      className={`group/card relative w-full box-border rounded-[28px] overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-500 ${isDragging ? 'opacity-40 scale-95' : 'hover:-translate-y-1 hover:shadow-2xl'}`}
       style={{
-        background: 'linear-gradient(145deg, #0d1526 0%, #080f1d 100%)',
+        background: 'rgba(10, 18, 36, 0.7)',
+        backdropFilter: 'blur(20px)',
         border: `1px solid ${cfg.border}`,
-        boxShadow: `0 4px 24px -4px ${cfg.glow}, 0 1px 0 0 rgba(255,255,255,0.04) inset`,
       }}
     >
-      {/* Glow de fundo sutil */}
       <div
-        className="absolute -top-6 -left-6 w-24 h-24 rounded-full blur-2xl opacity-40 pointer-events-none transition-opacity duration-500 group-hover/card:opacity-70"
+        className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-[60px] opacity-20 pointer-events-none transition-all duration-700 group-hover/card:opacity-40 group-hover/card:scale-150"
         style={{ background: cfg.glow.replace('0.18', '1') }}
       />
 
-      {/* Header — sempre visível, clicável para colapsar */}
-      <button
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.stopPropagation(); setIsCollapsed(c => !c); }}
-        className="relative w-full text-left focus:outline-none px-4 pt-4 pb-3"
-      >
-        {/* Linha 1: status pill + chevron */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            {/* Dot pulsante */}
+      <div className="relative p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
             <span className={`relative flex h-2 w-2`}>
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${cfg.dot} opacity-60`} />
               <span className={`relative inline-flex rounded-full h-2 w-2 ${cfg.dot}`} />
@@ -302,116 +307,109 @@ const OrderCard: React.FC<{
             <button
               onMouseDown={(e) => e.stopPropagation()}
               onClick={handleStatusClick}
-              className={`text-[9px] font-black uppercase tracking-[0.18em] border rounded-full px-2.5 py-0.5 transition-all hover:brightness-110 active:scale-95 cursor-pointer ${cfg.badge}`}
-              title="Clique para avançar o status"
+              className={`text-[9px] font-black uppercase tracking-[0.2em] border rounded-xl px-3 py-1 transition-all hover:brightness-110 active:scale-95 cursor-pointer ${cfg.badge}`}
             >
               {cfg.label}
             </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] text-slate-600 font-bold">#{formatOrderId(order.id)}</span>
-            <svg
-              className={`w-3.5 h-3.5 text-slate-600 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-600 font-bold bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">#{formatOrderId(order.id)}</span>
+            {profitMargin > 30 && <span className="text-[10px] text-emerald-500 font-black">★</span>}
           </div>
         </div>
 
-        {/* Linha 2: nome do cliente */}
-        <h4 className="text-[15px] font-black text-white tracking-tight leading-none truncate mb-2.5">
-          {order.customerName}
-        </h4>
+        <div className="space-y-1 mb-4">
+           <h4 className="text-[15px] font-black text-white tracking-tight leading-tight truncate group-hover/card:text-sky-400 transition-colors">
+            {order.customerName}
+          </h4>
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+            {order.items.map((it, i) => {
+              const p = products.find(prod => prod.id === it.productId);
+              return (
+                <span key={i} className="text-[8px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded border border-white/5 whitespace-nowrap">
+                  {it.quantity}x {p?.name || 'Item'}
+                </span>
+              );
+            })}
+          </div>
+        </div>
 
-        {/* Linha 3: total em destaque + data */}
-        <div className="flex items-end justify-between">
+        <div className="flex items-end justify-between pt-2 border-t border-white/5">
           <div>
-            <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-0.5">Total</p>
-            <p className={`text-xl font-black tracking-tight leading-none ${cfg.accent}`}>
-              R$ {(order.total || 0).toFixed(2).replace('.', ',')}
+            <p className="text-[8px] text-slate-600 font-black uppercase tracking-[0.2em] mb-1">Investimento Total</p>
+            <p className={`text-xl font-black tracking-tighter leading-none ${cfg.accent}`}>
+              <span className="text-sm opacity-50 mr-1 italic">R$</span>
+              {order.total.toFixed(2).replace('.', ',')}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-0.5">Entrega</p>
-            <p className="text-xs font-black text-slate-300">{order.deliveryDate}</p>
-          </div>
-        </div>
-      </button>
-
-      {/* Corpo recolhível */}
-      <AnimatePresence initial={false}>
-        {!isCollapsed && (
-          <motion.div
-            key="body"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-            className="overflow-hidden"
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setIsCollapsed(c => !c); }}
+            className={`w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 text-slate-500 hover:text-white transition-all ${!isCollapsed ? 'rotate-180 bg-sky-500/10 border-sky-500/20 text-sky-400' : ''}`}
           >
-            {/* Divisor */}
-            <div className="mx-4 mb-3" style={{ height: '1px', background: `linear-gradient(90deg, transparent, ${cfg.border}, transparent)` }} />
+            {ICONS.ChevronDown}
+          </button>
+        </div>
 
-            <div className="px-4 pb-4 space-y-3">
-              {/* Grid de métricas */}
-              <div className={`grid gap-2 ${shippingCost > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                {[
-                  { label: 'Restante', value: `R$ ${(order.remainingAmount || 0).toFixed(2).replace('.', ',')}`, color: hasPendingBalance ? 'text-rose-400' : 'text-emerald-400', bg: hasPendingBalance ? 'rgba(244,63,94,0.08)' : 'rgba(52,211,153,0.08)' },
-                  { label: 'Lucro', value: `R$ ${orderProfit.toFixed(2).replace('.', ',')}`, color: orderProfit >= 0 ? 'text-emerald-400' : 'text-rose-400', bg: orderProfit >= 0 ? 'rgba(52,211,153,0.08)' : 'rgba(244,63,94,0.08)' },
-                  ...(shippingCost > 0 ? [{ label: 'Frete', value: `R$ ${shippingCost.toFixed(2).replace('.', ',')}`, color: 'text-sky-400', bg: 'rgba(56,189,248,0.08)' }] : []),
-                ].map(m => (
-                  <div key={m.label} className="rounded-xl px-3 py-2.5 flex flex-col gap-1" style={{ background: m.bg, border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{m.label}</span>
-                    <span className={`text-xs font-black ${m.color}`}>{m.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Botão principal */}
-              <button
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => { e.stopPropagation(); onPay(order); }}
-                className={`w-full py-3 mt-1 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 active:scale-[0.98] ${hasPendingBalance
-                  ? 'text-white'
-                  : 'text-emerald-400 border border-emerald-500/25'
-                  }`}
-                style={hasPendingBalance ? {
-                  background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                  boxShadow: '0 4px 16px -2px rgba(249,115,22,0.45)',
-                } : { background: 'rgba(52,211,153,0.08)' }}
-              >
-                {hasPendingBalance ? 'Pagar Saldo' : '✓ Pagamento Concluído'}
-              </button>
-
-              {/* Ícones de ação */}
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex gap-1">
-                  {whatsappNumber && (
-                    <a
-                      href={`https://wa.me/55${whatsappNumber}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      title={`WhatsApp: ${customer?.phone}`}
-                      className="p-2 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-                        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.852L.057 23.5l5.82-1.527A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.877 9.877 0 0 1-5.031-1.378l-.361-.214-3.733.979.995-3.638-.235-.374A9.869 9.869 0 0 1 2.106 12C2.106 6.58 6.58 2.106 12 2.106S21.894 6.58 21.894 12 17.42 21.894 12 21.894z" />
-                      </svg>
-                    </a>
-                  )}
-                  <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onPrint(order); }} className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all">{ICONS.Print}</button>
-                  <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onEdit(order); }} className="p-2 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 transition-all">{ICONS.Edit}</button>
+        <AnimatePresence>
+          {!isCollapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mt-4 pt-4 border-t border-white/5 space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-[#030712]/40 border border-white/5 rounded-2xl p-3 flex flex-col gap-1">
+                   <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Saldo Devedor</span>
+                   <span className={`text-xs font-black ${hasPendingBalance ? 'text-rose-500' : 'text-emerald-500'}`}>
+                    R$ {order.remainingAmount.toFixed(2).replace('.', ',')}
+                   </span>
                 </div>
-                <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} className="p-2 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all">{ICONS.Trash}</button>
+                <div className="bg-[#030712]/40 border border-white/5 rounded-2xl p-3 flex flex-col gap-1">
+                   <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Rentabilidade</span>
+                   <span className="text-xs font-black text-sky-400">
+                    {profitMargin.toFixed(0)}%
+                   </span>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              <div className="flex gap-2">
+                <button
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onPay(order); }}
+                  className={`flex-1 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${hasPendingBalance ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-emerald-500 border border-white/5'}`}
+                >
+                  {hasPendingBalance ? 'Receber' : '✓ Pago'}
+                </button>
+                <button
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onPrint(order); }}
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 border border-white/5 text-slate-400 hover:text-white transition-all"
+                >
+                  {ICONS.Print}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-1 pt-1 opacity-60 hover:opacity-100 transition-opacity">
+                 <div className="flex gap-1">
+                  <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onEdit(order); }} className="p-2 text-slate-500 hover:text-sky-400 transition-colors">{ICONS.Edit}</button>
+                  {whatsappNumber && (
+                    <button 
+                      onMouseDown={(e) => e.stopPropagation()} 
+                      onClick={(e) => { e.stopPropagation(); contactCustomer(order, customer); }} 
+                      className="p-2 text-slate-500 hover:text-emerald-400 transition-colors"
+                    >
+                      {ICONS.Whatsapp}
+                    </button>
+                  )}
+                 </div>
+                 <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} className="p-2 text-slate-500 hover:text-rose-500 transition-colors">{ICONS.Trash}</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 };
@@ -485,11 +483,11 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
   const [activeTrackingOrder, setActiveTrackingOrder] = useState<Order | undefined>(undefined);
 
   const statusColumns = [
-    { id: OrderStatus.ART, label: 'CRIANDO ARTE', textColor: 'text-orange-500', icon: ICONS.Palette },
-    { id: OrderStatus.PRODUCTION, label: 'EM PRODUÇÃO', textColor: 'text-sky-500', icon: ICONS.Pending },
-    { id: OrderStatus.SHIPPING, label: 'EM TRANSPORTE', textColor: 'text-purple-600', icon: ICONS.Shipping },
-    { id: OrderStatus.DELIVERED, label: 'ENTREGUE', textColor: 'text-sky-500', icon: ICONS.Success },
-    { id: OrderStatus.COMPLETED, label: 'CONCLUIDO', textColor: 'text-emerald-500', icon: ICONS.Success },
+    { id: 'entrance', label: 'ENTRADA', textColor: 'text-amber-500', icon: ICONS.Pending, statuses: [OrderStatus.QUOTATION, OrderStatus.WAITING_PAYMENT, OrderStatus.WAITING_FILE] },
+    { id: 'art', label: 'ARTE & APROVAÇÃO', textColor: 'text-orange-500', icon: ICONS.Palette, statuses: [OrderStatus.ART, OrderStatus.WAITING_APPROVAL] },
+    { id: 'production', label: 'PRODUÇÃO', textColor: 'text-sky-500', icon: ICONS.Settings, statuses: [OrderStatus.PRODUCTION, OrderStatus.READY_FOR_PICKUP] },
+    { id: 'logistics', label: 'LOGÍSTICA', textColor: 'text-purple-600', icon: ICONS.Shipping, statuses: [OrderStatus.SHIPPING, OrderStatus.DELIVERED] },
+    { id: 'finished', label: 'CONCLUÍDOS', textColor: 'text-emerald-500', icon: ICONS.Success, statuses: [OrderStatus.COMPLETED] },
   ];
 
   const filteredOrders = useMemo(() => {
@@ -534,20 +532,20 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
     }, 0);
   }, [filteredOrders, products]);
 
-  const activeOrdersCount = filteredOrders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.COMPLETED).length;
-  const finishedOrdersCount = filteredOrders.filter(o => o.status === OrderStatus.COMPLETED || o.status === OrderStatus.DELIVERED).length;
+  const activeOrdersCount = filteredOrders.filter(o => ![OrderStatus.DELIVERED, OrderStatus.COMPLETED, OrderStatus.CANCELLED].includes(o.status)).length;
+  const finishedOrdersCount = filteredOrders.filter(o => [OrderStatus.COMPLETED, OrderStatus.DELIVERED].includes(o.status)).length;
   const uniqueBuyersCount = Array.from(new Set(filteredOrders.map(o => o.customerId || o.customerName))).length;
   const productsWithMarginCount = products.filter(p => (p.margin || 0) > 0).length;
 
   const statusSummary = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredOrders.forEach(o => {
-      if (o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.COMPLETED) {
+      if (![OrderStatus.DELIVERED, OrderStatus.COMPLETED, OrderStatus.CANCELLED].includes(o.status)) {
         counts[o.status] = (counts[o.status] || 0) + 1;
       }
     });
     return Object.entries(counts)
-      .map(([status, count]) => `${count} em ${status.toLowerCase().replace('criando ', '')}`)
+      .map(([status, count]) => `${count} em ${status.toLowerCase()}`)
       .join(' • ') || "Nenhum pedido ativo";
   }, [filteredOrders]);
 
@@ -707,6 +705,35 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
               {ICONS.Eye}
               <span>Vendas</span>
             </button>
+            <button 
+              onClick={() => {
+                const productionOrders = orders.filter(o => o.status === OrderStatus.PRODUCTION);
+                const items = productionOrders.flatMap(o => o.items);
+                const summary = items.reduce((acc, it) => {
+                  acc[it.productId] = (acc[it.productId] || 0) + it.quantity;
+                  return acc;
+                }, {} as Record<string, number>);
+                
+                let text = "RELATÓRIO DE PRODUÇÃO ATIVA\n==========================\n\n";
+                Object.entries(summary).forEach(([pid, qty]) => {
+                  const p = products.find(prod => prod.id === pid);
+                  text += `- ${p?.name || 'Item'}: ${qty} unidades\n`;
+                });
+                
+                if (productionOrders.length === 0) text += "Nenhum pedido em produção no momento.";
+                
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `producao_${new Date().toISOString().split('T')[0]}.txt`;
+                a.click();
+              }}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-black uppercase rounded-2xl text-[9px] sm:text-[10px] tracking-widest shadow-xl shadow-sky-500/20 transition-all active:scale-95"
+            >
+              {ICONS.Print}
+              <span>Produção</span>
+            </button>
           </div>
         </div>
       </div>
@@ -728,7 +755,15 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
             data-column-id={col.id}
             onDragOver={(e) => { e.preventDefault(); setDragOverColumn(col.id); }}
             onDragLeave={() => setDragOverColumn(null)}
-            onDrop={(e) => { e.preventDefault(); setDragOverColumn(null); const id = e.dataTransfer.getData('orderId'); if (id) onUpdateOrderStatus(id, col.id as OrderStatus); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOverColumn(null);
+              const id = e.dataTransfer.getData('orderId');
+              if (id) {
+                // Ao soltar em uma coluna, move para o PRIMEIRO status dessa coluna
+                onUpdateOrderStatus(id, col.statuses[0]);
+              }
+            }}
             className={`flex flex-col gap-4 min-h-[600px] w-[85vw] md:w-[320px] lg:w-full shrink-0 border-2 ${dragOverColumn === col.id ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 bg-[#050914]/30'} rounded-[36px] p-4 backdrop-blur-xl transition-all duration-500 box-border`}
           >
             <div className="flex items-center justify-between px-4 shrink-0 mb-4 bg-white/5 py-3 rounded-[20px] backdrop-blur-md">
@@ -737,14 +772,14 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                 <h2 className={`text-[11px] font-black uppercase tracking-[0.2em] ${col.textColor}`}>{col.label}</h2>
               </div>
               <span className="text-[10px] font-black text-white bg-white/10 w-7 h-7 flex items-center justify-center rounded-xl border border-white/5 shadow-inner">
-                {filteredOrders.filter(o => o.status === col.id).length}
+                {filteredOrders.filter(o => col.statuses.includes(o.status)).length}
               </span>
             </div>
 
             <div className="flex-1 overflow-y-auto px-1 space-y-6 no-scrollbar pb-10">
               <AnimatePresence mode="popLayout">
-                {col.id !== OrderStatus.COMPLETED ? (
-                  filteredOrders.filter(o => o.status === col.id).map(order => (
+                {col.id !== 'finished' ? (
+                  filteredOrders.filter(o => col.statuses.includes(o.status)).map(order => (
                     <OrderCard
                       key={order.id}
                       order={order}
@@ -755,6 +790,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                       onDelete={onDeleteOrder}
                       onFinalize={handleFinalizeOrder}
                       onStatusChange={onUpdateOrderStatus}
+                      products={products}
                       customers={customers}
                       isCollapsed={collapsedCols[col.id] ?? true}
                     />

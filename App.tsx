@@ -200,7 +200,17 @@ const App: React.FC = () => {
 
   // --- Handlers de Pedidos ---
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
-    const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+    const updatedOrders = orders.map(o => {
+      if (o.id === orderId) {
+        const history = o.statusHistory || [];
+        return { 
+          ...o, 
+          status: newStatus,
+          statusHistory: [...history, { date: new Date().toISOString(), status: newStatus }]
+        };
+      }
+      return o;
+    });
     setOrders(updatedOrders);
     const order = updatedOrders.find(o => o.id === orderId);
     if (order) {
@@ -262,12 +272,24 @@ const App: React.FC = () => {
     const totalPaid = updatedTransactions.reduce((sum, t) => sum + t.amount, 0);
     const newRemaining = Math.max(0, orderToUpdate.total - totalPaid);
     
+    let newStatus = orderToUpdate.status;
+    if (newRemaining <= 0 && (newStatus === OrderStatus.QUOTATION || newStatus === OrderStatus.WAITING_PAYMENT)) {
+      newStatus = OrderStatus.WAITING_FILE;
+    }
+
+    const history = orderToUpdate.statusHistory || [];
+    const updatedHistory = newStatus !== orderToUpdate.status 
+      ? [...history, { date: new Date().toISOString(), status: newStatus }]
+      : history;
+
     const updatedOrder: Order = { 
       ...orderToUpdate, 
       transactions: updatedTransactions,
       remainingAmount: newRemaining, 
       paid: newRemaining <= 0,
-      paymentMethod: method 
+      paymentMethod: method,
+      status: newStatus,
+      statusHistory: updatedHistory
     };
 
     setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
@@ -307,7 +329,8 @@ const App: React.FC = () => {
       trackingHistory: data.trackingHistory || [],
       transactions: initialTransactions,
       items: data.items || [],
-      isRegistered: true
+      isRegistered: true,
+      statusHistory: [{ date: new Date().toISOString(), status: data.status || OrderStatus.ART }]
     };
     
     try {

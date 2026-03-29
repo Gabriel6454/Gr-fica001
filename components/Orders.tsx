@@ -14,17 +14,27 @@ const TRACKING_STEPS = [
 ];
 
 const getStatusIndex = (status: string) => {
-  if (status === OrderStatus.COMPLETED) return 5;
-  if (status === OrderStatus.DELIVERED) return 4;
-  if (status === OrderStatus.SHIPPING) return 3;
-  if (status === OrderStatus.PRODUCTION) return 2;
-  if (status === OrderStatus.ART) return 1;
-  return 0;
+  const statuses = [
+    'created',
+    OrderStatus.QUOTATION,
+    OrderStatus.WAITING_PAYMENT,
+    OrderStatus.WAITING_FILE,
+    OrderStatus.ART,
+    OrderStatus.WAITING_APPROVAL,
+    OrderStatus.PRODUCTION,
+    OrderStatus.READY_FOR_PICKUP,
+    OrderStatus.SHIPPING,
+    OrderStatus.DELIVERED,
+    OrderStatus.COMPLETED
+  ];
+  const idx = statuses.indexOf(status);
+  return idx === -1 ? 0 : idx;
 };
 
 export const contactCustomer = (order: Order, customer?: Customer) => {
   const phone = customer?.phone?.replace(/\D/g, '') || '';
-  const text = `Olá ${order.customerName}, tudo bem? Gostaria de falar sobre o pedido #${formatOrderId(order.id)}.`;
+  const statusLabel = order.status.toUpperCase();
+  const text = `Olá ${order.customerName}, aqui é da Gráfica. 👋\n\nReferente ao seu pedido *#${formatOrderId(order.id)}*:\nStatus Atual: *${statusLabel}*\nTotal: *R$ ${order.total.toFixed(2).replace('.', ',')}*\n\nGostaria de tratar sobre o andamento do material ou tirar alguma dúvida?`;
 
   const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
@@ -444,11 +454,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
   const [formData, setFormData] = useState({
     customerId: '',
     deliveryDate: '',
-    productId: '',
-    tierIndex: 0,
+    items: [] as { productId: string; quantity: number; price: number; cost?: number }[],
     shippingCost: 0,
     paidAmount: 0,
-    status: OrderStatus.ART,
+    status: OrderStatus.QUOTATION,
     paymentMethod: 'pix',
     trackingCode: '',
     carrier: 'Correios',
@@ -457,10 +466,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
 
   useEffect(() => {
     if (order && isOpen) {
-      const productId = order.items[0]?.productId || '';
-      const quantity = order.items[0]?.quantity || 0;
-      const product = products.find(p => p.id === productId);
-      const tierIndex = product?.priceTiers.findIndex(t => t.quantity === quantity) ?? 0;
       let isoDate = '';
       if (order.deliveryDate.includes('/')) {
         const [d, m, y] = order.deliveryDate.split('/');
@@ -469,8 +474,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       setFormData({
         customerId: order.customerId || '',
         deliveryDate: isoDate,
-        productId: productId,
-        tierIndex: tierIndex === -1 ? 0 : tierIndex,
+        items: order.items || [],
         shippingCost: order.shippingCost || 0,
         paidAmount: order.total - order.remainingAmount,
         status: order.status,
@@ -480,22 +484,75 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
         trackingHistory: order.trackingHistory || []
       });
     } else if (isOpen) {
-      setFormData({ customerId: '', deliveryDate: '', productId: '', tierIndex: 0, shippingCost: 0, paidAmount: 0, status: OrderStatus.ART, paymentMethod: 'pix', trackingCode: '', carrier: 'Correios', trackingHistory: [] });
+      setFormData({ 
+        customerId: '', 
+        deliveryDate: '', 
+        items: [], 
+        shippingCost: 0, 
+        paidAmount: 0, 
+        status: OrderStatus.QUOTATION, 
+        paymentMethod: 'pix', 
+        trackingCode: '', 
+        carrier: 'Correios', 
+        trackingHistory: [] 
+      });
     }
-  }, [order, isOpen, products]);
+  }, [order, isOpen]);
 
   if (!isOpen) return null;
 
-  const selectedProduct = products.find(p => p.id === formData.productId);
-  const selectedCustomer = customers.find(c => c.id === formData.customerId);
-  const activeTier = selectedProduct?.priceTiers?.[formData.tierIndex];
-  const subtotalValue = activeTier?.salePrice || 0;
-  const totalValue = subtotalValue + formData.shippingCost;
+  const totalValue = formData.items.reduce((acc, item) => acc + item.price, 0) + formData.shippingCost;
   const remainingValue = totalValue - formData.paidAmount;
+  const selectedCustomer = customers.find(c => c.id === formData.customerId);
+
+  const addItem = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    // Padrão: usa o primeiro tier de preço
+    const firstTier = product.priceTiers?.[0];
+    const newItem = {
+      productId: product.id,
+      quantity: firstTier?.quantity || 1,
+      price: firstTier?.salePrice || product.salePrice,
+      cost: firstTier?.costPrice || product.costPrice
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+  };
+
+  const removeItem = (idx: number) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== idx)
+    }));
+  };
+
+  const updateItem = (idx: number, field: string, value: any) => {
+    const newItems = [...formData.items];
+    newItems[idx] = { ...newItems[idx], [field]: value };
+    
+    // Se mudar a quantidade, tenta recalcular o preço baseando-se nos tiers
+    if (field === 'quantity') {
+      const product = products.find(p => p.id === newItems[idx].productId);
+      if (product) {
+        const tier = product.priceTiers.find(t => t.quantity === value);
+        if (tier) {
+          newItems[idx].price = tier.salePrice;
+          newItems[idx].cost = tier.costPrice;
+        }
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, items: newItems }));
+  };
 
   const handleSubmit = () => {
-    if (!formData.customerId || !formData.productId || !formData.deliveryDate) {
-      alert('Preencha os campos obrigatórios.');
+    if (!formData.customerId || formData.items.length === 0 || !formData.deliveryDate) {
+      alert('Preencha os campos obrigatórios (Cliente, Itens e Prazo).');
       return;
     }
     onSave({
@@ -511,12 +568,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       trackingCode: formData.trackingCode,
       carrier: formData.carrier,
       trackingHistory: formData.trackingHistory,
-      items: [{
-        productId: formData.productId,
-        quantity: activeTier?.quantity || 0,
-        price: subtotalValue,
-        cost: (activeTier?.costPrice || selectedProduct?.costPrice || 0)
-      }]
+      statusHistory: order?.statusHistory || formData.statusHistory,
+      items: formData.items
     });
     onClose();
   };
@@ -524,7 +577,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
   const handleModalDelete = () => {
     if (order && onDelete) {
       const id = String(order.id).trim();
-      console.log('Orders.tsx: Exclusão via Modal para ID:', id);
       if (window.confirm(`Excluir permanentemente o pedido #${id}?`)) {
         onDelete(id);
         onClose();
@@ -534,7 +586,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
 
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="glass-card bg-[#0a1224]/90 border border-white/10 w-full max-w-[1100px] rounded-[48px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col h-full sm:h-auto max-h-[98vh] sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200 relative">
+      <div className="glass-card bg-[#0a1224]/90 border border-white/10 w-full max-w-[1200px] rounded-[48px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col h-full sm:h-auto max-h-[98vh] sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200 relative">
         <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[40%] h-[30%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
@@ -549,9 +601,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all border border-white/5">{ICONS.X}</button>
         </div>
 
-        <div className="flex-1 p-8 sm:p-12 grid grid-cols-1 md:grid-cols-3 gap-10 overflow-y-auto no-scrollbar bg-gradient-to-b from-transparent to-white/[0.02] relative z-10">
+        <div className="flex-1 p-8 sm:p-12 grid grid-cols-1 lg:grid-cols-12 gap-10 overflow-y-auto no-scrollbar bg-gradient-to-b from-transparent to-white/[0.02] relative z-10">
 
-          <div className="space-y-8 md:border-r border-white/5 md:pr-10">
+          {/* Coluna Esquerda: Cliente e Prazos */}
+          <div className="lg:col-span-3 space-y-8 lg:border-r border-white/5 lg:pr-10">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_12px_#0ea5e9]"></span>
               <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">IDENTIFICAÇÃO</h3>
@@ -559,129 +612,168 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Selecione o Cliente</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Cliente</label>
                 <div className="relative group">
-                  <select value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
+                  <select value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 appearance-none font-bold transition-all shadow-xl">
                     <option value="">Buscar na base...</option>
-                    {customers.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a] text-white">{c.name}</option>)}
+                    {customers.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a]">{c.name}</option>)}
                   </select>
                   <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Prazo de Entrega</label>
-                  <input type="date" value={formData.deliveryDate} onChange={e => setFormData({ ...formData, deliveryDate: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 font-bold transition-all shadow-xl" />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Status Operacional</label>
-                   <div className="relative group">
-                    <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as OrderStatus })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 appearance-none font-bold transition-all shadow-xl">
-                      {Object.values(OrderStatus).map(st => <option key={st} value={st} className="bg-[#0f172a] text-white">{st}</option>)}
-                    </select>
-                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
-                  </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Prazo de Entrega</label>
+                <input type="date" value={formData.deliveryDate} onChange={e => setFormData({ ...formData, deliveryDate: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 font-bold transition-all shadow-xl" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Status Operacional</label>
+                <div className="relative group">
+                  <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as OrderStatus })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-5 py-4 text-xs text-white outline-none focus:border-sky-500 appearance-none font-bold transition-all shadow-xl">
+                    {Object.values(OrderStatus).map(st => <option key={st} value={st} className="bg-[#0f172a]">{st}</option>)}
+                  </select>
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
                 </div>
               </div>
             </div>
+
+            {/* Timeline de Status */}
+            {order?.statusHistory && order.statusHistory.length > 0 && (
+              <div className="pt-8 space-y-6">
+                <div className="flex items-center gap-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_#f97316]"></span>
+                  <h3 className="text-[11px] font-black text-orange-400 uppercase tracking-[0.2em]">LINHA DO TEMPO</h3>
+                </div>
+                <div className="space-y-4 max-h-[250px] overflow-y-auto no-scrollbar pl-2 border-l border-white/5">
+                  {order.statusHistory.slice().reverse().map((h, i) => (
+                    <div key={i} className="relative pl-6 pb-2 last:pb-0">
+                      <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full bg-slate-700 border border-slate-900 shadow-[0_2px_4px_rgba(0,0,0,0.4)]"></div>
+                      <p className="text-[10px] font-black text-white uppercase tracking-wider">{h.status}</p>
+                      <p className="text-[9px] text-slate-500 font-bold mt-0.5">
+                        {new Date(h.date).toLocaleDateString('pt-BR')} às {new Date(h.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-8 md:border-r border-white/5 md:pr-10">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_#a855f7]"></span>
-              <h3 className="text-[11px] font-black text-purple-400 uppercase tracking-[0.2em]">ESPECIFICAÇÕES</h3>
+          {/* Coluna Central: Itens do Pedido */}
+          <div className="lg:col-span-6 space-y-8 lg:border-r border-white/5 lg:pr-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_#a855f7]"></span>
+                <h3 className="text-[11px] font-black text-purple-400 uppercase tracking-[0.2em]">ITENS DO PEDIDO</h3>
+              </div>
+              <div className="relative">
+                <select 
+                  onChange={(e) => { if(e.target.value) addItem(e.target.value); e.target.value = ""; }}
+                  className="bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl outline-none hover:bg-purple-500 hover:text-white transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">+ Adicionar Item</option>
+                  {products.map(p => <option key={p.id} value={p.id} className="bg-[#0f172a]">{p.name}</option>)}
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Produto / Serviço</label>
-                <div className="relative group">
-                  <select value={formData.productId} onChange={e => setFormData({ ...formData, productId: e.target.value, tierIndex: 0 })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[20px] px-5 py-4 text-xs text-white outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 appearance-none font-bold transition-all shadow-xl">
-                    <option value="">Escolher serviço...</option>
-                    {products.map(p => <option key={p.id} value={p.id} className="bg-[#0f172a] text-white">{p.name}</option>)}
-                  </select>
-                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+              {formData.items.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[32px] opacity-40">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nenhum item adicionado</p>
                 </div>
-              </div>
-
-              {selectedProduct && (
-                <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-3">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Quantidade (Lote)</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {selectedProduct.priceTiers?.map((tier, idx) => (
-                      <button key={idx} onClick={() => setFormData({ ...formData, tierIndex: idx })} className={`py-4 rounded-2xl border text-xs font-black transition-all duration-300 relative overflow-hidden flex flex-col items-center justify-center ${formData.tierIndex === idx ? 'bg-purple-600 border-purple-400 text-white shadow-xl shadow-purple-500/20 scale-[1.03] z-10' : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10 hover:border-white/20'}`}>
-                        <span className="text-sm">{tier.quantity}</span>
-                        <span className="text-[8px] opacity-70 uppercase tracking-widest mt-0.5">unidades</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              ) : (
+                formData.items.map((item, idx) => {
+                  const product = products.find(p => p.id === item.productId);
+                  return (
+                    <div key={idx} className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-4 hover:border-purple-500/30 transition-all group relative">
+                      <button onClick={() => removeItem(idx)} className="absolute top-4 right-4 text-slate-500 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100">{ICONS.Trash}</button>
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#030712] border border-white/5 flex items-center justify-center text-purple-500 shrink-0">
+                          {ICONS.Products}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-black text-white uppercase truncate">{product?.name || 'Produto'}</h4>
+                          <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{product?.category}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Qtd</label>
+                          <input 
+                            type="number" 
+                            value={item.quantity} 
+                            onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} 
+                            className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-2 text-xs text-white font-black outline-none focus:border-purple-500" 
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Valor Unit.</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            value={item.price} 
+                            onChange={e => updateItem(idx, 'price', Number(e.target.value))} 
+                            className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-2 text-xs text-white font-black outline-none focus:border-purple-500" 
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Subtotal</label>
+                          <div className="w-full bg-[#030712]/40 border border-white/5 rounded-xl px-4 py-2 text-xs text-emerald-400 font-black flex items-center">
+                            R$ {(item.price).toFixed(2).replace('.', ',')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
 
-          <div className="space-y-8">
+          {/* Coluna Direita: Financeiro e Frete */}
+          <div className="lg:col-span-3 space-y-8">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_#10b981]"></span>
-              <h3 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.2em]">CAPITAL & FLUXO</h3>
+              <h3 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.2em]">CUSTOS & LOGÍSTICA</h3>
             </div>
 
             <div className="space-y-8">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Frete</label>
-                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
-                    <input type="number" step="0.01" value={formData.shippingCost} onChange={e => setFormData({ ...formData, shippingCost: Number(e.target.value) })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] pl-10 pr-4 py-4 text-sm text-white font-black outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-xl" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Entrada</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
-                    <input type="number" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: Number(e.target.value) })} className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-[24px] pl-10 pr-4 py-4 text-sm text-emerald-400 font-black outline-none focus:border-emerald-500 shadow-xl" />
-                  </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Frete / Transporte</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
+                  <input type="number" step="0.01" value={formData.shippingCost} onChange={e => setFormData({ ...formData, shippingCost: Number(e.target.value) })} className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] pl-10 pr-4 py-4 text-sm text-white font-black outline-none focus:border-emerald-500 transition-all shadow-xl" />
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 text-center">Forma de Pagamento</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {PAYMENT_METHODS.slice(0, 6).map(method => (
-                    <button key={method.id} onClick={() => setFormData({ ...formData, paymentMethod: method.id })} className={`flex flex-col items-center justify-center py-3 rounded-[24px] border transition-all gap-1.5 ${formData.paymentMethod === method.id ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-500/20 scale-[1.05]' : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'}`}>
-                      <span className="text-lg">{method.icon}</span>
-                      <span className="text-[8px] font-black uppercase tracking-widest">{method.label}</span>
-                    </button>
-                  ))}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Valor Já Pago</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black">R$</span>
+                  <input type="number" step="0.01" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: Number(e.target.value) })} className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-[24px] pl-10 pr-4 py-4 text-sm text-emerald-400 font-black outline-none focus:border-emerald-500 shadow-xl" />
                 </div>
               </div>
 
-              <div className="bg-orange-500/5 border border-orange-500/20 rounded-[32px] p-6 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400">{ICONS.Shipping}</div>
-                  <h3 className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em]">LOGÍSTICA</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-2">
-                   <div className="relative">
-                    <select value={formData.carrier} onChange={e => setFormData({ ...formData, carrier: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 appearance-none font-bold shadow-xl pr-10">
-                      <option value="Correios">Correios</option>
-                      <option value="SEDEX">SEDEX</option>
-                      <option value="PAC">PAC</option>
-                      <option value="Jadlog">Jadlog</option>
-                      <option value="Azul Cargo">Azul Cargo</option>
-                      <option value="Retirada">Retirada Local</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{ICONS.ChevronDown}</div>
-                  </div>
-                  <input type="text" placeholder="Cód. Rastreio" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-5 py-3 text-xs text-white outline-none focus:border-orange-500 font-bold shadow-xl" />
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Logística</label>
+                <div className="bg-orange-500/5 border border-orange-500/20 rounded-[28px] p-5 space-y-4">
+                  <input type="text" placeholder="Cód. Rastreio" value={formData.trackingCode} onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-white font-black outline-none focus:border-orange-500 shadow-xl" />
+                  <select value={formData.carrier} onChange={e => setFormData({ ...formData, carrier: e.target.value })} className="w-full bg-[#030712]/60 border border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-white outline-none focus:border-orange-500 appearance-none font-black shadow-xl">
+                    <option value="Correios">Correios</option>
+                    <option value="SEDEX">SEDEX</option>
+                    <option value="Motoboy">Motoboy</option>
+                    <option value="Retirada">Retirada Local</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Footer com Totais */}
         <div className="px-10 py-10 bg-white/5 border-t border-white/10 backdrop-blur-3xl flex flex-col sm:flex-row items-center justify-between gap-10 shadow-[0_-20px_80px_rgba(0,0,0,0.4)] relative z-20">
           <div className="flex flex-wrap gap-12 w-full sm:w-auto justify-between sm:justify-start">
             <div className="space-y-1">
@@ -702,9 +794,18 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
           </div>
 
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            <button onClick={onClose} className="flex-1 sm:flex-none px-10 py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl hover:bg-white/10 transition-all text-[11px] tracking-widest min-h-[56px] min-w-[140px]">Descartar</button>
-            <button onClick={handleSubmit} className="flex-[2] sm:flex-none px-16 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl hover:bg-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-all text-[11px] tracking-widest active:scale-95 min-h-[56px] min-w-[200px]">
-              {order ? 'Salvar Alterações' : 'Confirmar Pedido'}
+            {order && (
+              <button 
+                onClick={handleModalDelete}
+                className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-xl"
+                title="Excluir Pedido"
+              >
+                {ICONS.Trash}
+              </button>
+            )}
+            <button onClick={onClose} className="flex-1 sm:flex-none px-10 py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl transition-all text-[11px] tracking-widest min-w-[140px]">Fechar</button>
+            <button onClick={handleSubmit} className="flex-[2] sm:flex-none px-16 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl hover:bg-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-all text-[11px] tracking-widest active:scale-95 min-w-[200px]">
+              {order ? 'Salvar Alterações' : 'Finalizar Pedido'}
             </button>
           </div>
         </div>
@@ -728,8 +829,13 @@ interface OrdersProps {
 
 const getNextStatus = (current: OrderStatus): OrderStatus => {
   const statuses = [
+    OrderStatus.QUOTATION,
+    OrderStatus.WAITING_PAYMENT,
+    OrderStatus.WAITING_FILE,
     OrderStatus.ART,
+    OrderStatus.WAITING_APPROVAL,
     OrderStatus.PRODUCTION,
+    OrderStatus.READY_FOR_PICKUP,
     OrderStatus.SHIPPING,
     OrderStatus.DELIVERED,
     OrderStatus.COMPLETED

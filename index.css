@@ -108,6 +108,14 @@
     @apply bg-white/5 backdrop-blur-md border border-white/10;
   }
 
+  .glass-overlay {
+    @apply bg-[#030712]/40 backdrop-blur-lg border border-white/5;
+  }
+
+  .premium-border {
+    @apply border border-white/10 hover:border-sky-500/30 transition-all duration-500;
+  }
+
   .premium-gradient {
     @apply bg-gradient-to-br from-white/5 to-transparent;
   }
@@ -116,6 +124,10 @@
   .glow-emerald{ @apply shadow-lg shadow-emerald-500/20; }
   .glow-rose   { @apply shadow-lg shadow-rose-500/20; }
   .glow-orange { @apply shadow-lg shadow-orange-500/20; }
+
+  .text-glow-sky {
+    text-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+  }
 
   /* Page padding respeitando tokens */
   .page-wrapper {

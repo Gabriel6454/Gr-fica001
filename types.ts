@@ -35,14 +35,21 @@ export interface Order {
   trackingCode?: string;
   carrier?: string;
   trackingHistory?: { date: string; status: string; location: string }[];
+  statusHistory?: { date: string; status: OrderStatus; user?: string }[];
 }
 
 export enum OrderStatus {
-  ART = 'Criando Arte',
+  QUOTATION = 'Orçamento',
+  WAITING_PAYMENT = 'Aguardando Pagamento',
+  WAITING_FILE = 'Aguardando Arquivo',
+  ART = 'Em Arte',
+  WAITING_APPROVAL = 'Aguardando Aprovação',
   PRODUCTION = 'Em Produção',
+  READY_FOR_PICKUP = 'Pronto p/ Retirada',
   SHIPPING = 'Em Transporte',
   DELIVERED = 'Entregue',
-  COMPLETED = 'Concluído'
+  COMPLETED = 'Concluído',
+  CANCELLED = 'Cancelado'
 }
 
 export enum TransactionType {
