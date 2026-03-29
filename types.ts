@@ -27,15 +27,33 @@ export interface Order {
   shippingCost?: number;
   remainingAmount: number;
   paid: boolean;
-  paymentMethod?: string; // Mantido para compatibilidade, mas o ideal é usar transactions
-  transactions?: PaymentTransaction[]; // Novo campo para histórico
-  items: { productId: string; quantity: number; price: number; cost?: number }[];
+  paymentMethod?: string;
+  transactions?: PaymentTransaction[];
+  items: { 
+    productId: string; 
+    quantity: number; 
+    price: number; 
+    cost?: number;
+    paperType?: string;
+    grammage?: string;
+    finishing?: string;
+    colors?: string;
+    pantone?: string;
+    estimatedMachineTime?: number; // minutos
+    estimatedEnergyCost?: number;
+    predictedWaste?: number; // m² ou kg
+    machineId?: string; // v2.9
+  }[];
+  source?: 'direct' | 'ml' | 'shopify' | 'mercado_livre' | 'local'; // v2.9
   pdfUrl?: string; // URL ou Base64 do PDF anexado
   isRegistered?: boolean;
   trackingCode?: string;
   carrier?: string;
   trackingHistory?: { date: string; status: string; location: string }[];
   statusHistory?: { date: string; status: OrderStatus; user?: string }[];
+  blockchainHash?: string; // Novo v2.8
+  co2Avoided?: number; // kg
+  stockDeducted?: boolean; // Novo v2.9
 }
 
 export enum OrderStatus {
@@ -96,6 +114,8 @@ export interface Customer {
   city: string;
   state: string;
   cep: string;
+  loyaltyPoints?: number; // Novo v2.8
+  aiProfileNotes?: string;
 }
 
 export interface Category {
@@ -120,12 +140,30 @@ export interface Product {
   margin: number;
   salePrice: number;
   imageUrl: string;
-  totalSold: number;
   totalProfit: number;
   priceTiers: PriceTier[];
+  
+  // Novos campos técnicos v2.6
+  defaultPaper?: string;
+  defaultGrammage?: string;
+  defaultFinishing?: string;
+  
   pdfBrandName?: string;
   pdfSubtitle?: string;
   pdfBadge?: string;
+  
+  // Novo v2.7
+  templates?: { name: string; url: string }[];
+  machineRequirements?: string[];
+}
+
+export interface ProductionMachine {
+  id: string;
+  name: string;
+  type: 'offset' | 'digital' | 'finishing' | 'plotter';
+  status: 'idle' | 'running' | 'maintenance' | 'offline';
+  hourlyRate: number;
+  energyConsumption: number; // kWh
 }
 
 export interface CatalogOrder {
@@ -171,4 +209,16 @@ export interface PortfolioFII {
   avgPrice: number;
   currentPrice: number;
   lastDividend: number;
+}
+
+export interface StockItem {
+  id: string;
+  name: string;
+  quantity: number;
+  minQuantity: number;
+  unit: string; // ex: kg, un, resma
+  lastRestock: string;
+  supplierPrice?: number; // Preço em tempo real do fornecedor
+  supplierAvailability?: boolean;
+  predictedUsageNext15Days?: number; // ML prediction
 }

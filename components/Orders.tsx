@@ -515,7 +515,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       productId: product.id,
       quantity: firstTier?.quantity || 1,
       price: firstTier?.salePrice || product.salePrice,
-      cost: firstTier?.costPrice || product.costPrice
+      cost: firstTier?.costPrice || product.costPrice,
+      paperType: product.defaultPaper || 'Couché 150g',
+      grammage: product.defaultGrammage || '150g',
+      finishing: product.defaultFinishing || 'Nenhum',
+      colors: '4x4'
     };
     
     setFormData(prev => ({
@@ -587,15 +591,17 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
       <div className="glass-card bg-[#0a1224]/90 border border-white/10 w-full max-w-[1200px] rounded-[48px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col h-full sm:h-auto max-h-[98vh] sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200 relative">
-        <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[40%] h-[30%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
         <div className="px-8 sm:px-12 py-8 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl relative z-10">
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/20">{order ? ICONS.Edit : ICONS.Plus}</div>
             <div>
-              <h2 className="text-2xl font-black text-white italic uppercase tracking-tight">{order ? 'Refinar' : 'Gerar Novo'} <span className="text-sky-400">Pedido</span></h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Console de Operação Industrial</p>
+              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{order ? 'Refinar' : 'Novo'} <span className="text-sky-500">Pedido</span></h2>
+              <div className="flex items-center gap-3 mt-1.5">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">{order ? 'ATUALIZAÇÃO DE PEDIDO' : 'SISTEMA DE GESTÃO GRAPHIC'}</p>
+              </div>
             </div>
           </div>
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all border border-white/5">{ICONS.X}</button>
@@ -699,6 +705,54 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
                         </div>
                       </div>
                       
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Papel</label>
+                          <input type="text" value={item.paperType} onChange={e => updateItem(idx, 'paperType', e.target.value)} className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-2 text-[10px] text-white font-bold outline-none focus:border-purple-500" placeholder="Ex: Couché" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Gramatura</label>
+                          <input type="text" value={item.grammage} onChange={e => updateItem(idx, 'grammage', e.target.value)} className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-2 text-[10px] text-white font-bold outline-none focus:border-purple-500" placeholder="Ex: 250g" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Acabamento</label>
+                          <input type="text" value={item.finishing} onChange={e => updateItem(idx, 'finishing', e.target.value)} className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-2 text-[10px] text-white font-bold outline-none focus:border-purple-500" placeholder="Ex: Verniz UV" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Cores</label>
+                          <input type="text" value={item.colors} onChange={e => updateItem(idx, 'colors', e.target.value)} className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-2 text-[10px] text-white font-bold outline-none focus:border-purple-500" placeholder="Ex: 4x0" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2 bg-purple-500/5 p-3 rounded-2xl border border-purple-500/10">
+                         <div className="space-y-1.5">
+                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">
+                             <span>Pantone / Especial</span>
+                           </label>
+                           <input type="text" value={item.pantone || ''} onChange={e => updateItem(idx, 'pantone', e.target.value)} className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-1.5 text-[10px] text-white outline-none focus:border-purple-500" placeholder="Ex: PMS 200C" />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-[9px] font-black text-purple-400 uppercase tracking-widest px-1">Equipamento (ID)</label>
+                           <input type="text" value={item.machineId || ''} onChange={e => updateItem(idx, 'machineId', e.target.value)} className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-1.5 text-[10px] text-white outline-none focus:border-purple-500" placeholder="Ex: OFFSET-01" />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-[9px] font-black text-purple-400 uppercase tracking-widest px-1">Tempo (min)</label>
+                           <input type="number" value={item.estimatedMachineTime || 0} onChange={e => updateItem(idx, 'estimatedMachineTime', Number(e.target.value))} className="w-full bg-[#030712] border border-white/5 rounded-xl px-4 py-1.5 text-[10px] text-white outline-none focus:border-purple-500" />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-[9px] font-black text-purple-400 uppercase tracking-widest px-1">Energia + Desperdício (kg)</label>
+                           <div className="grid grid-cols-2 gap-2">
+                             <div className="relative">
+                               <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] text-slate-600">R$</span>
+                               <input type="number" step="0.01" value={item.estimatedEnergyCost || 0} onChange={e => updateItem(idx, 'estimatedEnergyCost', Number(e.target.value))} className="w-full bg-[#030712] border border-white/5 rounded-xl pl-6 pr-2 py-1.5 text-[9px] text-emerald-500 font-bold outline-none focus:border-purple-500" />
+                             </div>
+                             <div className="relative">
+                               <input type="number" step="0.01" value={item.predictedWaste || 0} onChange={e => updateItem(idx, 'predictedWaste', Number(e.target.value))} className="w-full bg-[#030712] border border-white/5 rounded-xl px-2 py-1.5 text-[9px] text-rose-400 font-bold outline-none focus:border-purple-500" placeholder="Waste" />
+                             </div>
+                           </div>
+                         </div>
+                      </div>
+
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Qtd</label>

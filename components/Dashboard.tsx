@@ -81,7 +81,7 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({ isOpen, onC
               <div className="scale-110">{ICONS.History}</div>
               <h3 className="font-bold text-white text-sm sm:text-base">Resumo de Compras</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
                 { label: 'Total Gasto', value: `R$ ${(totalSpent || 0).toFixed(2).replace('.', ',')}`, icon: '$', color: 'text-emerald-500' },
                 { label: 'Total de Compras', value: customerOrders.length.toString(), icon: ICONS.Orders, color: 'text-sky-500' },
@@ -211,15 +211,9 @@ const OrderCard: React.FC<{
 
   const getNextStatus = (current: OrderStatus): OrderStatus => {
     const statuses = [
-      OrderStatus.QUOTATION,
-      OrderStatus.WAITING_PAYMENT,
-      OrderStatus.WAITING_FILE,
-      OrderStatus.ART,
-      OrderStatus.WAITING_APPROVAL,
-      OrderStatus.PRODUCTION,
-      OrderStatus.READY_FOR_PICKUP,
-      OrderStatus.SHIPPING,
-      OrderStatus.DELIVERED,
+      OrderStatus.QUOTATION, OrderStatus.WAITING_PAYMENT, OrderStatus.WAITING_FILE,
+      OrderStatus.ART, OrderStatus.WAITING_APPROVAL, OrderStatus.PRODUCTION,
+      OrderStatus.READY_FOR_PICKUP, OrderStatus.SHIPPING, OrderStatus.DELIVERED,
       OrderStatus.COMPLETED
     ];
     const currentIndex = statuses.indexOf(current);
@@ -237,179 +231,175 @@ const OrderCard: React.FC<{
 
   const statusConfig = (status: OrderStatus) => {
     switch (status) {
-      case OrderStatus.QUOTATION: return { dot: 'bg-slate-400', glow: 'rgba(148,163,184,0.18)', border: 'rgba(148,163,184,0.35)', badge: 'text-slate-300 bg-slate-500/10 border-slate-500/25', accent: 'text-slate-400', label: 'Orçamento' };
-      case OrderStatus.WAITING_PAYMENT: return { dot: 'bg-amber-400', glow: 'rgba(251,191,36,0.18)', border: 'rgba(251,191,36,0.35)', badge: 'text-amber-300 bg-amber-500/10 border-amber-500/25', accent: 'text-amber-400', label: 'Aguard. Pagamento' };
-      case OrderStatus.WAITING_FILE: return { dot: 'bg-indigo-400', glow: 'rgba(129,140,248,0.18)', border: 'rgba(129,140,248,0.35)', badge: 'text-indigo-300 bg-indigo-500/10 border-indigo-500/25', accent: 'text-indigo-400', label: 'Aguard. Arquivo' };
-      case OrderStatus.ART: return { dot: 'bg-orange-400', glow: 'rgba(251,146,60,0.18)', border: 'rgba(251,146,60,0.35)', badge: 'text-orange-300 bg-orange-500/10 border-orange-500/25', accent: 'text-orange-400', label: 'Em Arte' };
-      case OrderStatus.WAITING_APPROVAL: return { dot: 'bg-pink-400', glow: 'rgba(244,114,182,0.18)', border: 'rgba(244,114,182,0.35)', badge: 'text-pink-300 bg-pink-500/10 border-pink-500/25', accent: 'text-pink-400', label: 'Aguard. Aprovação' };
-      case OrderStatus.PRODUCTION: return { dot: 'bg-sky-400', glow: 'rgba(56,189,248,0.18)', border: 'rgba(56,189,248,0.35)', badge: 'text-sky-300 bg-sky-500/10 border-sky-500/25', accent: 'text-sky-400', label: 'Em Produção' };
-      case OrderStatus.READY_FOR_PICKUP: return { dot: 'bg-emerald-400', glow: 'rgba(52,211,153,0.18)', border: 'rgba(52,211,153,0.35)', badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/25', accent: 'text-emerald-400', label: 'Pronto p/ Retirada' };
-      case OrderStatus.SHIPPING: return { dot: 'bg-violet-400', glow: 'rgba(167,139,250,0.18)', border: 'rgba(167,139,250,0.35)', badge: 'text-violet-300 bg-violet-500/10 border-violet-500/25', accent: 'text-violet-400', label: 'Em Transporte' };
-      case OrderStatus.DELIVERED: return { dot: 'bg-cyan-400', glow: 'rgba(34,211,238,0.18)', border: 'rgba(34,211,238,0.35)', badge: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/25', accent: 'text-cyan-400', label: 'Entregue' };
-      case OrderStatus.COMPLETED: return { dot: 'bg-emerald-400', glow: 'rgba(52,211,153,0.18)', border: 'rgba(52,211,153,0.35)', badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/25', accent: 'text-emerald-400', label: 'Concluído' };
-      case OrderStatus.CANCELLED: return { dot: 'bg-rose-600', glow: 'rgba(225,29,72,0.18)', border: 'rgba(225,29,72,0.35)', badge: 'text-rose-300 bg-rose-500/10 border-rose-500/25', accent: 'text-rose-600', label: 'Cancelado' };
-      default: return { dot: 'bg-slate-500', glow: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.2)', badge: 'text-slate-400 bg-slate-500/10 border-slate-500/20', accent: 'text-slate-400', label: status };
+      case OrderStatus.QUOTATION: return { dot: '#94a3b8', badge: 'Orçamento' };
+      case OrderStatus.WAITING_PAYMENT: return { dot: '#fbbf24', badge: 'Aguard. Pagamento' };
+      case OrderStatus.WAITING_FILE: return { dot: '#818cf8', badge: 'AGUARD. ARQUIVO' };
+      case OrderStatus.ART: return { dot: '#fb923c', badge: 'Em Arte' };
+      case OrderStatus.WAITING_APPROVAL: return { dot: '#f472b6', badge: 'Aguard. Aprovação' };
+      case OrderStatus.PRODUCTION: return { dot: '#38bdf8', badge: 'Em Produção' };
+      case OrderStatus.READY_FOR_PICKUP: return { dot: '#34d399', badge: 'PRONTO RETIRADA' };
+      case OrderStatus.SHIPPING: return { dot: '#a78bfa', badge: 'LOGÍSTICA' };
+      case OrderStatus.DELIVERED: return { dot: '#22d3ee', badge: 'ENTREGUE' };
+      case OrderStatus.COMPLETED: return { dot: '#10b981', badge: 'CONCLUÍDO' };
+      default: return { dot: '#64748b', badge: status.toUpperCase() };
     }
   };
 
   const cfg = statusConfig(order.status);
   const customer = customers.find(c => c.id === order.customerId || c.name === order.customerName);
   const whatsappNumber = customer?.phone?.replace(/\D/g, '');
-
-  const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('orderId', order.id);
-    e.dataTransfer.effectAllowed = 'move';
-    (e.currentTarget as HTMLElement).classList.add('opacity-40');
-  };
-
-  const handleDragEnd = (e: React.DragEvent) => {
-    (e.currentTarget as HTMLElement).classList.remove('opacity-40');
-  };
-
   const hasPendingBalance = (order.remainingAmount || 0) > 0;
-
-  const orderProfit = order.items.reduce((acc, item) => {
-    const cost = item.cost !== undefined ? item.cost : 0;
-    return acc + (item.price - cost);
-  }, 0);
-
+  const orderProfit = order.items.reduce((acc, item) => acc + (item.price - (item.cost || 0)), 0);
   const profitMargin = order.total > 0 ? (orderProfit / order.total) * 100 : 0;
-  const shippingCost = order.shippingCost || 0;
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
+      exit={{ opacity: 0, scale: 0.98 }}
       draggable
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      className={`group/card relative w-full box-border rounded-[28px] overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-500 ${isDragging ? 'opacity-40 scale-95' : 'hover:-translate-y-1 hover:shadow-2xl'}`}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('orderId', order.id);
+        e.dataTransfer.effectAllowed = 'move';
+        (e.currentTarget as HTMLElement).classList.add('opacity-40');
+      }}
+      onDragEnd={(e) => {
+        (e.currentTarget as HTMLElement).classList.remove('opacity-40');
+      }}
+      className={`group/card relative w-full box-border rounded-[24px] overflow-hidden border border-white/5 cursor-grab active:cursor-grabbing transition-all duration-300 ${isDragging ? 'opacity-40' : 'hover:border-white/10'}`}
       style={{
-        background: 'rgba(10, 18, 36, 0.7)',
-        backdropFilter: 'blur(20px)',
-        border: `1px solid ${cfg.border}`,
+        background: '#0a1122',
+        padding: isCollapsed ? '16px 20px' : '20px 24px',
       }}
     >
-      <div
-        className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-[60px] opacity-20 pointer-events-none transition-all duration-700 group-hover/card:opacity-40 group-hover/card:scale-150"
-        style={{ background: cfg.glow.replace('0.18', '1') }}
-      />
-
-      <div className="relative p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <span className={`relative flex h-2 w-2`}>
-              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${cfg.dot} opacity-60`} />
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${cfg.dot}`} />
-            </span>
-            <button
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={handleStatusClick}
-              className={`text-[9px] font-black uppercase tracking-[0.2em] border rounded-xl px-3 py-1 transition-all hover:brightness-110 active:scale-95 cursor-pointer ${cfg.badge}`}
-            >
-              {cfg.label}
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-slate-600 font-bold bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">#{formatOrderId(order.id)}</span>
-            {profitMargin > 30 && <span className="text-[10px] text-emerald-500 font-black">★</span>}
-          </div>
+      {/* HEADER COMPACTO */}
+      <div className={`flex items-center justify-between mb-4`}>
+        <div className="flex items-center gap-3">
+           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cfg.dot, boxShadow: `0 0 6px ${cfg.dot}60` }} />
+           <button
+             onClick={handleStatusClick}
+             className="bg-[#121b33] border border-sky-500/10 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] text-sky-200 transition-all hover:bg-sky-500/10 active:scale-95"
+           >
+             {cfg.badge}
+           </button>
+           {!isCollapsed && (
+             <div className="bg-[#10192e] px-2 py-1 rounded-lg border border-white/5 hidden sm:block">
+                <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest leading-none">#{formatOrderId(order.id)}</span>
+             </div>
+           )}
         </div>
+        <span className="text-emerald-500 text-xs">★</span>
+      </div>
 
-        <div className="space-y-1 mb-4">
-           <h4 className="text-[15px] font-black text-white tracking-tight leading-tight truncate group-hover/card:text-sky-400 transition-colors">
-            {order.customerName}
-          </h4>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+      {/* CUSTOMER NAME */}
+      <div className="space-y-2 mb-4">
+        <h3 className={`font-black text-white tracking-tight leading-none group-hover/card:text-sky-400 transition-colors uppercase truncate ${isCollapsed ? 'text-base' : 'text-lg'}`}>
+          {order.customerName}
+        </h3>
+        
+        {!isCollapsed && (
+          <div className="flex flex-wrap gap-1.5">
             {order.items.map((it, i) => {
               const p = products.find(prod => prod.id === it.productId);
               return (
-                <span key={i} className="text-[8px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded border border-white/5 whitespace-nowrap">
-                  {it.quantity}x {p?.name || 'Item'}
+                <span key={i} className="text-[8px] font-bold text-slate-500 uppercase tracking-widest bg-[#161f35] border border-white/5 px-2 py-1 rounded-lg">
+                  {it.quantity}X {p?.name || 'Item'}
                 </span>
               );
             })}
           </div>
-        </div>
+        )}
+      </div>
 
-        <div className="flex items-end justify-between pt-2 border-t border-white/5">
-          <div>
-            <p className="text-[8px] text-slate-600 font-black uppercase tracking-[0.2em] mb-1">Investimento Total</p>
-            <p className={`text-xl font-black tracking-tighter leading-none ${cfg.accent}`}>
-              <span className="text-sm opacity-50 mr-1 italic">R$</span>
-              {order.total.toFixed(2).replace('.', ',')}
-            </p>
+      {!isCollapsed && <div className="h-[1px] bg-white/5 w-full mb-4" />}
+
+      {/* FOOTER: PREÇO E EXPANDIR */}
+      <div className="flex items-end justify-between">
+        <div className="space-y-0.5">
+          <p className="text-[7px] font-black text-slate-700 uppercase tracking-[0.2em]">Investimento</p>
+          <div className="flex items-baseline gap-0.5">
+             <span className="text-[10px] font-black text-sky-600 italic uppercase">r$</span>
+             <span className={`${isCollapsed ? 'text-xl' : 'text-2xl'} font-black text-sky-200 tracking-tighter leading-none transition-all`}>
+               {order.total.toFixed(0)}
+               <span className="text-sm opacity-50">,{(order.total % 1).toFixed(2).split('.')[1] || '00'}</span>
+             </span>
           </div>
-          <button
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); setIsCollapsed(c => !c); }}
-            className={`w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 text-slate-500 hover:text-white transition-all ${!isCollapsed ? 'rotate-180 bg-sky-500/10 border-sky-500/20 text-sky-400' : ''}`}
-          >
-            {ICONS.ChevronDown}
-          </button>
         </div>
 
-        <AnimatePresence>
-          {!isCollapsed && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden mt-4 pt-4 border-t border-white/5 space-y-4"
-            >
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-[#030712]/40 border border-white/5 rounded-2xl p-3 flex flex-col gap-1">
-                   <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Saldo Devedor</span>
-                   <span className={`text-xs font-black ${hasPendingBalance ? 'text-rose-500' : 'text-emerald-500'}`}>
-                    R$ {order.remainingAmount.toFixed(2).replace('.', ',')}
-                   </span>
-                </div>
-                <div className="bg-[#030712]/40 border border-white/5 rounded-2xl p-3 flex flex-col gap-1">
-                   <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Rentabilidade</span>
-                   <span className="text-xs font-black text-sky-400">
-                    {profitMargin.toFixed(0)}%
-                   </span>
-                </div>
-              </div>
+        <button 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`group/expand flex items-center justify-center rounded-xl bg-[#161f35] border border-white/5 text-slate-500 hover:text-white transition-all shadow-lg ${isCollapsed ? 'w-8 h-8' : 'w-10 h-10 rotate-180 bg-sky-500/10 text-sky-400 border-sky-500/20'}`}
+        >
+          <div className="transition-transform group-hover/expand:scale-110">{ICONS.ChevronDown}</div>
+        </button>
+      </div>
 
-              <div className="flex gap-2">
-                <button
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => { e.stopPropagation(); onPay(order); }}
-                  className={`flex-1 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${hasPendingBalance ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-emerald-500 border border-white/5'}`}
-                >
-                  {hasPendingBalance ? 'Receber' : '✓ Pago'}
-                </button>
-                <button
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => { e.stopPropagation(); onPrint(order); }}
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 border border-white/5 text-slate-400 hover:text-white transition-all"
-                >
-                  {ICONS.Print}
-                </button>
-              </div>
+      {/* ÁREA EXPANDIDA (DRAWER INDUSTRIAL) */}
+      <AnimatePresence>
+        {!isCollapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden mt-6 flex flex-col gap-4 border-t border-white/5 pt-6"
+          >
+            {/* GRID FINANCEIRO */}
+            <div className="grid grid-cols-2 gap-2">
+               <div className="bg-[#050a16] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 ring-1 ring-inset ring-white/[0.02]">
+                  <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em]">Pendente</span>
+                  <span className={`text-[13px] font-black ${hasPendingBalance ? 'text-rose-500' : 'text-emerald-500'}`}>R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+               </div>
+               <div className="bg-[#050a16] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 ring-1 ring-inset ring-white/[0.02]">
+                  <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em]">Margem</span>
+                  <span className="text-[13px] font-black text-sky-400">{profitMargin.toFixed(0)}%</span>
+               </div>
+            </div>
 
-              <div className="flex items-center justify-between gap-1 pt-1 opacity-60 hover:opacity-100 transition-opacity">
-                 <div className="flex gap-1">
-                  <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onEdit(order); }} className="p-2 text-slate-500 hover:text-sky-400 transition-colors">{ICONS.Edit}</button>
+            {/* BOTÕES DE AÇÃO PRIMÁRIA */}
+            <div className="flex gap-2">
+               <button 
+                 onClick={() => onPay(order)} 
+                 className={`flex-[2] py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${hasPendingBalance ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95' : 'bg-[#161f35] text-emerald-500 border border-emerald-500/10'}`}
+               >
+                 {hasPendingBalance ? 'RECEBER VALOR' : 'PAGAMENTO OK'}
+               </button>
+               <button 
+                 onClick={() => onPrint(order)} 
+                 className="flex-1 flex items-center justify-center rounded-2xl bg-[#161f35] border border-white/5 text-slate-400 hover:text-white hover:bg-sky-500/10 transition-all active:scale-95"
+               >
+                 {ICONS.Print}
+               </button>
+            </div>
+
+            {/* BARRA DE FERRAMENTAS (FOOTER) */}
+            <div className="flex items-center justify-between bg-[#080d1a] border border-white/5 p-2 rounded-2xl">
+               <div className="flex gap-1">
+                  <button 
+                    onClick={() => onEdit(order)} 
+                    className="p-3 bg-white/5 rounded-xl border border-white/5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 transition-all"
+                  >
+                    {ICONS.Edit}
+                  </button>
                   {whatsappNumber && (
                     <button 
-                      onMouseDown={(e) => e.stopPropagation()} 
-                      onClick={(e) => { e.stopPropagation(); contactCustomer(order, customer); }} 
-                      className="p-2 text-slate-500 hover:text-emerald-400 transition-colors"
+                      onClick={() => contactCustomer(order, customer)} 
+                      className="p-3 bg-white/5 rounded-xl border border-white/5 text-emerald-600 hover:bg-emerald-500/10 transition-all"
                     >
                       {ICONS.Whatsapp}
                     </button>
                   )}
-                 </div>
-                 <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} className="p-2 text-slate-500 hover:text-rose-500 transition-colors">{ICONS.Trash}</button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+               </div>
+               <button 
+                 onClick={() => onDelete(order.id)} 
+                 className="p-3 bg-rose-500/5 rounded-xl border border-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all"
+               >
+                 {ICONS.Trash}
+               </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
@@ -662,21 +652,20 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-2xl border border-slate-800/50 w-full sm:w-auto overflow-x-auto no-scrollbar tabs-scroll">
             {[
-              { id: 'today',     label: 'Hoje' },
-              { id: 'last7',     label: '7D' },
-              { id: 'last30',    label: '30D' },
+              { id: 'today', label: 'Hoje' },
+              { id: 'last7', label: '7D' },
+              { id: 'last30', label: '30D' },
               { id: 'thisMonth', label: 'Mês' },
-              { id: 'all',       label: 'Tudo' },
-              { id: 'custom',    label: '...' },
+              { id: 'all', label: 'Tudo' },
+              { id: 'custom', label: '...' },
             ].map((p) => (
               <button
                 key={p.id}
                 onClick={() => setPeriod(p.id)}
-                className={`shrink-0 flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  period === p.id
-                    ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
-                    : 'text-slate-500 hover:text-white hover:bg-slate-800'
-                }`}
+                className={`shrink-0 flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${period === p.id
+                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
+                  : 'text-slate-500 hover:text-white hover:bg-slate-800'
+                  }`}
               >
                 {p.label}
               </button>
@@ -705,7 +694,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
               {ICONS.Eye}
               <span>Vendas</span>
             </button>
-            <button 
+            <button
               onClick={() => {
                 const productionOrders = orders.filter(o => o.status === OrderStatus.PRODUCTION);
                 const items = productionOrders.flatMap(o => o.items);
@@ -713,15 +702,15 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                   acc[it.productId] = (acc[it.productId] || 0) + it.quantity;
                   return acc;
                 }, {} as Record<string, number>);
-                
+
                 let text = "RELATÓRIO DE PRODUÇÃO ATIVA\n==========================\n\n";
                 Object.entries(summary).forEach(([pid, qty]) => {
                   const p = products.find(prod => prod.id === pid);
                   text += `- ${p?.name || 'Item'}: ${qty} unidades\n`;
                 });
-                
+
                 if (productionOrders.length === 0) text += "Nenhum pedido em produção no momento.";
-                
+
                 const blob = new Blob([text], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -740,12 +729,12 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
 
       {/* KPI Grid: 2 cols mobile → 3 tablet → 6 desktop */}
       <div className="kpi-grid pb-4 px-4 sm:px-6 md:px-8">
-        <KpiCard label="Vendas"     value={`R$ ${(totalSales   || 0).toFixed(0)}`} subtext="Faturamento Bruto" icon={ICONS.Up}       iconBgClass="bg-[#14b8a6]" glowColor="#14b8a6" valueColorClass="text-[#14b8a6]" />
-        <KpiCard label="Custo"      value={`R$ ${(totalCost    || 0).toFixed(0)}`} subtext="Gasto Materiais"  icon={ICONS.Products} iconBgClass="bg-[#ef4444]" glowColor="#ef4444" valueColorClass="text-[#ef4444]" />
-        <KpiCard label="Lucro"      value={`R$ ${(totalProfit  || 0).toFixed(0)}`} subtext="Margem Líquida"   icon={ICONS.Success}  iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
-        <KpiCard label="Ativos"     value={activeOrdersCount.toString()}            subtext="Pedidos em Aberto" icon={ICONS.Orders}   iconBgClass="bg-[#f59e0b]" glowColor="#f59e0b" valueColorClass="text-[#f59e0b]" />
-        <KpiCard label="Clientes"   value={uniqueBuyersCount.toString()}            subtext="Base Ativa"       icon={ICONS.Customers}iconBgClass="bg-[#3b82f6]" glowColor="#3b82f6" valueColorClass="text-[#3b82f6]" />
-        <KpiCard label="Finalizados"value={finishedOrdersCount.toString()}          subtext="Entregues"        icon={ICONS.Success}  iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
+        <KpiCard label="Vendas" value={`R$ ${(totalSales || 0).toFixed(0)}`} subtext="Faturamento Bruto" icon={ICONS.Up} iconBgClass="bg-[#14b8a6]" glowColor="#14b8a6" valueColorClass="text-[#14b8a6]" />
+        <KpiCard label="Custo" value={`R$ ${(totalCost || 0).toFixed(0)}`} subtext="Gasto Materiais" icon={ICONS.Products} iconBgClass="bg-[#ef4444]" glowColor="#ef4444" valueColorClass="text-[#ef4444]" />
+        <KpiCard label="Lucro" value={`R$ ${(totalProfit || 0).toFixed(0)}`} subtext="Margem Líquida" icon={ICONS.Success} iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
+        <KpiCard label="Ativos" value={activeOrdersCount.toString()} subtext="Pedidos em Aberto" icon={ICONS.Orders} iconBgClass="bg-[#f59e0b]" glowColor="#f59e0b" valueColorClass="text-[#f59e0b]" />
+        <KpiCard label="Clientes" value={uniqueBuyersCount.toString()} subtext="Base Ativa" icon={ICONS.Customers} iconBgClass="bg-[#3b82f6]" glowColor="#3b82f6" valueColorClass="text-[#3b82f6]" />
+        <KpiCard label="Finalizados" value={finishedOrdersCount.toString()} subtext="Entregues" icon={ICONS.Success} iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
       </div>
 
       <div className="flex flex-col md:flex-row overflow-x-auto lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 items-start gap-6 -mx-4 px-4 md:mx-0 md:px-0 pb-10 no-scrollbar">

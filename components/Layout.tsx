@@ -1,5 +1,5 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ICONS } from '../constants';
 import { StoreSettings } from '../types';
 
@@ -19,10 +19,10 @@ export const ALL_MENU_ITEMS = [
   { id: 'products', label: 'Produtos', icon: ICONS.Products },
   { id: 'orders', label: 'Pedidos', icon: ICONS.Orders },
   { id: 'sales', label: 'Vendas', icon: ICONS.Sales },
-  { id: 'reports', label: 'Relatórios', icon: ICONS.Reports },
   { id: 'quick-messages', label: 'Mensagem Rápida', icon: ICONS.Messages },
+  { id: 'reports', label: 'Relatórios', icon: ICONS.Reports },
   { id: 'investments', label: 'Investimento', icon: ICONS.Sales },
-  { id: 'settings', label: 'Configurações', icon: ICONS.Settings },
+  { id: 'settings', label: 'Ajustes', icon: ICONS.Settings },
 ];
 
 export const DefaultLogo: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
@@ -36,6 +36,7 @@ const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Auto-detect device and adjust layout
   useEffect(() => {
@@ -105,8 +106,14 @@ const Layout: React.FC<LayoutProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end">
+            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-sky-500 animate-pulse' : 'bg-amber-500'}`} />
+            <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500">{isOnline ? 'Hybrid Cloud' : 'Edge Mode'}</span>
+          </div>
+          <button className="p-2.5 bg-sky-500/10 text-sky-500 rounded-xl border border-sky-500/20 active:scale-90 transition-all font-black text-[9px] px-3">
+             {ICONS.Dashboard} v2.9
+          </button>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="btn-touch p-2 text-slate-400 hover:text-white transition-colors rounded-xl"
@@ -289,6 +296,71 @@ const Layout: React.FC<LayoutProps> = ({
         `}</style>
         <div className="px-4 sm:px-6 md:px-8 lg:px-10 max-w-full">
           {children}
+        </div>
+
+        {/* Novo v2.9: Assistente Virtual Interativo */}
+        <div className="fixed bottom-20 right-6 md:bottom-10 md:right-10 z-[200]">
+          <AnimatePresence>
+            {isChatOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                className="absolute bottom-full right-0 mb-6 w-80 bg-[#0a111f]/95 border border-sky-500/30 rounded-[32px] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+              >
+                <div className="bg-sky-500 p-5 flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white scale-110">
+                         {ICONS.Dashboard}
+                      </div>
+                      <div>
+                         <p className="text-xs font-black text-white uppercase tracking-widest leading-none">Atlas AI</p>
+                         <p className="text-[8px] text-sky-100 font-bold uppercase tracking-[0.2em] mt-1">Sistemas v2.9</p>
+                      </div>
+                   </div>
+                   <button onClick={() => setIsChatOpen(false)} className="text-white/60 hover:text-white transition-colors">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                   </button>
+                </div>
+                <div className="p-6 h-64 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-white/5">
+                   <div className="bg-white/5 rounded-2xl p-4 border border-white/5 text-[11px] text-slate-300 font-medium leading-relaxed">
+                      Olá! Ativado modo **Industrial v2.9**. Como posso ajudar no gerenciamento da gráfica hoje?
+                   </div>
+                   <div className="bg-sky-500/10 rounded-2xl p-4 border border-sky-500/20 text-[10px] text-sky-400 font-bold uppercase tracking-widest text-center cursor-pointer hover:bg-sky-500 hover:text-white transition-all">
+                      Relatório de Produção
+                   </div>
+                   <div className="bg-purple-500/10 rounded-2xl p-4 border border-purple-500/20 text-[10px] text-purple-400 font-bold uppercase tracking-widest text-center cursor-pointer hover:bg-purple-500 hover:text-white transition-all">
+                      Previsão de Insumos
+                   </div>
+                </div>
+                <div className="p-4 border-t border-white/5 bg-black/20">
+                   <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const input = (e.target as any).elements[0];
+                      if (input.value.toLowerCase().includes('estoque')) {
+                         alert('Atlas AI: Identificando itens abaixo do mínimo... Redirecionando para Insumos.');
+                      } else {
+                         alert('Atlas AI: Entendido. Estou processando sua solicitação sobre "' + input.value + '".');
+                      }
+                      input.value = '';
+                   }}>
+                      <input 
+                         type="text" 
+                         placeholder="Pergunte ao Atlas..." 
+                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[11px] text-white outline-none focus:border-sky-500 transition-all font-bold placeholder:text-slate-600"
+                      />
+                   </form>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <button 
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className="w-16 h-16 bg-gradient-to-br from-sky-500 to-sky-600 text-white rounded-[24px] flex items-center justify-center shadow-[0_20px_40px_-10px_rgba(14,165,233,0.4)] hover:scale-110 active:scale-95 transition-all relative group"
+          >
+             <div className="scale-150 absolute animate-ping bg-sky-500/40 w-full h-full rounded-[24px] group-hover:opacity-0 transition-opacity"></div>
+             <div className="scale-125 relative z-10">{ICONS.Messages}</div>
+          </button>
         </div>
       </main>
     </div>

@@ -152,7 +152,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
     description: '',
     category: categories[0]?.title || 'Outro',
     imageUrl: '',
-    priceTiers: initialTiers
+    priceTiers: initialTiers,
+    defaultPaper: 'Couché 150g',
+    defaultGrammage: '150g',
+    defaultFinishing: 'Nenhum'
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -174,7 +177,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
         priceTiers: initialTiers,
         pdfBrandName: '',
         pdfSubtitle: '',
-        pdfBadge: ''
+        pdfBadge: '',
+        defaultPaper: 'Couché 150g',
+        defaultGrammage: '150g',
+        defaultFinishing: 'Nenhum'
       });
     }
   }, [product, isOpen, categories]);
@@ -310,6 +316,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
                   </button>
                 </div>
                 <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} className="w-full bg-[#030712] border border-slate-800 rounded-2xl px-5 py-4 text-xs text-slate-300 outline-none focus:border-sky-500/50 transition-all resize-none leading-relaxed" placeholder="Descreva o papel, gramatura e acabamento..." />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Papel Padrão</label>
+                    <input type="text" value={formData.defaultPaper} onChange={e => setFormData({ ...formData, defaultPaper: e.target.value })} className="w-full bg-[#030712] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-sky-500/50 transition-all" placeholder="Couché, Offset..." />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Gramatura</label>
+                    <input type="text" value={formData.defaultGrammage} onChange={e => setFormData({ ...formData, defaultGrammage: e.target.value })} className="w-full bg-[#030712] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-sky-500/50 transition-all" placeholder="150g, 250g..." />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Acabamento</label>
+                    <input type="text" value={formData.defaultFinishing} onChange={e => setFormData({ ...formData, defaultFinishing: e.target.value })} className="w-full bg-[#030712] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-sky-500/50 transition-all" placeholder="Linflex, UV..." />
+                 </div>
               </div>
 
               <div className="space-y-4 pt-4 border-t border-white/5">
@@ -532,7 +553,7 @@ const Catalog: React.FC<CatalogProps> = ({
 
           <button
             onClick={handleOpenAddProduct}
-            className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-br from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-xl shadow-sky-500/20 transition-all active:scale-95 group"
+            className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-500 hover:bg-sky-400 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-xl transition-all active:scale-95 group"
           >
             <span className="group-hover:rotate-90 transition-transform duration-300">{ICONS.Plus}</span>
             ADICIONAR PRODUTO
@@ -591,7 +612,9 @@ const Catalog: React.FC<CatalogProps> = ({
                           </div>
                           <div className="min-w-0">
                             <h3 className="text-sm font-black text-white uppercase tracking-tight truncate group-hover:text-sky-400 transition-colors">{product.name}</h3>
-                            <span className="inline-block mt-1 text-[8px] text-sky-500 font-black uppercase tracking-[0.2em] bg-sky-500/5 px-2 py-0.5 rounded border border-sky-500/10">{product.category}</span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[8px] text-sky-500 font-black uppercase tracking-[0.2em] bg-sky-500/5 px-2 py-0.5 rounded border border-sky-500/10">{product.category}</span>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -671,7 +694,7 @@ const Catalog: React.FC<CatalogProps> = ({
                   <div className="absolute inset-x-4 bottom-4 flex justify-between gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                     <button 
                       onClick={() => setPreviewProduct(product)}
-                      className="flex-1 py-2 bg-white/95 text-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-2xl flex items-center justify-center gap-2 hover:bg-sky-500 hover:text-white transition-all"
+                      className="flex-1 py-2 bg-white/95 text-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-2xl flex items-center justify-center gap-2 hover:bg-sky-500 hover:text-white transition-all font-bold"
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                       PDF

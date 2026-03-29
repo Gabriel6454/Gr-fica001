@@ -11,10 +11,13 @@ import Reports from './components/Reports';
 import Settings from './components/Settings';
 import QuickMessages from './components/QuickMessages';
 import Investments from './components/Investments';
+import CashFlow from './components/CashFlow';
+import Ecommerce from './components/Ecommerce';
 import PublicTracking from './components/PublicTracking';
 import { Auth } from './components/Auth';
+import Stock from './components/Stock';
 import { INITIAL_PRODUCTS, INITIAL_ORDERS, INITIAL_CATEGORIES, INITIAL_CUSTOMERS, INITIAL_SETTINGS } from './data';
-import { Product, Order, OrderStatus, Category, Customer, StoreSettings, PaymentTransaction } from './types';
+import { Product, Order, OrderStatus, Category, Customer, StoreSettings, PaymentTransaction, StockItem } from './types';
 import { ICONS } from './constants';
 import { dbService } from './services/dbService';
 import { supabase } from './services/supabase';
@@ -48,6 +51,11 @@ const App: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stock, setStock] = useState<StockItem[]>([
+    { id: '1', name: 'Papel Couché 150g', quantity: 500, minQuantity: 100, unit: 'folhas', lastRestock: new Date().toISOString() },
+    { id: '2', name: 'Papel Offset 90g', quantity: 1000, minQuantity: 200, unit: 'folhas', lastRestock: new Date().toISOString() },
+    { id: '3', name: 'Tinta Black HP', quantity: 5, minQuantity: 2, unit: 'L', lastRestock: new Date().toISOString() },
+  ]);
   const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
 
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
@@ -200,19 +208,47 @@ const App: React.FC = () => {
 
   // --- Handlers de Pedidos ---
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    let usedStock = false;
     const updatedOrders = orders.map(o => {
       if (o.id === orderId) {
+        let shouldDeduct = false;
+        if (newStatus === OrderStatus.PRODUCTION && !o.stockDeducted) {
+           shouldDeduct = true;
+           usedStock = true;
+        }
+
         const history = o.statusHistory || [];
         return { 
           ...o, 
           status: newStatus,
-          statusHistory: [...history, { date: new Date().toISOString(), status: newStatus }]
+          statusHistory: [...history, { date: new Date().toISOString(), status: newStatus }],
+          stockDeducted: o.stockDeducted || shouldDeduct
         };
       }
       return o;
     });
-    setOrders(updatedOrders);
+
     const order = updatedOrders.find(o => o.id === orderId);
+    
+    if (usedStock && order && order.items) {
+       setStock(prevStock => {
+          let updatedStock = [...prevStock];
+          order.items?.forEach(orderItem => {
+            const stockIndex = updatedStock.findIndex(si => 
+              si.name.toLowerCase().includes(orderItem.paperType?.toLowerCase() || '') && orderItem.paperType
+            );
+            if (stockIndex !== -1) {
+              updatedStock[stockIndex] = {
+                ...updatedStock[stockIndex],
+                quantity: Math.max(0, updatedStock[stockIndex].quantity - orderItem.quantity)
+              };
+            }
+          });
+          return updatedStock;
+       });
+    }
+
+    setOrders(updatedOrders);
     if (order) {
       try {
         await dbService.saveOrder(order);
@@ -335,6 +371,26 @@ const App: React.FC = () => {
     
     try {
       setOrders(prev => [newOrder, ...prev]);
+      
+      // Novo v2.6: Subtração automática de estoque
+      if (data.items) {
+        setStock(prevStock => {
+          let updatedStock = [...prevStock];
+          data.items?.forEach(orderItem => {
+            const stockIndex = updatedStock.findIndex(si => 
+              si.name.toLowerCase().includes(orderItem.paperType?.toLowerCase() || '') && orderItem.paperType
+            );
+            if (stockIndex !== -1) {
+              updatedStock[stockIndex] = {
+                ...updatedStock[stockIndex],
+                quantity: Math.max(0, updatedStock[stockIndex].quantity - orderItem.quantity)
+              };
+            }
+          });
+          return updatedStock;
+        });
+      }
+
       await dbService.saveOrder(newOrder);
     } catch (err: any) {
       console.error('Falha ao criar pedido no Supabase:', err);
