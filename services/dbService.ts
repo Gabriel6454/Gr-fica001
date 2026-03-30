@@ -239,5 +239,22 @@ export const dbService = {
     if (!user_id) return;
     const { error } = await supabase.from('fiis').delete().eq('user_id', user_id);
     if (error) console.error('Error resetting FIIs:', error);
+  },
+
+  // Public Tracking
+  async getPublicOrder(id: string): Promise<Order | null> {
+    // Busca baseada no ID ou no Código de Rastreio (Tracking Code)
+    // Nota: Esta função ignora o RLS se configurado como público no Supabase
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .or(`id.eq.${id},trackingCode.eq.${id}`)
+      .single();
+      
+    if (error) {
+      console.error('Erro ao buscar pedido público:', error);
+      return null;
+    }
+    return data;
   }
 };

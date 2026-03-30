@@ -24,12 +24,11 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
 
 
   const getStatusIndex = (status: string) => {
-    if (status === OrderStatus.COMPLETED) return 3; 
-    if (status === OrderStatus.DELIVERED) return 4;
+    if (status === OrderStatus.DELIVERED || status === OrderStatus.COMPLETED) return 4;
     if (status === OrderStatus.SHIPPING) return 3;
     if (status === OrderStatus.PRODUCTION) return 2;
     if (status === OrderStatus.ART) return 1;
-    return 0;
+    return 0; // criated / orç / aguard. pag
   };
 
   const fetchRealTimeTracking = async () => {

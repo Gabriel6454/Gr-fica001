@@ -34,7 +34,9 @@ const getStatusIndex = (status: string) => {
 export const contactCustomer = (order: Order, customer?: Customer) => {
   const phone = customer?.phone?.replace(/\D/g, '') || '';
   const statusLabel = order.status.toUpperCase();
-  const text = `Olá ${order.customerName}, aqui é da Gráfica. 👋\n\nReferente ao seu pedido *#${formatOrderId(order.id)}*:\nStatus Atual: *${statusLabel}*\nTotal: *R$ ${order.total.toFixed(2).replace('.', ',')}*\n\nGostaria de tratar sobre o andamento do material ou tirar alguma dúvida?`;
+  const trackingLink = `${window.location.origin}?tracking=${order.id}`;
+  
+  const text = `Olá ${order.customerName}, aqui é da Gráfica. 👋\n\nReferente ao seu pedido *#${formatOrderId(order.id)}*:\nStatus Atual: *${statusLabel}*\nTotal: *R$ ${order.total.toFixed(2).replace('.', ',')}*\n\nAcompanhe o rastreamento em tempo real aqui: ${trackingLink}\n\nGostaria de tratar sobre o andamento do material ou tirar alguma dúvida?`;
 
   const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
@@ -1102,11 +1104,22 @@ const Orders: React.FC<OrdersProps> = ({
 
                     <td className="py-6 px-10 text-right">
                       <div className="flex justify-end gap-2.5">
-                        <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center">{ICONS.Whatsapp}</button>
-                        <button onClick={() => handlePrintOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center">{ICONS.Print}</button>
-                        <button onClick={() => handleTrackOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center">{ICONS.Shipping}</button>
-                        <button onClick={() => handleEditOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center">{ICONS.Edit}</button>
-                        <button onClick={() => handleDelete(order.id)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 transition-all flex items-center justify-center">{ICONS.Trash}</button>
+                        <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center" title="Enviar WhatsApp com Link">{ICONS.Whatsapp}</button>
+                        <button 
+                          onClick={() => {
+                            const link = `${window.location.origin}?tracking=${order.id}`;
+                            navigator.clipboard.writeText(link);
+                            alert('Link de rastreamento copiado!');
+                          }}
+                          className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-sky-500 hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center"
+                          title="Copiar Link de Rastreio"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                        </button>
+                        <button onClick={() => handlePrintOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center" title="Imprimir">{ICONS.Print}</button>
+                        <button onClick={() => handleTrackOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center" title="Rastrear">{ICONS.Shipping}</button>
+                        <button onClick={() => handleEditOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center" title="Editar">{ICONS.Edit}</button>
+                        <button onClick={() => handleDelete(order.id)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 transition-all flex items-center justify-center" title="Excluir">{ICONS.Trash}</button>
                       </div>
                     </td>
                   </tr>
@@ -1194,15 +1207,25 @@ const Orders: React.FC<OrdersProps> = ({
                     $ Pagar
                   </button>
                 )}
-                <button onClick={() => handlePrintOrder(order)} className="flex-1 min-w-[30%] h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest">
-                  {ICONS.Print}
-                </button>
-                <button onClick={() => handleTrackOrder(order)} className="flex-1 min-w-[30%] h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest">
-                  {ICONS.Shipping}
-                </button>
-                <button onClick={() => handleEditOrder(order)} className="flex-1 min-w-[30%] h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest">
-                  {ICONS.Edit}
-                </button>
+                <div className="flex gap-2 w-full">
+                    <button onClick={() => handleEditOrder(order)} className="flex-1 py-4 bg-white/5 border border-white/5 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center gap-2">
+                       {ICONS.Edit} Editar
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const link = `${window.location.origin}?tracking=${order.id}`;
+                        navigator.clipboard.writeText(link);
+                        alert('Link de rastreamento copiado!');
+                      }}
+                      className="flex-1 py-4 bg-sky-500/10 border border-sky-500/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-sky-400 hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center gap-2"
+                    >
+                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                       Link
+                    </button>
+                    <button onClick={() => handlePrintOrder(order)} className="p-4 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all">
+                       {ICONS.Print}
+                    </button>
+                </div>
                 <button onClick={() => handleDelete(order.id)} className="w-12 h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-600 hover:text-rose-500 transition-all flex items-center justify-center">
                   {ICONS.Trash}
                 </button>

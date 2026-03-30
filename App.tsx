@@ -171,6 +171,19 @@ const App: React.FC = () => {
     const trackingId = urlParams.get('tracking');
     if (trackingId) {
       setTrackingOrderId(trackingId);
+      // Fetch public order data if not authenticated yet
+      const fetchPublicData = async () => {
+         setIsLoadingAuth(true); // Reutilizamos o loading para a busca pública
+         const order = await dbService.getPublicOrder(trackingId);
+         if (order) {
+            setOrders(prev => {
+              const exists = prev.some(o => o.id === order.id);
+              return exists ? prev : [order];
+            });
+         }
+         setIsLoadingAuth(false);
+      };
+      fetchPublicData();
     }
 
     return () => {

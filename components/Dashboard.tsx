@@ -378,6 +378,7 @@ const OrderCard: React.FC<{
                   <button 
                     onClick={() => onEdit(order)} 
                     className="p-3 bg-white/5 rounded-xl border border-white/5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 transition-all"
+                    title="Editar Pedido"
                   >
                     {ICONS.Edit}
                   </button>
@@ -385,14 +386,27 @@ const OrderCard: React.FC<{
                     <button 
                       onClick={() => contactCustomer(order, customer)} 
                       className="p-3 bg-white/5 rounded-xl border border-white/5 text-emerald-600 hover:bg-emerald-500/10 transition-all"
+                      title="Enviar WhatsApp"
                     >
                       {ICONS.Whatsapp}
                     </button>
                   )}
+                  <button 
+                    onClick={() => {
+                      const link = `${window.location.origin}?tracking=${order.id}`;
+                      navigator.clipboard.writeText(link);
+                      alert('Link de rastreamento copiado!');
+                    }}
+                    className="p-3 bg-white/5 rounded-xl border border-white/5 text-sky-500 hover:bg-sky-500/10 transition-all"
+                    title="Copiar Link de Rastreio"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  </button>
                </div>
                <button 
                  onClick={() => onDelete(order.id)} 
                  className="p-3 bg-rose-500/5 rounded-xl border border-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all"
+                 title="Excluir Pedido"
                >
                  {ICONS.Trash}
                </button>
@@ -427,7 +441,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
-  const [period, setPeriod] = useState('today');
+  const [period, setPeriod] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -767,35 +781,32 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
 
             <div className="flex-1 overflow-y-auto px-1 space-y-6 no-scrollbar pb-10">
               <AnimatePresence mode="popLayout">
-                {col.id !== 'finished' ? (
-                  filteredOrders.filter(o => col.statuses.includes(o.status)).map(order => (
-                    <OrderCard
-                      key={order.id}
-                      order={order}
-                      onEdit={handleOpenEdit}
-                      onPrint={handleOpenPrint}
-                      onPay={handleOpenPay}
-                      onTrack={handleOpenTrack}
-                      onDelete={onDeleteOrder}
-                      onFinalize={handleFinalizeOrder}
-                      onStatusChange={onUpdateOrderStatus}
-                      products={products}
-                      customers={customers}
-                      isCollapsed={collapsedCols[col.id] ?? true}
-                    />
-                  ))
-                ) : (
+                {filteredOrders.filter(o => col.statuses.includes(o.status)).map(order => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    onEdit={handleOpenEdit}
+                    onPrint={handleOpenPrint}
+                    onPay={handleOpenPay}
+                    onTrack={handleOpenTrack}
+                    onDelete={onDeleteOrder}
+                    onFinalize={handleFinalizeOrder}
+                    onStatusChange={onUpdateOrderStatus}
+                    products={products}
+                    customers={customers}
+                    isCollapsed={collapsedCols[col.id] ?? true}
+                  />
+                ))}
+
+                {/* Drop Zone Visual quando a coluna está vazia */}
+                {filteredOrders.filter(o => col.statuses.includes(o.status)).length === 0 && (
                   <motion.div
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="h-full min-h-[400px] flex flex-col items-center justify-center border-4 border-dashed border-emerald-500/10 rounded-[40px] opacity-30 hover:opacity-100 hover:bg-emerald-500/5 hover:border-emerald-500/30 transition-all duration-500 p-8 text-center group"
+                    animate={{ opacity: 0.4 }}
+                    className="h-full min-h-[200px] flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[40px] p-8 text-center"
                   >
-                    <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 mb-6 animate-bounce">
-                      <div className="scale-[2]">{ICONS.Success}</div>
-                    </div>
-                    <h3 className="text-xs font-black text-emerald-500 uppercase tracking-[0.2em] mb-2">Finalizar Fluxo</h3>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                      Arraste aqui para concluir o pedido e arquivá-lo do painel ativo
+                      Livre
                     </p>
                   </motion.div>
                 )}
