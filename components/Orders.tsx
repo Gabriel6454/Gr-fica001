@@ -561,8 +561,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       alert('Preencha os campos obrigatórios (Cliente, Itens e Prazo).');
       return;
     }
+    const localNow = new Date();
+    const localDate = `${localNow.getFullYear()}-${String(localNow.getMonth() + 1).padStart(2, '0')}-${String(localNow.getDate()).padStart(2, '0')}`;
+
     onSave({
-      date: order?.date || new Date().toISOString().split('T')[0], // Garante a data de criação no formato ISO YYYY-MM-DD
+      date: order?.date || localDate, 
       customerName: selectedCustomer?.name || 'Cliente Avulso',
       customerId: formData.customerId,
       deliveryDate: new Date(formData.deliveryDate + 'T12:00:00').toLocaleDateString('pt-BR'),

@@ -506,8 +506,12 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
       const orderDateStr = order.date.includes('T') ? order.date.split('T')[0] : order.date;
       
       if (startDate === endDate && startDate) {
-         // Filtro de um único dia (Hoje)
-         return orderDateStr === startDate;
+         // Filtro de um único dia (Hoje) com resiliência para drift de fuso horário UTC (manter compatibilidade)
+         const tomorrowUtc = new Date();
+         tomorrowUtc.setDate(tomorrowUtc.getDate() + 1);
+         const tomorrowUtcStr = tomorrowUtc.toISOString().split('T')[0];
+         
+         return orderDateStr === startDate || orderDateStr === tomorrowUtcStr;
       }
 
       // Filtro de intervalo
