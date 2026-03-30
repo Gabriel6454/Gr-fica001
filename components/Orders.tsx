@@ -562,6 +562,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       return;
     }
     onSave({
+      date: order?.date || new Date().toISOString().split('T')[0], // Garante a data de criação no formato ISO YYYY-MM-DD
       customerName: selectedCustomer?.name || 'Cliente Avulso',
       customerId: formData.customerId,
       deliveryDate: new Date(formData.deliveryDate + 'T12:00:00').toLocaleDateString('pt-BR'),
