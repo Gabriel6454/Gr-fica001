@@ -496,10 +496,27 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Se não há filtro de data, mostra tudo
       if (!startDate && !endDate) return true;
-      const orderDate = new Date(order.date + 'T12:00:00');
+      
+      // Sanitização da data do pedido
+      if (!order.date) return false;
+
+      // Se o filtro for para "HOJE", usamos comparação direta de strings para evitar problemas de fuso horário
+      const orderDateStr = order.date.includes('T') ? order.date.split('T')[0] : order.date;
+      
+      if (startDate === endDate && startDate) {
+         // Filtro de um único dia (Hoje)
+         return orderDateStr === startDate;
+      }
+
+      // Filtro de intervalo
+      const orderDate = new Date(orderDateStr + 'T12:00:00');
+      if (isNaN(orderDate.getTime())) return false;
+
       if (startDate && orderDate < new Date(startDate + 'T00:00:00')) return false;
       if (endDate && orderDate > new Date(endDate + 'T23:59:59')) return false;
+      
       return true;
     });
   }, [orders, startDate, endDate]);
