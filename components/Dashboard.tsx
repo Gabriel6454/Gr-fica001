@@ -491,7 +491,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
     { id: 'art', label: 'ARTE & APROVAÇÃO', textColor: 'text-orange-500', icon: ICONS.Palette, statuses: [OrderStatus.ART, OrderStatus.WAITING_APPROVAL] },
     { id: 'production', label: 'PRODUÇÃO', textColor: 'text-sky-500', icon: ICONS.Settings, statuses: [OrderStatus.PRODUCTION, OrderStatus.READY_FOR_PICKUP] },
     { id: 'logistics', label: 'LOGÍSTICA', textColor: 'text-purple-600', icon: ICONS.Shipping, statuses: [OrderStatus.SHIPPING, OrderStatus.DELIVERED] },
-    { id: 'finished', label: 'CONCLUÍDOS', textColor: 'text-emerald-500', icon: ICONS.Success, statuses: [OrderStatus.COMPLETED] },
+    { id: 'finished', label: 'CONCLUÍDO', textColor: 'text-emerald-500', icon: ICONS.Success, statuses: [OrderStatus.COMPLETED] },
   ];
 
   const filteredOrders = useMemo(() => {
@@ -802,25 +802,34 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
 
             <div className="flex-1 overflow-y-auto px-1 space-y-6 no-scrollbar pb-10">
               <AnimatePresence mode="popLayout">
-                {filteredOrders.filter(o => col.statuses.includes(o.status)).map(order => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onEdit={handleOpenEdit}
-                    onPrint={handleOpenPrint}
-                    onPay={handleOpenPay}
-                    onTrack={handleOpenTrack}
-                    onDelete={onDeleteOrder}
-                    onFinalize={handleFinalizeOrder}
-                    onStatusChange={onUpdateOrderStatus}
-                    products={products}
-                    customers={customers}
-                    isCollapsed={collapsedCols[col.id] ?? true}
-                  />
-                ))}
+                {col.id !== 'finished' ? (
+                  filteredOrders.filter(o => col.statuses.includes(o.status)).map(order => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      onEdit={handleOpenEdit}
+                      onPrint={handleOpenPrint}
+                      onPay={handleOpenPay}
+                      onTrack={handleOpenTrack}
+                      onDelete={onDeleteOrder}
+                      onFinalize={handleFinalizeOrder}
+                      onStatusChange={onUpdateOrderStatus}
+                      products={products}
+                      customers={customers}
+                      isCollapsed={collapsedCols[col.id] ?? true}
+                    />
+                  ))
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center p-8 opacity-40 border-2 border-dashed border-emerald-500/20 rounded-[40px]">
+                    <div className="text-emerald-500 mb-2">{ICONS.Success}</div>
+                    <p className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest text-center leading-relaxed">
+                      Solte para<br/>Arquivar
+                    </p>
+                  </div>
+                )}
 
-                {/* Drop Zone Visual quando a coluna está vazia */}
-                {filteredOrders.filter(o => col.statuses.includes(o.status)).length === 0 && (
+                {/* Drop Zone Visual quando a coluna está vazia (exceto concluído que já tem o placeholder) */}
+                {col.id !== 'finished' && filteredOrders.filter(o => col.statuses.includes(o.status)).length === 0 && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 0.4 }}
