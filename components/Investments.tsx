@@ -314,9 +314,19 @@ const ProgressReport: React.FC<{
 
   const allAchiereved = simulation.config.funds.every((fund, i) => {
     const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
-    const actualShares = wallet.find(f => f.ticker === fund.ticker)?.shares || 0;
+    const actualShares = wallet.find(f => f.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase())?.shares || 0;
     return actualShares >= (targetRow?.shares || 0);
   });
+
+  // Calculate current date based on start date
+  const startDate = new Date(simulation.startDate);
+  const targetDate = new Date(startDate.setMonth(startDate.getMonth() + (m - 1)));
+  const dateStr = targetDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+  // Progress relative to current month's income goal
+  const currentIncome = wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0);
+  const targetIncome = results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0);
+  const incomeGoalPct = targetIncome > 0 ? Math.min(100, (currentIncome / targetIncome) * 100) : 0;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -343,7 +353,7 @@ const ProgressReport: React.FC<{
           >
             ←
           </button>
-          <div className="px-8 py-3 bg-gradient-to-br from-sky-500 to-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-sky-500/20 text-sm">
+          <div className="px-8 py-3 bg-gradient-to-br from-slate-800 to-slate-900 text-white font-black rounded-2xl border border-white/10 text-sm shadow-xl">
             {m}º Mês
           </div>
           <button 
@@ -375,37 +385,44 @@ const ProgressReport: React.FC<{
             {simulation.config.funds.map((fund, i) => {
               const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
               const targetShares = targetRow ? targetRow.shares : 0;
-              const actualShares = wallet.find(f => f.ticker === fund.ticker)?.shares || 0;
+              const actualShares = wallet.find(f => f.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase())?.shares || 0;
               const diff = Math.max(0, targetShares - actualShares);
               const cost = diff * fund.sharePrice;
+              const hasTicker = !!fund.ticker;
 
               return (
-                <div key={i} className={`flex items-center justify-between p-5 rounded-2xl border transition-all group ${diff === 0 ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/5 hover:border-sky-500/30'}`}>
+                <div key={i} className={`flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 group ${diff === 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-[#030712]/40 border-white/5 hover:border-sky-500/30'}`}>
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${diff === 0 ? 'bg-emerald-500' : ACCENT_COLORS[i % ACCENT_COLORS.length].bg} text-white text-xs`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black transition-transform group-hover:scale-110 ${diff === 0 ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : ACCENT_COLORS[i % ACCENT_COLORS.length].bg} text-white text-xs`}>
                       {diff === 0 ? '✔' : (fund.ticker?.substring(0, 4) || fund.label.substring(0, 1))}
                     </div>
                     <div>
-                      <p className="text-sm font-black text-white">{fund.ticker || fund.label}</p>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Alvo para Mês {m}: {targetShares} cotas</p>
+                      <p className="text-sm font-black text-white flex items-center gap-2">
+                        {fund.ticker || fund.label}
+                        {!hasTicker && <span className="text-[8px] px-1.5 py-0.5 bg-rose-500/20 text-rose-500 rounded-md">Sem Ticker</span>}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Alvo: {targetShares} cotas</p>
                     </div>
                   </div>
-                  <div className="text-right flex items-center gap-4">
+                  <div className="text-right flex items-center gap-5">
                     <div className="text-right">
                       {diff > 0 ? (
                         <>
-                          <p className="text-emerald-400 font-black text-base">+{diff} cotas</p>
-                          <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">{fmt(cost)} aprox.</p>
+                          <p className={`text-sm font-black ${ACCENT_COLORS[i % ACCENT_COLORS.length].text}`}>+{diff} cotas</p>
+                          <p className="text-slate-500 text-[10px] font-bold tracking-tight">{fmt(cost)}</p>
                         </>
                       ) : (
-                        <span className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Concluído</span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.2em]">ALCANÇADO</span>
+                          <span className="text-[9px] text-slate-600 font-bold uppercase">{actualShares} cotas em posse</span>
+                        </div>
                       )}
                     </div>
-                    {diff > 0 && fund.ticker && (
+                    {diff > 0 && hasTicker && (
                        <button 
                          onClick={() => onConfirmPurchase(fund.ticker!, diff)}
-                         className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-500/10"
-                         title="Confirmar compra destas cotas"
+                         className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all shadow-lg hover:shadow-sky-500/30 border border-sky-500/20"
+                         title="Confirmar compra"
                        >
                          ✔
                        </button>
@@ -424,14 +441,16 @@ const ProgressReport: React.FC<{
             
             {!allAchiereved && (
               <button 
-                onClick={() => {
+                onClick={async () => {
                    if (confirm("Confirmar a compra de TODAS as cotas pendentes para este mês?")) {
-                      simulation.config.funds.forEach((fund, i) => {
+                      for (const [i, fund] of simulation.config.funds.entries()) {
                          const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
-                         const actualShares = wallet.find(f => f.ticker === fund.ticker)?.shares || 0;
+                         const actualShares = wallet.find(f => f.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase())?.shares || 0;
                          const diff = Math.max(0, (targetRow?.shares || 0) - actualShares);
-                         if (diff > 0 && fund.ticker) onConfirmPurchase(fund.ticker, diff);
-                      });
+                         if (diff > 0 && fund.ticker) {
+                            await onConfirmPurchase(fund.ticker, diff);
+                         }
+                      }
                    }
                 }}
                 className="px-6 py-3 bg-emerald-500 text-black font-black uppercase tracking-widest rounded-xl text-[10px] hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20"
@@ -460,29 +479,61 @@ const ProgressReport: React.FC<{
           <div className="space-y-6">
             <div>
                <div className="flex justify-between items-center mb-2">
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Renda Mensal Atual vs Alvo</span>
-                 <span className="text-xs font-black text-emerald-400">
-                    {((wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0) / results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0)) * 100).toFixed(1)}%
+                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta de Renda do Mês</span>
+                 <span className={`text-xs font-black ${incomeGoalPct >= 100 ? 'text-emerald-400' : 'text-sky-400'}`}>
+                    {incomeGoalPct.toFixed(1)}%
                  </span>
                </div>
-               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0) / results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0)) * 100)}%` }} />
+               <div className="w-full h-2.5 bg-black/50 rounded-full overflow-hidden p-0.5 border border-white/5">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-1000 ${incomeGoalPct >= 100 ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]'}`} 
+                    style={{ width: `${incomeGoalPct}%` }} 
+                  />
                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                {[
-                 { label: 'Renda Atual', value: fmt(wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0)), color: 'text-emerald-400' },
-                 { label: 'Renda Alvo Mês', value: fmt(results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0)), color: 'text-white' },
-                 { label: 'Patrimônio Atual', value: fmt(wallet.reduce((s,f) => s + (f.shares * f.currentPrice), 0)), color: 'text-sky-400' },
-                 { label: 'P. Alvo Mês', value: fmt(results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.shares * simulation.config.funds[results.indexOf(r)].sharePrice || 0), 0)), color: 'text-white' },
+                 { label: 'Renda Hoje', value: fmt(currentIncome), color: 'text-emerald-400', icon: '💰' },
+                 { label: 'Expectativa Mês', value: fmt(targetIncome), color: 'text-white', icon: '📈' },
+                 { label: 'Patrimônio FII', value: fmt(wallet.reduce((s,f) => s + (f.shares * f.currentPrice), 0)), color: 'text-sky-400', icon: '🏠' },
+                 { label: 'Próximo Aporte', value: fmt(monthTotalInvested), color: 'text-amber-400', icon: '⚡' },
                ].map(item => (
-                 <div key={item.label} className="p-4 bg-[#030712]/40 rounded-2xl border border-white/5">
-                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">{item.label}</p>
-                   <p className={`text-sm font-black ${item.color}`}>{item.value}</p>
+                 <div key={item.label} className="p-4 bg-[#030712]/60 rounded-2xl border border-white/5 flex flex-col gap-1 relative overflow-hidden group">
+                   <span className="absolute -right-2 -top-2 text-2xl opacity-10 group-hover:scale-125 transition-transform">{item.icon}</span>
+                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{item.label}</p>
+                   <p className={`text-sm font-black ${item.color} truncate`}>{item.value}</p>
                  </div>
                ))}
             </div>
+
+            {/* Next Month Anticipation */}
+            {m < results[0]?.years.length * 12 && (
+              <div className="p-6 bg-gradient-to-br from-slate-900 to-[#0a111f] rounded-[32px] border border-white/5 mt-4">
+                 <h5 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                    Expectativa para o Próximo Mês
+                 </h5>
+                 <div className="flex justify-between items-end">
+                    <div>
+                       <p className="text-[10px] text-slate-400 font-bold">Renda Projetada</p>
+                       <p className="text-lg font-black text-white">
+                          {fmt(results.reduce((s,r) => s + (r.years[Math.floor(m / 12)]?.[m % 12]?.dividend || 0), 0))}
+                       </p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[10px] text-slate-400 font-bold">Investimento</p>
+                       <p className="text-sm font-black text-emerald-400">
+                          {fmt(simulation.config.funds.reduce((s, f, i) => {
+                             const targetPrev = results[i]?.years[yearIdx]?.[monthIdx];
+                             const targetNext = results[i]?.years[Math.floor(m / 12)]?.[m % 12];
+                             return s + (Math.max(0, (targetNext?.shares || 0) - (targetPrev?.shares || 0)) * f.sharePrice);
+                          }, 0))}
+                       </p>
+                    </div>
+                 </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1078,33 +1129,42 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
 
   const handleConfirmPurchase = async (ticker: string, addedShares: number) => {
     try {
-      const existing = fiis.find(f => f.ticker === ticker);
-      let updatedFii: PortfolioFII;
+      const cleanTicker = ticker.trim().toUpperCase();
+      console.log(`[Investments] Confirming purchase: ${cleanTicker} +${addedShares}`);
+      
+      let updatedFii: PortfolioFII | null = null;
 
-      if (existing) {
-        updatedFii = { ...existing, shares: existing.shares + addedShares };
-      } else {
-        // Find in simulation to get some defaults
-        const simFund = inputs.funds.find(f => f.ticker === ticker);
-        updatedFii = {
-          id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString(),
-          ticker,
-          shares: addedShares,
-          avgPrice: simFund?.sharePrice || 0,
-          currentPrice: simFund?.sharePrice || 0,
-          lastDividend: simFund?.lastDividend || 0,
-          sector: 'Híbrido'
-        };
-      }
+      setFiis(prevFiis => {
+        const existing = prevFiis.find(f => f.ticker.trim().toUpperCase() === cleanTicker);
+        
+        if (existing) {
+          updatedFii = { ...existing, shares: existing.shares + addedShares };
+          return prevFiis.map(f => f.id === existing.id ? updatedFii! : f);
+        } else {
+          // Find in simulation to get some defaults
+          const simFund = inputs.funds.find(f => f.ticker?.trim().toUpperCase() === cleanTicker);
+          updatedFii = {
+            id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(7),
+            ticker: cleanTicker,
+            shares: addedShares,
+            avgPrice: simFund?.sharePrice || 0,
+            currentPrice: simFund?.sharePrice || 0,
+            lastDividend: simFund?.lastDividend || 0,
+            sector: 'Híbrido'
+          };
+          return [...prevFiis, updatedFii];
+        }
+      });
 
-      const updatedFiis = existing 
-        ? fiis.map(f => f.ticker === ticker ? updatedFii : f)
-        : [...fiis, updatedFii];
-
-      setFiis(updatedFiis);
-      await dbService.saveFii(updatedFii);
-      // Optional: alert or visual feedback
+      // Wait for state to be ready to save to DB (we just need top updatedFii)
+      // Since updatedFii is assigned inside the setter, we can use it here
+      setTimeout(async () => {
+        if (updatedFii) {
+          await dbService.saveFii(updatedFii!);
+        }
+      }, 0);
     } catch (err) {
+      console.error("[Investments] Confirm purchase error:", err);
       alert("Erro ao confirmar compra no banco de dados.");
     }
   };
