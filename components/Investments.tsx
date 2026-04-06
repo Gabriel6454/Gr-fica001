@@ -296,7 +296,8 @@ const ProgressReport: React.FC<{
   wallet: PortfolioFII[]; 
   results: SimResult[];
   onUpdateMonth: (m: number) => void;
-}> = ({ simulation, wallet, results, onUpdateMonth }) => {
+  onConfirmPurchase: (ticker: string, shares: number) => void;
+}> = ({ simulation, wallet, results, onUpdateMonth, onConfirmPurchase }) => {
   const m = simulation.currentMonth || 1;
   const yearIdx = Math.floor((m - 1) / 12);
   const monthIdx = (m - 1) % 12;
@@ -304,17 +305,37 @@ const ProgressReport: React.FC<{
   const fmt = (v: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
+  const monthTotalInvested = simulation.config.funds.reduce((s, f, i) => {
+    const targetPrevRow = monthIdx === 0 && yearIdx === 0 ? null : (monthIdx === 0 ? results[i]?.years[yearIdx-1]?.[11] : results[i]?.years[yearIdx]?.[monthIdx-1]);
+    const prevTarget = targetPrevRow ? targetPrevRow.shares : f.initialShares;
+    const targetNow = results[i]?.years[yearIdx]?.[monthIdx]?.shares || 0;
+    return s + (Math.max(0, targetNow - prevTarget) * f.sharePrice);
+  }, 0);
+
+  const allAchiereved = simulation.config.funds.every((fund, i) => {
+    const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
+    const actualShares = wallet.find(f => f.ticker === fund.ticker)?.shares || 0;
+    return actualShares >= (targetRow?.shares || 0);
+  });
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Month Control */}
-      <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <h3 className="text-xl font-black text-white italic uppercase tracking-tight">
-            Progresso: <span className="text-sky-500">Mês {m}</span> de {results[0]?.years.length * 12}
-          </h3>
-          <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">Siga sua meta mensal para atingir a independência</p>
+      <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-8 flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded-[24px] bg-sky-500/10 flex items-center justify-center text-2xl shadow-inner border border-sky-500/20">
+            {allAchiereved ? '✅' : '📅'}
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-white italic uppercase tracking-tight">
+              Progresso: <span className={allAchiereved ? 'text-emerald-400' : 'text-sky-500'}>Mês {m}</span> de {results[0]?.years.length * 12}
+            </h3>
+            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">
+              {allAchiereved ? 'Todas as compras deste mês foram concluídas!' : 'Siga sua meta mensal para atingir a independência'}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 bg-black/40 p-2 rounded-[24px] border border-white/5">
           <button 
             disabled={m <= 1}
             onClick={() => onUpdateMonth(m - 1)}
@@ -322,7 +343,7 @@ const ProgressReport: React.FC<{
           >
             ←
           </button>
-          <div className="px-6 py-3 bg-sky-500 text-white font-black rounded-2xl shadow-lg shadow-sky-500/20">
+          <div className="px-8 py-3 bg-gradient-to-br from-sky-500 to-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-sky-500/20 text-sm">
             {m}º Mês
           </div>
           <button 
@@ -337,40 +358,57 @@ const ProgressReport: React.FC<{
 
       {/* Buy List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6">
+        <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6 relative overflow-hidden">
+          {allAchiereved && (
+             <div className="absolute top-0 right-0 p-4">
+                <span className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                   <span className="text-xs">✔</span> Visto
+                </span>
+             </div>
+          )}
           <h4 className="text-[11px] font-black text-sky-500 uppercase tracking-[0.4em] flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-sky-500" />
-            O que comprar este mês
+            <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_10px_#0ea5e9]" />
+            Lista de Compras do Mês
           </h4>
           
           <div className="space-y-4">
             {simulation.config.funds.map((fund, i) => {
               const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
               const targetShares = targetRow ? targetRow.shares : 0;
-              // Find in wallet by ticker
               const actualShares = wallet.find(f => f.ticker === fund.ticker)?.shares || 0;
               const diff = Math.max(0, targetShares - actualShares);
               const cost = diff * fund.sharePrice;
 
               return (
-                <div key={i} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-sky-500/30 transition-all group">
+                <div key={i} className={`flex items-center justify-between p-5 rounded-2xl border transition-all group ${diff === 0 ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/5 hover:border-sky-500/30'}`}>
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${ACCENT_COLORS[i % ACCENT_COLORS.length].bg} text-white text-xs`}>
-                      {fund.ticker?.substring(0, 4) || fund.label.substring(0, 1)}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${diff === 0 ? 'bg-emerald-500' : ACCENT_COLORS[i % ACCENT_COLORS.length].bg} text-white text-xs`}>
+                      {diff === 0 ? '✔' : (fund.ticker?.substring(0, 4) || fund.label.substring(0, 1))}
                     </div>
                     <div>
                       <p className="text-sm font-black text-white">{fund.ticker || fund.label}</p>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Alvo: {targetShares} cotas</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Alvo para Mês {m}: {targetShares} cotas</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    {diff > 0 ? (
-                      <>
-                        <p className="text-emerald-400 font-black text-base">Comprar {diff}</p>
-                        <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">{fmt(cost)} aprox.</p>
-                      </>
-                    ) : (
-                      <span className="text-emerald-500 font-black text-[10px] uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full">Meta Atingida</span>
+                  <div className="text-right flex items-center gap-4">
+                    <div className="text-right">
+                      {diff > 0 ? (
+                        <>
+                          <p className="text-emerald-400 font-black text-base">+{diff} cotas</p>
+                          <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">{fmt(cost)} aprox.</p>
+                        </>
+                      ) : (
+                        <span className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Concluído</span>
+                      )}
+                    </div>
+                    {diff > 0 && fund.ticker && (
+                       <button 
+                         onClick={() => onConfirmPurchase(fund.ticker!, diff)}
+                         className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-500/10"
+                         title="Confirmar compra destas cotas"
+                       >
+                         ✔
+                       </button>
                     )}
                   </div>
                 </div>
@@ -378,16 +416,38 @@ const ProgressReport: React.FC<{
             })}
           </div>
 
-          <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Investimento Estimado</span>
-            <span className="text-xl font-black text-white">
-              {fmt(simulation.config.funds.reduce((s, f, i) => {
-                 const targetPrevRow = monthIdx === 0 && yearIdx === 0 ? null : (monthIdx === 0 ? results[i]?.years[yearIdx-1]?.[11] : results[i]?.years[yearIdx]?.[monthIdx-1]);
-                 const prevTarget = targetPrevRow ? targetPrevRow.shares : f.initialShares;
-                 const targetNow = results[i]?.years[yearIdx]?.[monthIdx]?.shares || 0;
-                 return s + (Math.max(0, targetNow - prevTarget) * f.sharePrice);
-              }, 0))}
-            </span>
+          <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Estimado</span>
+              <p className="text-xl font-black text-white leading-tight">{fmt(monthTotalInvested)}</p>
+            </div>
+            
+            {!allAchiereved && (
+              <button 
+                onClick={() => {
+                   if (confirm("Confirmar a compra de TODAS as cotas pendentes para este mês?")) {
+                      simulation.config.funds.forEach((fund, i) => {
+                         const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
+                         const actualShares = wallet.find(f => f.ticker === fund.ticker)?.shares || 0;
+                         const diff = Math.max(0, (targetRow?.shares || 0) - actualShares);
+                         if (diff > 0 && fund.ticker) onConfirmPurchase(fund.ticker, diff);
+                      });
+                   }
+                }}
+                className="px-6 py-3 bg-emerald-500 text-black font-black uppercase tracking-widest rounded-xl text-[10px] hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20"
+              >
+                ✔ Confirmar Todas
+              </button>
+            )}
+            
+            {allAchiereved && m < results[0]?.years.length * 12 && (
+               <button 
+                 onClick={() => onUpdateMonth(m + 1)}
+                 className="px-6 py-3 bg-sky-500 text-white font-black uppercase tracking-widest rounded-xl text-[10px] hover:brightness-110 transition-all shadow-lg shadow-sky-500/20 animate-pulse"
+               >
+                 Próximo Mês →
+               </button>
+            )}
           </div>
         </div>
 
@@ -434,9 +494,9 @@ const ProgressReport: React.FC<{
 const PortfolioView: React.FC<{ 
   settings: StoreSettings; 
   onUpdateSettings: (s: StoreSettings) => void;
-  onFiisChange?: (fiis: PortfolioFII[]) => void;
-}> = ({ settings, onUpdateSettings, onFiisChange }) => {
-  const [fiis, setFiis] = useState<PortfolioFII[]>([]);
+  fiis: PortfolioFII[];
+  setFiis: React.Dispatch<React.SetStateAction<PortfolioFII[]>>;
+}> = ({ settings, onUpdateSettings, fiis, setFiis }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'ticker' | 'patrimony' | 'dividend' | 'dy' | 'result'>('patrimony');
   const [activeView, setActiveView] = useState<'lista' | 'dividendos'>('lista');
@@ -455,13 +515,11 @@ const PortfolioView: React.FC<{
         setLoading(true);
         const savedFiis = await dbService.getFiis();
         setFiis(savedFiis);
-        if (onFiisChange) onFiisChange(savedFiis);
         
         if (savedFiis.length > 0 && navigator.onLine && settings.brapiToken) {
           try {
             const updated = await fiiService.updateAll(savedFiis, settings.brapiToken);
             setFiis(updated);
-            if (onFiisChange) onFiisChange(updated);
             // Salvar atualizações no banco de fundo (sem travar se um falhar)
             await Promise.allSettled(updated.map(f => dbService.saveFii(f)));
           } catch (apiErr) {
@@ -475,7 +533,7 @@ const PortfolioView: React.FC<{
       }
     };
     loadAndSync();
-  }, [settings.brapiToken]);
+  }, [settings.brapiToken]); // Keep this deps
 
   // Form state
   const [form, setForm] = useState({ ticker: '', sector: 'Papel', shares: '', avgPrice: '', currentPrice: '', lastDividend: '' });
@@ -530,14 +588,11 @@ const PortfolioView: React.FC<{
     };
 
     try {
-      let updatedFiis;
       if (editingId) {
-        updatedFiis = fiis.map((f) => (f.id === editingId ? entry : f));
+        setFiis(fiis.map((f) => (f.id === editingId ? entry : f)));
       } else {
-        updatedFiis = [...fiis, entry];
+        setFiis([...fiis, entry]);
       }
-      setFiis(updatedFiis);
-      if (onFiisChange) onFiisChange(updatedFiis);
       setEditingId(null);
       await dbService.saveFii(entry);
       resetForm();
@@ -560,9 +615,7 @@ const PortfolioView: React.FC<{
   const handleDelete = async (id: string) => {
     if (confirm("Excluir este fundo da carteira?")) {
       await dbService.deleteFii(id);
-      const updated = fiis.filter((x) => x.id !== id);
-      setFiis(updated);
-      if (onFiisChange) onFiisChange(updated);
+      setFiis(fiis.filter((x) => x.id !== id));
     }
   };
 
@@ -1023,6 +1076,39 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
     await dbService.saveSimulation(updated);
   };
 
+  const handleConfirmPurchase = async (ticker: string, addedShares: number) => {
+    try {
+      const existing = fiis.find(f => f.ticker === ticker);
+      let updatedFii: PortfolioFII;
+
+      if (existing) {
+        updatedFii = { ...existing, shares: existing.shares + addedShares };
+      } else {
+        // Find in simulation to get some defaults
+        const simFund = inputs.funds.find(f => f.ticker === ticker);
+        updatedFii = {
+          id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString(),
+          ticker,
+          shares: addedShares,
+          avgPrice: simFund?.sharePrice || 0,
+          currentPrice: simFund?.sharePrice || 0,
+          lastDividend: simFund?.lastDividend || 0,
+          sector: 'Híbrido'
+        };
+      }
+
+      const updatedFiis = existing 
+        ? fiis.map(f => f.ticker === ticker ? updatedFii : f)
+        : [...fiis, updatedFii];
+
+      setFiis(updatedFiis);
+      await dbService.saveFii(updatedFii);
+      // Optional: alert or visual feedback
+    } catch (err) {
+      alert("Erro ao confirmar compra no banco de dados.");
+    }
+  };
+
   // Use results.map for rendering instead of r0, r1
 
   return (
@@ -1253,6 +1339,7 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
               wallet={fiis} 
               results={results} 
               onUpdateMonth={handleUpdateMonth}
+              onConfirmPurchase={handleConfirmPurchase}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-6 glass-card bg-[#0a111f]/60 rounded-[40px] border border-white/5">
@@ -1265,7 +1352,12 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
             </div>
           )
         ) : (
-          <PortfolioView settings={settings} onUpdateSettings={onUpdateSettings} onFiisChange={setFiis} />
+          <PortfolioView 
+            settings={settings} 
+            onUpdateSettings={onUpdateSettings} 
+            fiis={fiis} 
+            setFiis={setFiis} 
+          />
         )}
       </div>
     </div>
