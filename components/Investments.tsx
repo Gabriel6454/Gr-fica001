@@ -729,9 +729,14 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
     period: 5,
     periodUnit: 'Anos',
     reinvest: true,
-    multiFundMode: false,
+    multiFundMode: true,
     funds: [
-      { label: 'Fundo A', sharePrice: 79.97, lastDividend: 1.21, initialShares: 0, splitPct: 100 },
+      { label: 'Fundo A', sharePrice: 79.97, lastDividend: 1.21, initialShares: 0, splitPct: 17 },
+      { label: 'Fundo B', sharePrice: 100, lastDividend: 0.80, initialShares: 0, splitPct: 17 },
+      { label: 'Fundo C', sharePrice: 100, lastDividend: 1.10, initialShares: 0, splitPct: 17 },
+      { label: 'Fundo D', sharePrice: 10, lastDividend: 0.10, initialShares: 0, splitPct: 17 },
+      { label: 'Fundo E', sharePrice: 100, lastDividend: 1, initialShares: 0, splitPct: 16 },
+      { label: 'Fundo F', sharePrice: 100, lastDividend: 1, initialShares: 0, splitPct: 16 },
     ],
   });
   const [activeTab, setActiveTab] = useState<'simulador' | 'carteira'>('simulador');
