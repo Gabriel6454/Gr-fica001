@@ -105,7 +105,18 @@ function simulateFund(
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
-const fmt = (val: number) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const parseNum = (val: any): number => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const str = String(val).replace(/\s/g, '').replace(',', '.');
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
+};
+
+const fmt = (val: number) => {
+  if (!isFinite(val)) return 'R$ 0,00';
+  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
 
 // ─── Input Field ─────────────────────────────────────────────────────────────
 const InputField: React.FC<{
@@ -290,10 +301,13 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
         setFiis(savedFiis);
         
         if (savedFiis.length > 0 && navigator.onLine && settings.brapiToken) {
-          const updated = await fiiService.updateAll(savedFiis, settings.brapiToken);
-          setFiis(updated);
-          for (const f of updated) {
-             await dbService.saveFii(f);
+          try {
+            const updated = await fiiService.updateAll(savedFiis, settings.brapiToken);
+            setFiis(updated);
+            // Salvar atualizações no banco de fundo (sem travar se um falhar)
+            await Promise.allSettled(updated.map(f => dbService.saveFii(f)));
+          } catch (apiErr) {
+            console.error("Erro na atualização via Brapi:", apiErr);
           }
         }
       } catch (err) {
@@ -309,10 +323,18 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
   const [form, setForm] = useState({ ticker: '', sector: 'Papel', shares: '', avgPrice: '', currentPrice: '', lastDividend: '' });
   const resetForm = () => setForm({ ticker: '', sector: 'Papel', shares: '', avgPrice: '', currentPrice: '', lastDividend: '' });
 
-  const totalPatrimony = fiis.reduce((s, f) => s + f.shares * f.currentPrice, 0);
-  const totalCost = fiis.reduce((s, f) => s + f.shares * f.avgPrice, 0);
-  const totalMonthlyDiv = fiis.reduce((s, f) => s + f.shares * f.lastDividend, 0);
-  const avgDY = fiis.length > 0 ? fiis.reduce((s, f) => s + (f.lastDividend / f.currentPrice) * 100, 0) / fiis.length : 0;
+  const totalPatrimony = fiis.reduce((s, f) => s + (parseNum(f.shares) * parseNum(f.currentPrice)), 0);
+  const totalCost = fiis.reduce((s, f) => s + (parseNum(f.shares) * parseNum(f.avgPrice)), 0);
+  const totalMonthlyDiv = fiis.reduce((s, f) => s + (parseNum(f.shares) * parseNum(f.lastDividend)), 0);
+  
+  const avgDY = fiis.length > 0 
+    ? fiis.reduce((s, f) => {
+        const price = parseNum(f.currentPrice);
+        const div = parseNum(f.lastDividend);
+        return s + (price > 0 ? (div / price) * 100 : 0);
+      }, 0) / fiis.length 
+    : 0;
+    
   const totalResult = totalPatrimony - totalCost;
 
   const fmt = (v: number) => 
@@ -340,13 +362,13 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
   const addOrUpdate = async () => {
     if (!form.ticker || !form.shares || !form.avgPrice) return;
     const entry: PortfolioFII = {
-      id: editingId ?? crypto.randomUUID(),
-      ticker: form.ticker.toUpperCase(),
+      id: editingId ?? (typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString()),
+      ticker: form.ticker.trim().toUpperCase(),
       sector: form.sector,
-      shares: Number(form.shares),
-      avgPrice: Number(form.avgPrice),
-      currentPrice: Number(form.currentPrice) || Number(form.avgPrice),
-      lastDividend: Number(form.lastDividend),
+      shares: parseNum(form.shares),
+      avgPrice: parseNum(form.avgPrice),
+      currentPrice: parseNum(form.currentPrice) || parseNum(form.avgPrice),
+      lastDividend: parseNum(form.lastDividend),
     };
 
     try {
@@ -482,8 +504,8 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
                     if (data) {
                       setForm(p => ({
                         ...p,
-                        currentPrice: String(data.currentPrice || p.currentPrice),
-                        lastDividend: String(data.lastDividend || p.lastDividend)
+                        currentPrice: String(data.currentPrice ?? p.currentPrice),
+                        lastDividend: String(data.lastDividend ?? p.lastDividend)
                       }));
                     }
                   }
@@ -607,10 +629,15 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {sorted.map((f) => {
-                    const patrimony = (f.shares || 0) * (f.currentPrice || 0);
-                    const monthDiv = (f.shares || 0) * (f.lastDividend || 0);
-                    const dy = f.currentPrice > 0 ? (f.lastDividend / f.currentPrice) * 100 : 0;
-                    const result = f.avgPrice > 0 ? ((f.currentPrice - f.avgPrice) / f.avgPrice) * 100 : 0;
+                    const shares = parseNum(f.shares);
+                    const currPrice = parseNum(f.currentPrice);
+                    const avgPrice = parseNum(f.avgPrice);
+                    const lastDiv = parseNum(f.lastDividend);
+
+                    const patrimony = shares * currPrice;
+                    const monthDiv = shares * lastDiv;
+                    const dy = currPrice > 0 ? (lastDiv / currPrice) * 100 : 0;
+                    const result = avgPrice > 0 ? ((currPrice - avgPrice) / avgPrice) * 100 : 0;
                     const weight = totalPatrimony > 0 ? (patrimony / totalPatrimony) * 100 : 0;
                     return (
                       <tr key={f.id} className="hover:bg-white/[0.02] transition-colors group">
@@ -655,8 +682,8 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
               <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-8">
                 <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.4em] mb-6">Dividendo Mensal por FII</h3>
                 <div className="space-y-4">
-                  {[...fiis].sort((a, b) => b.shares * b.lastDividend - a.shares * a.lastDividend).map((f) => {
-                    const div = f.shares * f.lastDividend;
+                  {[...fiis].sort((a, b) => (parseNum(b.shares) * parseNum(b.lastDividend)) - (parseNum(a.shares) * parseNum(a.lastDividend))).map((f) => {
+                    const div = parseNum(f.shares) * parseNum(f.lastDividend);
                     const pct = totalMonthlyDiv > 0 ? (div / totalMonthlyDiv) * 100 : 0;
                     return (
                       <div key={f.id} className="space-y-2">

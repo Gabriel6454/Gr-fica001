@@ -6,7 +6,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   subtitle: 'Gestão de Revenda Gráfica',
   // Deixamos vazio para usar o ícone de gestão padrão do sistema até o usuário fazer upload
   logoUrl: '',
-  menuOrder: ['dashboard', 'customers', 'products', 'orders', 'sales', 'reports', 'settings'],
+  menuOrder: ['dashboard', 'customers', 'products', 'orders', 'sales', 'quick-messages', 'investments', 'reports', 'settings'],
   systemScale: 1
 };
 
