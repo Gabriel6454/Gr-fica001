@@ -10,6 +10,7 @@ interface FundConfig {
   lastDividend: number;
   initialShares: number;
   splitPct: number; // 0-100
+  ticker?: string; // Ticker mapping
 }
 
 interface SimulatorInputs {
@@ -20,6 +21,14 @@ interface SimulatorInputs {
   reinvest: boolean;
   multiFundMode: boolean;
   funds: FundConfig[];
+}
+
+interface SavedSimulation {
+  id: string;
+  config: SimulatorInputs;
+  currentMonth: number;
+  startDate: string;
+  lastUpdate: string;
 }
 
 interface MonthRow {
@@ -239,7 +248,10 @@ const FundForm: React.FC<{
       <InputField label="Preço da cota" value={String(fund.sharePrice)} onChange={(v) => onChange('sharePrice', v)} />
       <InputField label="Último rendimento" value={String(fund.lastDividend)} onChange={(v) => onChange('lastDividend', v)} />
     </div>
-    <InputField label="Qtde de cotas inicial" value={String(fund.initialShares)} onChange={(v) => onChange('initialShares', v)} />
+    <div className="grid grid-cols-2 gap-4">
+      <InputField label="Ticker do FII" value={fund.ticker || ''} onChange={(v) => onChange('ticker', v)} type="text" />
+      <InputField label="Qtde de cotas inicial" value={String(fund.initialShares)} onChange={(v) => onChange('initialShares', v)} />
+    </div>
     {multiFundMode && (
       <div className="flex flex-col gap-2 pt-2">
         <div className="flex justify-between">
@@ -278,8 +290,152 @@ const SECTOR_COLORS: Record<string, string> = {
   'Agro': 'bg-lime-500/20 text-lime-400',
 };
 
+// ─── Progress Report ──────────────────────────────────────────────────────────
+const ProgressReport: React.FC<{ 
+  simulation: SavedSimulation; 
+  wallet: PortfolioFII[]; 
+  results: SimResult[];
+  onUpdateMonth: (m: number) => void;
+}> = ({ simulation, wallet, results, onUpdateMonth }) => {
+  const m = simulation.currentMonth || 1;
+  const yearIdx = Math.floor((m - 1) / 12);
+  const monthIdx = (m - 1) % 12;
+
+  const fmt = (v: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Month Control */}
+      <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h3 className="text-xl font-black text-white italic uppercase tracking-tight">
+            Progresso: <span className="text-sky-500">Mês {m}</span> de {results[0]?.years.length * 12}
+          </h3>
+          <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">Siga sua meta mensal para atingir a independência</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <button 
+            disabled={m <= 1}
+            onClick={() => onUpdateMonth(m - 1)}
+            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20"
+          >
+            ←
+          </button>
+          <div className="px-6 py-3 bg-sky-500 text-white font-black rounded-2xl shadow-lg shadow-sky-500/20">
+            {m}º Mês
+          </div>
+          <button 
+            disabled={m >= results[0]?.years.length * 12}
+            onClick={() => onUpdateMonth(m + 1)}
+            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      {/* Buy List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6">
+          <h4 className="text-[11px] font-black text-sky-500 uppercase tracking-[0.4em] flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-sky-500" />
+            O que comprar este mês
+          </h4>
+          
+          <div className="space-y-4">
+            {simulation.config.funds.map((fund, i) => {
+              const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
+              const targetShares = targetRow ? targetRow.shares : 0;
+              // Find in wallet by ticker
+              const actualShares = wallet.find(f => f.ticker === fund.ticker)?.shares || 0;
+              const diff = Math.max(0, targetShares - actualShares);
+              const cost = diff * fund.sharePrice;
+
+              return (
+                <div key={i} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-sky-500/30 transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${ACCENT_COLORS[i % ACCENT_COLORS.length].bg} text-white text-xs`}>
+                      {fund.ticker?.substring(0, 4) || fund.label.substring(0, 1)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-white">{fund.ticker || fund.label}</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Alvo: {targetShares} cotas</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {diff > 0 ? (
+                      <>
+                        <p className="text-emerald-400 font-black text-base">Comprar {diff}</p>
+                        <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">{fmt(cost)} aprox.</p>
+                      </>
+                    ) : (
+                      <span className="text-emerald-500 font-black text-[10px] uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full">Meta Atingida</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Investimento Estimado</span>
+            <span className="text-xl font-black text-white">
+              {fmt(simulation.config.funds.reduce((s, f, i) => {
+                 const targetPrevRow = monthIdx === 0 && yearIdx === 0 ? null : (monthIdx === 0 ? results[i]?.years[yearIdx-1]?.[11] : results[i]?.years[yearIdx]?.[monthIdx-1]);
+                 const prevTarget = targetPrevRow ? targetPrevRow.shares : f.initialShares;
+                 const targetNow = results[i]?.years[yearIdx]?.[monthIdx]?.shares || 0;
+                 return s + (Math.max(0, targetNow - prevTarget) * f.sharePrice);
+              }, 0))}
+            </span>
+          </div>
+        </div>
+
+        <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6">
+           <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em] flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            Progresso Geral
+          </h4>
+          
+          <div className="space-y-6">
+            <div>
+               <div className="flex justify-between items-center mb-2">
+                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Renda Mensal Atual vs Alvo</span>
+                 <span className="text-xs font-black text-emerald-400">
+                    {((wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0) / results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0)) * 100).toFixed(1)}%
+                 </span>
+               </div>
+               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0) / results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0)) * 100)}%` }} />
+               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+               {[
+                 { label: 'Renda Atual', value: fmt(wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0)), color: 'text-emerald-400' },
+                 { label: 'Renda Alvo Mês', value: fmt(results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0)), color: 'text-white' },
+                 { label: 'Patrimônio Atual', value: fmt(wallet.reduce((s,f) => s + (f.shares * f.currentPrice), 0)), color: 'text-sky-400' },
+                 { label: 'P. Alvo Mês', value: fmt(results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.shares * simulation.config.funds[results.indexOf(r)].sharePrice || 0), 0)), color: 'text-white' },
+               ].map(item => (
+                 <div key={item.label} className="p-4 bg-[#030712]/40 rounded-2xl border border-white/5">
+                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">{item.label}</p>
+                   <p className={`text-sm font-black ${item.color}`}>{item.value}</p>
+                 </div>
+               ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Portfolio View ───────────────────────────────────────────────────────────
-const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: StoreSettings) => void }> = ({ settings, onUpdateSettings }) => {
+const PortfolioView: React.FC<{ 
+  settings: StoreSettings; 
+  onUpdateSettings: (s: StoreSettings) => void;
+  onFiisChange?: (fiis: PortfolioFII[]) => void;
+}> = ({ settings, onUpdateSettings, onFiisChange }) => {
   const [fiis, setFiis] = useState<PortfolioFII[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'ticker' | 'patrimony' | 'dividend' | 'dy' | 'result'>('patrimony');
@@ -299,11 +455,13 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
         setLoading(true);
         const savedFiis = await dbService.getFiis();
         setFiis(savedFiis);
+        if (onFiisChange) onFiisChange(savedFiis);
         
         if (savedFiis.length > 0 && navigator.onLine && settings.brapiToken) {
           try {
             const updated = await fiiService.updateAll(savedFiis, settings.brapiToken);
             setFiis(updated);
+            if (onFiisChange) onFiisChange(updated);
             // Salvar atualizações no banco de fundo (sem travar se um falhar)
             await Promise.allSettled(updated.map(f => dbService.saveFii(f)));
           } catch (apiErr) {
@@ -372,12 +530,15 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
     };
 
     try {
+      let updatedFiis;
       if (editingId) {
-        setFiis((p) => p.map((f) => (f.id === editingId ? entry : f)));
-        setEditingId(null);
+        updatedFiis = fiis.map((f) => (f.id === editingId ? entry : f));
       } else {
-        setFiis((p) => [...p, entry]);
+        updatedFiis = [...fiis, entry];
       }
+      setFiis(updatedFiis);
+      if (onFiisChange) onFiisChange(updatedFiis);
+      setEditingId(null);
       await dbService.saveFii(entry);
       resetForm();
     } catch (err) {
@@ -399,7 +560,9 @@ const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: S
   const handleDelete = async (id: string) => {
     if (confirm("Excluir este fundo da carteira?")) {
       await dbService.deleteFii(id);
-      setFiis((p) => p.filter((x) => x.id !== id));
+      const updated = fiis.filter((x) => x.id !== id);
+      setFiis(updated);
+      if (onFiisChange) onFiisChange(updated);
     }
   };
 
@@ -739,8 +902,33 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
       { label: 'Fundo F', sharePrice: 100, lastDividend: 1, initialShares: 0, splitPct: 16 },
     ],
   });
-  const [activeTab, setActiveTab] = useState<'simulador' | 'carteira'>('simulador');
+  const [activeTab, setActiveTab] = useState<'simulador' | 'carteira' | 'acompanhamento'>('simulador');
   const [results, setResults] = useState<SimResult[]>([]);
+  const [fiis, setFiis] = useState<PortfolioFII[]>([]);
+  const [savedSim, setSavedSim] = useState<SavedSimulation | null>(null);
+
+  useEffect(() => {
+    const loadSim = async () => {
+      const sim = await dbService.getSimulation();
+      if (sim) {
+        setSavedSim(sim);
+        setInputs(sim.config);
+      }
+    };
+    loadSim();
+  }, []);
+
+  useEffect(() => {
+    if (savedSim && activeTab !== 'simulador') {
+       // Auto calculate if we have a saved sim and are tracking
+       const totalMonths = inputs.periodUnit === 'Anos' ? inputs.period * 12 : inputs.period;
+       const newResults = inputs.funds.map(fund => {
+          const inv = inputs.multiFundMode ? (inputs.monthlyInvestment * (fund.splitPct || 0) / 100) : inputs.monthlyInvestment;
+          return simulateFund(inv, fund.sharePrice || 0.01, fund.lastDividend || 0, fund.initialShares || 0, totalMonths, inputs.reinvest, inputs.dividendGoal).result;
+       });
+       setResults(newResults);
+    }
+  }, [savedSim, activeTab]);
 
   const addFund = () => {
     if (inputs.funds.length >= 6) return;
@@ -812,6 +1000,29 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
     setResults(newResults);
   }, [inputs]);
 
+  const handleSaveSimulation = async () => {
+    try {
+      const simOb: Partial<SavedSimulation> = {
+        id: savedSim?.id || (typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString()),
+        config: inputs,
+        currentMonth: savedSim?.currentMonth || 1,
+        startDate: savedSim?.startDate || new Date().toISOString(),
+      };
+      await dbService.saveSimulation(simOb);
+      setSavedSim(simOb as SavedSimulation);
+      alert("Simulação salva com sucesso! Você pode acompanhá-la na aba 'Acompanhamento'.");
+    } catch (err) {
+      alert("Erro ao salvar simulação.");
+    }
+  };
+
+  const handleUpdateMonth = async (m: number) => {
+    if (!savedSim) return;
+    const updated = { ...savedSim, currentMonth: m };
+    setSavedSim(updated);
+    await dbService.saveSimulation(updated);
+  };
+
   // Use results.map for rendering instead of r0, r1
 
   return (
@@ -823,9 +1034,13 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
           <p className="text-slate-500 text-sm font-medium">Simule e gerencie seus Fundos Imobiliários</p>
         </div>
         <div className="flex gap-2 bg-[#0a111f] rounded-2xl p-1.5 border border-white/5">
-          {[{ id: 'simulador', label: 'Simulador FII' }, { id: 'carteira', label: 'Carteira' }].map((t) => (
+          {[
+            { id: 'simulador', label: 'Simulador' }, 
+            { id: 'acompanhamento', label: 'Acompanhamento' },
+            { id: 'carteira', label: 'Minha Carteira' }
+          ].map((t) => (
             <button key={t.id} onClick={() => setActiveTab(t.id as any)}
-              className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === t.id ? 'bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-white'}`}>
+              className={`px-4 sm:px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === t.id ? 'bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-white'}`}>
               {t.label}
             </button>
           ))}
@@ -916,10 +1131,14 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
               </div>
             )}
 
-            <div className="flex justify-center pt-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <button onClick={handleCalc}
-                className="w-full sm:w-auto px-16 py-4 bg-gradient-to-br from-sky-500 to-indigo-600 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 text-[11px]">
+                className="px-16 py-4 bg-gradient-to-br from-sky-500 to-indigo-600 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 text-[11px]">
                 Calcular Simulação
+              </button>
+              <button onClick={handleSaveSimulation}
+                className="px-10 py-4 bg-white/5 text-slate-300 font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 transition-all border border-white/5 text-[11px]">
+                💾 Salvar e Acompanhar
               </button>
             </div>
 
@@ -1027,8 +1246,26 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
               </>
             )}
           </>
+        ) : activeTab === 'acompanhamento' ? (
+          savedSim && results.length > 0 ? (
+            <ProgressReport 
+              simulation={savedSim} 
+              wallet={fiis} 
+              results={results} 
+              onUpdateMonth={handleUpdateMonth}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-6 glass-card bg-[#0a111f]/60 rounded-[40px] border border-white/5">
+              <div className="w-20 h-20 rounded-full bg-sky-500/10 flex items-center justify-center text-3xl">🎯</div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-black text-white uppercase italic">Nenhuma meta ativa</h3>
+                <p className="text-xs font-medium max-w-xs mx-auto">Vá para o simulador, defina seu plano e clique em "Salvar e Acompanhar" para ver seu progresso mensal aqui.</p>
+              </div>
+              <button onClick={() => setActiveTab('simulador')} className="px-8 py-3 bg-sky-500 text-white font-black uppercase tracking-widest rounded-xl text-[10px] hover:brightness-110 transition-all">Ir para o Simulador</button>
+            </div>
+          )
         ) : (
-          <PortfolioView settings={settings} onUpdateSettings={onUpdateSettings} />
+          <PortfolioView settings={settings} onUpdateSettings={onUpdateSettings} onFiisChange={setFiis} />
         )}
       </div>
     </div>

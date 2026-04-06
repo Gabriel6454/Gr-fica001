@@ -223,3 +223,30 @@ export interface StockItem {
   supplierAvailability?: boolean;
   predictedUsageNext15Days?: number; // ML prediction
 }
+
+export interface FIISimFundConfig {
+  label: string;
+  sharePrice: number;
+  lastDividend: number;
+  initialShares: number;
+  splitPct: number;
+}
+
+export interface FIISimulatorInputs {
+  monthlyInvestment: number;
+  dividendGoal: number;
+  period: number;
+  periodUnit: 'Anos' | 'Meses';
+  reinvest: boolean;
+  multiFundMode: boolean;
+  funds: FIISimFundConfig[];
+}
+
+export interface FIISimulation {
+  id: string;
+  user_id?: string;
+  config: FIISimulatorInputs;
+  currentMonth: number;
+  startDate: string;
+  lastUpdate: string;
+}

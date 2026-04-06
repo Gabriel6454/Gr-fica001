@@ -151,9 +151,27 @@ CREATE TABLE IF NOT EXISTS fiis (
     "lastDividend" NUMERIC
 );
 
-ALTER TABLE fiis ENABLE ROW LEVEL SECURITY;
+-- 8. FII Simulations (Persistence)
+CREATE TABLE IF NOT EXISTS fii_simulations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
+    config JSONB NOT NULL,
+    "currentMonth" INTEGER DEFAULT 1,
+    "startDate" TIMESTAMPTZ DEFAULT now(),
+    "lastUpdate" TIMESTAMPTZ DEFAULT now()
+);
 
+ALTER TABLE fiis ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fii_simulations ENABLE ROW LEVEL SECURITY;
+
+-- FIIs Policies
 CREATE POLICY "Users can see only their own fiis" ON fiis FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own fiis" ON fiis FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their own fiis" ON fiis FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own fiis" ON fiis FOR DELETE USING (auth.uid() = user_id);
+
+-- Simulations Policies
+CREATE POLICY "Users can see only their own simulations" ON fii_simulations FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own simulations" ON fii_simulations FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own simulations" ON fii_simulations FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own simulations" ON fii_simulations FOR DELETE USING (auth.uid() = user_id);

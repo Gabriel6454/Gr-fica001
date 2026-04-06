@@ -241,6 +241,26 @@ export const dbService = {
     if (error) console.error('Error resetting FIIs:', error);
   },
 
+  // FII Simulations
+  async getSimulation(): Promise<any | null> {
+    const user_id = await getUserId();
+    if (!user_id) return null;
+    const { data, error } = await supabase.from('fii_simulations').select('*').eq('user_id', user_id).order('lastUpdate', { ascending: false }).limit(1).maybeSingle();
+    if (error) { console.error('Error fetching simulation:', error); return null; }
+    return data;
+  },
+  async saveSimulation(sim: any) {
+    const user_id = await getUserId();
+    if (!user_id) throw new Error('Usuário não autenticado');
+    const { error } = await supabase.from('fii_simulations').upsert({ ...sim, user_id, lastUpdate: new Date().toISOString() });
+    if (error) { console.error('Error saving simulation:', error); throw error; }
+  },
+  async deleteSimulation(id: string) {
+    const user_id = await getUserId();
+    if (!user_id) return;
+    await supabase.from('fii_simulations').delete().eq('id', id).eq('user_id', user_id);
+  },
+
   // Public Tracking
   async getPublicOrder(id: string): Promise<Order | null> {
     // Busca baseada no ID ou no Código de Rastreio (Tracking Code)
