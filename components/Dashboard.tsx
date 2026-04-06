@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ICONS, formatOrderId } from '../constants';
-import { Product, Order, OrderStatus, Customer, StoreSettings } from '../types';
+import { Product, Order, OrderStatus, Customer, StoreSettings, StockItem } from '../types';
 import { OrderModal, OrderPrintModal, PaymentModal, TrackingModal, contactCustomer } from './Orders';
 import {
   AreaChart,
@@ -150,6 +150,211 @@ const SalesModal: React.FC<SalesModalProps> = ({ isOpen, onClose, orders, onOpen
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface ProductionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  orders: Order[];
+  products: Product[];
+  stock: StockItem[];
+}
+
+const ProductionModal: React.FC<ProductionModalProps> = ({ isOpen, onClose, orders, products, stock }) => {
+  if (!isOpen) return null;
+
+  const productionOrders = orders.filter(o => o.status === OrderStatus.PRODUCTION);
+  
+  const productionSummary = useMemo(() => {
+    const summary: Record<string, { product: Product; quantity: number; details: any[] }> = {};
+    
+    productionOrders.forEach(order => {
+      order.items.forEach(item => {
+        if (!summary[item.productId]) {
+          const product = products.find(p => p.id === item.productId);
+          if (product) {
+            summary[item.productId] = { product, quantity: 0, details: [] };
+          }
+        }
+        if (summary[item.productId]) {
+          summary[item.productId].quantity += item.quantity;
+          summary[item.productId].details.push({
+            orderId: order.id,
+            customerName: order.customerName,
+            quantity: item.quantity,
+            paperType: item.paperType,
+            finishing: item.finishing,
+            deliveryDate: order.deliveryDate
+          });
+        }
+      });
+    });
+    return Object.values(summary);
+  }, [productionOrders, products]);
+
+  const stockAlerts = useMemo(() => {
+    const alerts: { name: string; needed: number; available: number; ok: boolean }[] = [];
+    productionSummary.forEach(s => {
+      s.details.forEach(d => {
+        if (d.paperType) {
+          const stockItem = stock.find(si => si.name.toLowerCase().includes(d.paperType.toLowerCase()));
+          if (stockItem) {
+            const existing = alerts.find(a => a.name === stockItem.name);
+            if (existing) {
+              existing.needed += d.quantity;
+              existing.ok = existing.available >= existing.needed;
+            } else {
+              alerts.push({
+                name: stockItem.name,
+                needed: d.quantity,
+                available: stockItem.quantity,
+                ok: stockItem.quantity >= d.quantity
+              });
+            }
+          }
+        }
+      });
+    });
+    return alerts;
+  }, [productionSummary, stock]);
+
+  const handleExportText = () => {
+    let text = "RELATÓRIO DE PRODUÇÃO ATIVA\n==========================\n\n";
+    productionSummary.forEach(s => {
+      text += `- ${s.product.name}: ${s.quantity} unidades\n`;
+      s.details.forEach(d => {
+        text += `  • Pedido #${formatOrderId(d.orderId)} - ${d.customerName} (${d.paperType || 'N/A'})\n`;
+      });
+      text += "\n";
+    });
+
+    if (productionSummary.length === 0) text += "Nenhum pedido em produção no momento.";
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `producao_${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#0a111f] border border-slate-800/60 w-full max-w-6xl rounded-[24px] shadow-2xl flex flex-col h-full max-h-[92vh] sm:max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-6 sm:p-8 pb-4 relative border-b border-white/5">
+          <button onClick={onClose} className="absolute top-4 sm:top-6 right-4 sm:right-8 text-slate-500 hover:text-white transition-colors p-2 hover:bg-slate-800/40 rounded-lg">{ICONS.X}</button>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="text-sky-500 scale-110 sm:scale-125">{ICONS.Settings}</div>
+            <h2 className="text-lg sm:text-xl font-black text-white tracking-tight uppercase tracking-widest">Produção Industrial</h2>
+          </div>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Gestão de demanda e materiais ativos</p>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 sm:p-8 space-y-8 scrollbar-thin scrollbar-thumb-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+             <div className="bg-[#10192e] border border-white/5 p-5 rounded-2xl">
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Pedidos Ativos</p>
+                <h4 className="text-2xl font-black text-white mt-1">{productionOrders.length}</h4>
+             </div>
+             <div className="bg-[#10192e] border border-white/5 p-5 rounded-2xl">
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Itens em Fila</p>
+                <h4 className="text-2xl font-black text-sky-400 mt-1">{productionSummary.reduce((acc, s) => acc + s.quantity, 0)}</h4>
+             </div>
+             <div className="sm:col-span-2 flex items-center justify-end gap-3">
+                <button onClick={handleExportText} className="px-6 py-3 bg-[#161f35] border border-white/5 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all flex items-center gap-2">
+                  {ICONS.Print} Gerar Lista TXT
+                </button>
+             </div>
+          </div>
+
+          {stockAlerts.length > 0 && (
+            <div className="bg-[#0c1425] border border-white/5 rounded-[24px] p-6 space-y-4">
+              <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]" />
+                Verificação de Materiais
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {stockAlerts.map((alert, idx) => (
+                  <div key={idx} className={`p-4 rounded-xl border transition-all ${alert.ok ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-rose-500/5 border-rose-500/20'}`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-[10px] font-black text-slate-200 uppercase truncate pr-2">{alert.name}</p>
+                      <span className={`text-[8px] font-black px-2 py-0.5 rounded-md ${alert.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                        {alert.ok ? 'ESTOQUE OK' : 'FALTANTE'}
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold">Necessário: {alert.needed} | Disponível: {alert.available}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_#38bdf8]" />
+              Fila de Produção Detalhada
+            </h3>
+            <div className="overflow-x-auto rounded-[24px] border border-white/5 bg-[#050914]/50 backdrop-blur-xl">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white/5 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                    <th className="py-5 px-6">Produto</th>
+                    <th className="py-5 px-6">Quantidade</th>
+                    <th className="py-5 px-6">Especificações</th>
+                    <th className="py-5 px-6">Pedidos Vinculados</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {productionSummary.map((s, idx) => (
+                    <tr key={idx} className="group hover:bg-white/[0.02] transition-colors">
+                      <td className="py-5 px-6 border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center font-black text-sky-500">
+                             {s.product.name[0]}
+                          </div>
+                          <p className="text-xs font-black text-white uppercase pr-4">{s.product.name}</p>
+                        </div>
+                      </td>
+                      <td className="py-5 px-6 border-b border-white/5">
+                        <span className="text-lg font-black text-sky-400 font-mono tracking-tighter">{s.quantity}</span>
+                      </td>
+                      <td className="py-5 px-6 border-b border-white/5">
+                         <div className="flex flex-wrap gap-1">
+                            {Array.from(new Set(s.details.map(d => `${d.paperType || 'S/ Papel'} • ${d.finishing || 'S/ Acab.'}`))).map((detail, dIdx) => (
+                              <span key={dIdx} className="text-[9px] font-bold text-slate-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                                {detail}
+                              </span>
+                            ))}
+                         </div>
+                      </td>
+                      <td className="py-5 px-6 border-b border-white/5">
+                         <div className="space-y-1.5 max-h-24 overflow-y-auto no-scrollbar py-1">
+                            {s.details.map((d, dIdx) => (
+                              <div key={dIdx} className="flex items-center gap-2 text-[10px] text-slate-400">
+                                <span className="font-black text-sky-500/60 leading-none">#{formatOrderId(d.orderId)}</span>
+                                <span className="font-bold truncate max-w-[120px]">{d.customerName}</span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${new Date(d.deliveryDate) < new Date() ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-800 text-slate-500'}`}>
+                                  {d.deliveryDate}
+                                </span>
+                              </div>
+                            ))}
+                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {productionSummary.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-20 text-center text-slate-500 text-[11px] font-black uppercase tracking-[0.4em] opacity-30">Vazio em Produção</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -427,9 +632,10 @@ interface DashboardProps {
   onEditOrder: (orderId: string, updates: Partial<Order>) => void;
   onDeleteOrder: (orderId: string) => void;
   onReceivePayment: (orderId: string, amount: number, method: string) => void;
+  stock: StockItem[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, settings, onUpdateOrderStatus, onEditOrder, onDeleteOrder, onReceivePayment }) => {
+const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, settings, onUpdateOrderStatus, onEditOrder, onDeleteOrder, onReceivePayment, stock }) => {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -440,6 +646,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [isProductionModalOpen, setIsProductionModalOpen] = useState(false);
 
   const [period, setPeriod] = useState('all');
   const [startDate, setStartDate] = useState('');
@@ -677,6 +884,13 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
       {activePrintOrder && <OrderPrintModal isOpen={isPrintModalOpen} onClose={() => setIsPrintModalOpen(false)} order={activePrintOrder} products={products} customers={customers} settings={settings} />}
       {activePaymentOrder && <PaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} order={activePaymentOrder} onConfirm={onReceivePayment} />}
       {activeTrackingOrder && <TrackingModal isOpen={isTrackingModalOpen} onClose={() => setIsTrackingModalOpen(false)} order={activeTrackingOrder} customers={customers} />}
+      <ProductionModal 
+        isOpen={isProductionModalOpen} 
+        onClose={() => setIsProductionModalOpen(false)} 
+        orders={orders} 
+        products={products} 
+        stock={stock} 
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 border-b border-slate-800/50 mb-6 px-4 sm:px-6 md:px-8">
         <div className="space-y-0.5">
@@ -730,32 +944,10 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
               <span>Vendas</span>
             </button>
             <button
-              onClick={() => {
-                const productionOrders = orders.filter(o => o.status === OrderStatus.PRODUCTION);
-                const items = productionOrders.flatMap(o => o.items);
-                const summary = items.reduce((acc, it) => {
-                  acc[it.productId] = (acc[it.productId] || 0) + it.quantity;
-                  return acc;
-                }, {} as Record<string, number>);
-
-                let text = "RELATÓRIO DE PRODUÇÃO ATIVA\n==========================\n\n";
-                Object.entries(summary).forEach(([pid, qty]) => {
-                  const p = products.find(prod => prod.id === pid);
-                  text += `- ${p?.name || 'Item'}: ${qty} unidades\n`;
-                });
-
-                if (productionOrders.length === 0) text += "Nenhum pedido em produção no momento.";
-
-                const blob = new Blob([text], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `producao_${new Date().toISOString().split('T')[0]}.txt`;
-                a.click();
-              }}
+              onClick={() => setIsProductionModalOpen(true)}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-black uppercase rounded-2xl text-[9px] sm:text-[10px] tracking-widest shadow-xl shadow-sky-500/20 transition-all active:scale-95"
             >
-              {ICONS.Print}
+              {ICONS.Settings}
               <span>Produção</span>
             </button>
           </div>

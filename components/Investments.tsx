@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { dbService } from '../services/dbService';
-import { PortfolioFII } from '../types';
+import { fiiService } from '../services/fiiService';
+import { PortfolioFII, StoreSettings } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FundConfig {
@@ -17,8 +18,8 @@ interface SimulatorInputs {
   period: number;
   periodUnit: 'Anos' | 'Meses';
   reinvest: boolean;
-  dualMode: boolean;
-  funds: [FundConfig, FundConfig];
+  multiFundMode: boolean;
+  funds: FundConfig[];
 }
 
 interface MonthRow {
@@ -61,6 +62,8 @@ function simulateFund(
   const allMonths: MonthRow[] = [];
   let availableCash = 0;
   let goalMonthHit: number | null = null;
+  
+  if (sharePrice <= 0) return { result: { totalInvested, totalReinvested, finalMonthlyDividend: 0, goalMonthHit: null, years: [] } };
 
   for (let m = 1; m <= totalMonths; m++) {
     availableCash += monthlyInvestment;
@@ -173,8 +176,12 @@ const SummaryCard: React.FC<{
   sharePrice: number;
   lastDividend: number;
   gradient: string;
-}> = ({ label, result, period, periodUnit, sharePrice, lastDividend, gradient }) => (
-  <div className={`${gradient} rounded-[40px] p-8 grid grid-cols-2 gap-5 content-start shadow-2xl`}>
+  onRemove?: () => void;
+}> = ({ label, result, period, periodUnit, sharePrice, lastDividend, gradient, onRemove }) => (
+  <div className={`${gradient} rounded-[40px] p-8 grid grid-cols-2 gap-5 content-start shadow-2xl relative group`}>
+    {onRemove && (
+      <button onClick={onRemove} className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors opacity-0 group-hover:opacity-100">✕</button>
+    )}
     <div className="col-span-2 pb-2 border-b border-white/20">
       <span className="text-xs font-black text-white/70 uppercase tracking-widest">{label}</span>
     </div>
@@ -198,37 +205,54 @@ const SummaryCard: React.FC<{
 const FundForm: React.FC<{
   fund: FundConfig;
   index: number;
-  dualMode: boolean;
+  multiFundMode: boolean;
   onChange: (field: keyof FundConfig, val: string) => void;
-  accentColor: string;
-}> = ({ fund, index, dualMode, onChange, accentColor }) => (
-  <div className={`glass-card bg-[#0a111f]/60 border rounded-[32px] p-6 space-y-4 backdrop-blur-xl ${accentColor === 'sky' ? 'border-sky-500/20' : 'border-violet-500/20'}`}>
-    <div className="flex items-center gap-3 mb-2">
-      <span className={`w-2 h-2 rounded-full ${accentColor === 'sky' ? 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]' : 'bg-violet-500 shadow-[0_0_10px_#8b5cf6]'}`} />
-      <h3 className={`text-[11px] font-black uppercase tracking-[0.3em] ${accentColor === 'sky' ? 'text-sky-400' : 'text-violet-400'}`}>
-        {dualMode ? fund.label : 'Fundo'}
-      </h3>
+  onRemove?: () => void;
+  accent: typeof ACCENT_COLORS[0];
+}> = ({ fund, index, multiFundMode, onChange, onRemove, accent }) => (
+  <div className={`glass-card bg-[#0a111f]/60 border rounded-[32px] p-6 space-y-4 backdrop-blur-xl ${accent.border} relative group`}>
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-3">
+        <span className={`w-2 h-2 rounded-full ${accent.bg} ${accent.shadow}`} />
+        <input 
+          value={fund.label} 
+          onChange={(e) => onChange('label', e.target.value)}
+          className={`bg-transparent border-none outline-none text-[11px] font-black uppercase tracking-[0.3em] ${accent.text} w-32`}
+        />
+      </div>
+      {onRemove && (
+        <button onClick={onRemove} className="text-slate-600 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100">✕</button>
+      )}
     </div>
     <div className="grid grid-cols-2 gap-4">
       <InputField label="Preço da cota" value={String(fund.sharePrice)} onChange={(v) => onChange('sharePrice', v)} />
       <InputField label="Último rendimento" value={String(fund.lastDividend)} onChange={(v) => onChange('lastDividend', v)} />
     </div>
     <InputField label="Qtde de cotas inicial" value={String(fund.initialShares)} onChange={(v) => onChange('initialShares', v)} />
-    {dualMode && (
-      <div className="flex flex-col gap-2">
+    {multiFundMode && (
+      <div className="flex flex-col gap-2 pt-2">
         <div className="flex justify-between">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">% do Investimento</label>
-          <span className={`text-[10px] font-black ${accentColor === 'sky' ? 'text-sky-400' : 'text-violet-400'}`}>{fund.splitPct}%</span>
+          <span className={`text-[10px] font-black ${accent.text}`}>{fund.splitPct}%</span>
         </div>
         <input
-          type="range" min="10" max="90" value={fund.splitPct}
+          type="range" min="0" max="100" value={fund.splitPct}
           onChange={(e) => onChange('splitPct', e.target.value)}
-          className="w-full accent-sky-500 cursor-pointer"
+          className={`w-full ${accent.range} cursor-pointer`}
         />
       </div>
     )}
   </div>
 );
+
+const ACCENT_COLORS = [
+  { slug: 'sky', bg: 'bg-sky-500', shadow: 'shadow-[0_0_10px_#0ea5e9]', border: 'border-sky-500/20', text: 'text-sky-400', range: 'accent-sky-500', gradient: 'bg-gradient-to-br from-sky-600 to-indigo-700' },
+  { slug: 'violet', bg: 'bg-violet-500', shadow: 'shadow-[0_0_10px_#8b5cf6]', border: 'border-violet-500/20', text: 'text-violet-400', range: 'accent-violet-500', gradient: 'bg-gradient-to-br from-violet-600 to-purple-800' },
+  { slug: 'emerald', bg: 'bg-emerald-500', shadow: 'shadow-[0_0_10px_#10b981]', border: 'border-emerald-500/20', text: 'text-emerald-400', range: 'accent-emerald-500', gradient: 'bg-gradient-to-br from-emerald-600 to-teal-700' },
+  { slug: 'amber', bg: 'bg-amber-500', shadow: 'shadow-[0_0_10px_#f59e0b]', border: 'border-amber-500/20', text: 'text-amber-400', range: 'accent-amber-500', gradient: 'bg-gradient-to-br from-amber-600 to-orange-700' },
+  { slug: 'rose', bg: 'bg-rose-500', shadow: 'shadow-[0_0_10px_#f43f5e]', border: 'border-rose-500/20', text: 'text-rose-400', range: 'accent-rose-500', gradient: 'bg-gradient-to-br from-rose-600 to-pink-700' },
+  { slug: 'orange', bg: 'bg-orange-500', shadow: 'shadow-[0_0_10px_#f97316]', border: 'border-orange-500/20', text: 'text-orange-400', range: 'accent-orange-500', gradient: 'bg-gradient-to-br from-orange-600 to-red-700' },
+];
 const SECTORS = ['Papel', 'Tijolo', 'Híbrido', 'CRI/CRA', 'Fundo de Fundos', 'Logística', 'Shoppings', 'Lajes Corp.', 'Residencial', 'Agro'];
 const SECTOR_COLORS: Record<string, string> = {
   'Papel': 'bg-sky-500/20 text-sky-400',
@@ -244,28 +268,42 @@ const SECTOR_COLORS: Record<string, string> = {
 };
 
 // ─── Portfolio View ───────────────────────────────────────────────────────────
-const PortfolioView: React.FC = () => {
+const PortfolioView: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: StoreSettings) => void }> = ({ settings, onUpdateSettings }) => {
   const [fiis, setFiis] = useState<PortfolioFII[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'ticker' | 'patrimony' | 'dividend' | 'dy' | 'result'>('patrimony');
   const [activeView, setActiveView] = useState<'lista' | 'dividendos'>('lista');
   const [loading, setLoading] = useState(true);
+  const [showApiConfig, setShowApiConfig] = useState(false);
+  const [tempToken, setTempToken] = useState(settings.brapiToken || localStorage.getItem('brapi_token') || '');
+
+  useEffect(() => {
+    setTempToken(settings.brapiToken || localStorage.getItem('brapi_token') || '');
+  }, [settings.brapiToken]);
 
   // Load from Supabase on mount
   useEffect(() => {
-    const loadData = async () => {
+    const loadAndSync = async () => {
       try {
         setLoading(true);
-        const data = await dbService.getFiis();
-        setFiis(data);
+        const savedFiis = await dbService.getFiis();
+        setFiis(savedFiis);
+        
+        if (savedFiis.length > 0 && navigator.onLine && settings.brapiToken) {
+          const updated = await fiiService.updateAll(savedFiis, settings.brapiToken);
+          setFiis(updated);
+          for (const f of updated) {
+             await dbService.saveFii(f);
+          }
+        }
       } catch (err) {
-        console.error("Erro ao carregar carteira:", err);
+        console.error("Erro ao carregar e sincronizar:", err);
       } finally {
         setLoading(false);
       }
     };
-    loadData();
-  }, []);
+    loadAndSync();
+  }, [settings.brapiToken]);
 
   // Form state
   const [form, setForm] = useState({ ticker: '', sector: 'Papel', shares: '', avgPrice: '', currentPrice: '', lastDividend: '' });
@@ -276,6 +314,28 @@ const PortfolioView: React.FC = () => {
   const totalMonthlyDiv = fiis.reduce((s, f) => s + f.shares * f.lastDividend, 0);
   const avgDY = fiis.length > 0 ? fiis.reduce((s, f) => s + (f.lastDividend / f.currentPrice) * 100, 0) / fiis.length : 0;
   const totalResult = totalPatrimony - totalCost;
+
+  const fmt = (v: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+  const handleRefreshAll = async () => {
+    if (!navigator.onLine || !settings.brapiToken) {
+       if (!settings.brapiToken) setShowApiConfig(true);
+       return;
+    }
+    try {
+      setLoading(true);
+      const updated = await fiiService.updateAll(fiis, settings.brapiToken);
+      setFiis(updated);
+      for (const f of updated) {
+        await dbService.saveFii(f);
+      }
+    } catch (e) {
+      console.error("Erro ao atualizar dados reais:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addOrUpdate = async () => {
     if (!form.ticker || !form.shares || !form.avgPrice) return;
@@ -330,8 +390,16 @@ const PortfolioView: React.FC = () => {
     if (sortBy === 'ticker') return a.ticker.localeCompare(b.ticker);
     if (sortBy === 'patrimony') return (b.shares * b.currentPrice) - (a.shares * a.currentPrice);
     if (sortBy === 'dividend') return (b.shares * b.lastDividend) - (a.shares * a.lastDividend);
-    if (sortBy === 'dy') return (b.lastDividend / b.currentPrice) - (a.lastDividend / a.currentPrice);
-    if (sortBy === 'result') return ((b.currentPrice - b.avgPrice) / b.avgPrice) - ((a.currentPrice - a.avgPrice) / a.avgPrice);
+    if (sortBy === 'dy') {
+        const dyA = a.currentPrice > 0 ? (a.lastDividend / a.currentPrice) : 0;
+        const dyB = b.currentPrice > 0 ? (b.lastDividend / b.currentPrice) : 0;
+        return dyB - dyA;
+    }
+    if (sortBy === 'result') {
+        const resA = a.avgPrice > 0 ? (a.currentPrice - a.avgPrice) / a.avgPrice : 0;
+        const resB = b.avgPrice > 0 ? (b.currentPrice - b.avgPrice) / b.avgPrice : 0;
+        return resB - resA;
+    }
     return 0;
   });
 
@@ -406,8 +474,22 @@ const PortfolioView: React.FC = () => {
           ].map((f) => (
             <div key={f.key} className="flex flex-col gap-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{f.label}</label>
-              <input type={f.type} value={(form as any)[f.key]} onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder}
-                className="bg-[#030712]/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-sky-500/50 font-bold shadow-inner" />
+              <input type={f.type} value={(form as any)[f.key]} 
+                onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))} 
+                onBlur={async () => {
+                  if (f.key === 'ticker' && form.ticker.length >= 5) {
+                    const data = await fiiService.getRealTimeData(form.ticker, settings.brapiToken);
+                    if (data) {
+                      setForm(p => ({
+                        ...p,
+                        currentPrice: String(data.currentPrice || p.currentPrice),
+                        lastDividend: String(data.lastDividend || p.lastDividend)
+                      }));
+                    }
+                  }
+                }}
+                placeholder={f.placeholder}
+                className="bg-[#030712]/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-sky-500/50 font-bold shadow-inner transition-all" />
             </div>
           ))}
           <div className="flex flex-col gap-2">
@@ -427,6 +509,48 @@ const PortfolioView: React.FC = () => {
       </div>
 
       {/* View Toggle + Sort */}
+      {/* API Configuration Button */}
+      {!settings.brapiToken && (
+        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-between gap-4">
+           <div className="flex items-center gap-3">
+              <span className="text-xl">⚠️</span>
+              <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest leading-relaxed">
+                As cotações automáticas estão desativadas. Obtenha seu token gratuito <a href="https://brapi.dev/register" target="_blank" className="underline">aqui</a>.
+              </p>
+           </div>
+           <button onClick={() => setShowApiConfig(true)} className="px-4 py-2 bg-amber-500 text-black text-[9px] font-black uppercase rounded-lg hover:brightness-110 transition-all">Configurar</button>
+        </div>
+      )}
+
+      {showApiConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+           <div className="bg-[#0a111f] border border-white/10 p-8 rounded-[32px] w-full max-w-md shadow-2xl space-y-6">
+              <div className="flex items-center justify-between">
+                 <h3 className="text-sm font-black text-white uppercase tracking-widest">Configurar API Brapi</h3>
+                 <button onClick={() => setShowApiConfig(false)} className="text-slate-500 hover:text-white">✕</button>
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                Para carregar cotações e dividendos em tempo real, crie uma conta gratuita no <a href="https://brapi.dev/" target="_blank" className="text-sky-400 underline">brapi.dev</a> e cole seu token abaixo.
+              </p>
+              <div className="space-y-2">
+                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Brapi Token</label>
+                 <input type="text" value={tempToken} onChange={(e) => setTempToken(e.target.value)} 
+                   className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-xs text-white" placeholder="Sua chave API..." />
+              </div>
+              <button 
+                onClick={() => {
+                  onUpdateSettings({ ...settings, brapiToken: tempToken });
+                  localStorage.setItem('brapi_token', tempToken);
+                  setShowApiConfig(false);
+                }}
+                className="w-full py-4 bg-sky-500 text-white font-black uppercase tracking-widest rounded-xl text-[10px]"
+              >
+                Salvar Configurações
+              </button>
+           </div>
+        </div>
+      )}
+
       {fiis.length > 0 && (
         <>
             <div className="flex gap-4 items-center">
@@ -448,6 +572,12 @@ const PortfolioView: React.FC = () => {
           </div>
             {activeView === 'lista' && (
               <div className="flex items-center gap-2 text-[9px]">
+                <button 
+                  onClick={handleRefreshAll}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 rounded-lg font-black uppercase tracking-widest transition-all border border-sky-500/20 mr-2"
+                >
+                  <span className="text-xs">🔄</span> Atualizar Cotações
+                </button>
                 <span className="text-slate-600 font-black uppercase tracking-widest">Ordenar:</span>
                 <SortBtn field="patrimony" label="Patrimônio" />
                 <SortBtn field="dividend" label="Dividendo" />
@@ -477,10 +607,10 @@ const PortfolioView: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {sorted.map((f) => {
-                    const patrimony = f.shares * f.currentPrice;
-                    const monthDiv = f.shares * f.lastDividend;
+                    const patrimony = (f.shares || 0) * (f.currentPrice || 0);
+                    const monthDiv = (f.shares || 0) * (f.lastDividend || 0);
                     const dy = f.currentPrice > 0 ? (f.lastDividend / f.currentPrice) * 100 : 0;
-                    const result = ((f.currentPrice - f.avgPrice) / f.avgPrice) * 100;
+                    const result = f.avgPrice > 0 ? ((f.currentPrice - f.avgPrice) / f.avgPrice) * 100 : 0;
                     const weight = totalPatrimony > 0 ? (patrimony / totalPatrimony) * 100 : 0;
                     return (
                       <tr key={f.id} className="hover:bg-white/[0.02] transition-colors group">
@@ -565,50 +695,92 @@ const PortfolioView: React.FC = () => {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-const Investments: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'simulador' | 'carteira'>('simulador');
+const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: StoreSettings) => void }> = ({ settings, onUpdateSettings }) => {
   const [inputs, setInputs] = useState<SimulatorInputs>({
     monthlyInvestment: 5000,
     dividendGoal: 0,
     period: 5,
     periodUnit: 'Anos',
     reinvest: true,
-    dualMode: false,
+    multiFundMode: false,
     funds: [
-      { label: 'Fundo A', sharePrice: 79.97, lastDividend: 1.21, initialShares: 0, splitPct: 50 },
-      { label: 'Fundo B', sharePrice: 10.50, lastDividend: 0.12, initialShares: 0, splitPct: 50 },
+      { label: 'Fundo A', sharePrice: 79.97, lastDividend: 1.21, initialShares: 0, splitPct: 100 },
     ],
   });
-  const [results, setResults] = useState<[SimResult | null, SimResult | null]>([null, null]);
+  const [activeTab, setActiveTab] = useState<'simulador' | 'carteira'>('simulador');
+  const [results, setResults] = useState<SimResult[]>([]);
 
-  const updateFund = (index: 0 | 1, field: keyof FundConfig, val: string) => {
+  const addFund = () => {
+    if (inputs.funds.length >= 6) return;
+    setInputs(p => ({
+      ...p,
+      multiFundMode: true,
+      funds: [...p.funds, { label: `Fundo ${String.fromCharCode(65 + p.funds.length)}`, sharePrice: 100, lastDividend: 1, initialShares: 0, splitPct: 0 }]
+    }));
+  };
+
+  const removeFund = (idx: number) => {
+    if (inputs.funds.length <= 1) {
+      setInputs(p => ({ ...p, multiFundMode: false }));
+      return;
+    }
+    setInputs(p => {
+      const newFunds = p.funds.filter((_, i) => i !== idx);
+      return { ...p, funds: newFunds, multiFundMode: newFunds.length > 1 };
+    });
+  };
+
+  const updateFund = (index: number, field: keyof FundConfig, val: string) => {
     setInputs((prev) => {
-      const funds = [...prev.funds] as [FundConfig, FundConfig];
-      if (field === 'splitPct') {
-        const pct = Math.min(90, Math.max(10, Number(val)));
-        funds[0] = { ...funds[0], splitPct: index === 0 ? pct : 100 - pct };
-        funds[1] = { ...funds[1], splitPct: index === 1 ? pct : 100 - pct };
-      } else {
-        funds[index] = { ...funds[index], [field]: field === 'label' ? val : Number(val) };
+      const funds = [...prev.funds];
+      const numVal = field === 'label' ? val : Number(val);
+      funds[index] = { ...funds[index], [field]: numVal } as FundConfig;
+      
+      // Basic splitPct rebalancing if needed
+      if (field === 'splitPct' && funds.length === 2) {
+        const otherIdx = index === 0 ? 1 : 0;
+        funds[otherIdx].splitPct = 100 - (numVal as number);
       }
+      
       return { ...prev, funds };
+    });
+  };
+
+  const redistributeEqually = () => {
+    setInputs(p => {
+      const count = p.funds.length;
+      if (count === 0) return p;
+      const share = Math.floor(100 / count);
+      const remainder = 100 % count;
+      return {
+        ...p,
+        funds: p.funds.map((f, i) => ({ 
+          ...f, 
+          splitPct: i === 0 ? share + remainder : share 
+        }))
+      };
     });
   };
 
   const handleCalc = useCallback(() => {
     const totalMonths = inputs.periodUnit === 'Anos' ? inputs.period * 12 : inputs.period;
-    const inv0 = inputs.dualMode ? inputs.monthlyInvestment * (inputs.funds[0].splitPct / 100) : inputs.monthlyInvestment;
-    const inv1 = inputs.dualMode ? inputs.monthlyInvestment * (inputs.funds[1].splitPct / 100) : 0;
+    const totalSplit = inputs.funds.reduce((s, f) => s + f.splitPct, 0);
+    
+    if (inputs.multiFundMode && totalSplit !== 100 && inputs.funds.length > 1) {
+      alert(`A soma das porcentagens deve ser 100% (atual: ${totalSplit}%).\nUse o botão "Distribuir Igual" se desejar.`);
+      return;
+    }
 
-    const r0 = simulateFund(inv0, inputs.funds[0].sharePrice, inputs.funds[0].lastDividend, inputs.funds[0].initialShares, totalMonths, inputs.reinvest, inputs.dividendGoal).result;
-    const r1 = inputs.dualMode
-      ? simulateFund(inv1, inputs.funds[1].sharePrice, inputs.funds[1].lastDividend, inputs.funds[1].initialShares, totalMonths, inputs.reinvest, inputs.dividendGoal).result
-      : null;
+    const newResults = inputs.funds.map(fund => {
+      const inv = inputs.multiFundMode ? (inputs.monthlyInvestment * (fund.splitPct || 0) / 100) : inputs.monthlyInvestment;
+      const sPrice = fund.sharePrice || 0.01; // Avoid 0
+      return simulateFund(inv, sPrice, fund.lastDividend || 0, fund.initialShares || 0, totalMonths, inputs.reinvest, inputs.dividendGoal).result;
+    });
 
-    setResults([r0, r1]);
+    setResults(newResults);
   }, [inputs]);
 
-  const [r0, r1] = results;
+  // Use results.map for rendering instead of r0, r1
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -659,37 +831,55 @@ const Investments: React.FC = () => {
                 />
               </div>
               <div className="flex flex-wrap gap-6">
+              <div className="flex flex-wrap gap-4 items-center">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={inputs.reinvest} onChange={(e) => setInputs((p) => ({ ...p, reinvest: e.target.checked }))} className="w-4 h-4 accent-sky-500" />
                   <span className="text-xs text-slate-400 font-medium">Reinvestir dividendos</span>
                 </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={inputs.dualMode} onChange={(e) => setInputs((p) => ({ ...p, dualMode: e.target.checked }))} className="w-4 h-4 accent-violet-500" />
-                  <span className="text-xs text-violet-400 font-black uppercase tracking-widest">Dividir em 2 fundos</span>
-                </label>
+                <div className="h-6 w-px bg-white/10 hidden sm:block" />
+                <button onClick={addFund} disabled={inputs.funds.length >= 6} className="px-4 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-sky-500/20 disabled:opacity-30">
+                  + Adicionar Fundo
+                </button>
+                {inputs.funds.length > 1 && (
+                  <button onClick={redistributeEqually} className="px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-violet-500/20">
+                    Distribuir Igual (%)
+                  </button>
+                )}
               </div>
             </div>
 
+              </div>
+
             {/* Fund Forms */}
-            <div className={`grid gap-6 ${inputs.dualMode ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
-              <FundForm fund={inputs.funds[0]} index={0} dualMode={inputs.dualMode} onChange={(f, v) => updateFund(0, f, v)} accentColor="sky" />
-              {inputs.dualMode && (
-                <FundForm fund={inputs.funds[1]} index={1} dualMode={inputs.dualMode} onChange={(f, v) => updateFund(1, f, v)} accentColor="violet" />
-              )}
+            <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 ${inputs.funds.length > 4 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+              {inputs.funds.map((f, i) => (
+                <FundForm 
+                  key={i} 
+                  fund={f} 
+                  index={i} 
+                  multiFundMode={inputs.multiFundMode} 
+                  onChange={(field, v) => updateFund(i, field, v)} 
+                  onRemove={inputs.funds.length > 1 ? () => removeFund(i) : undefined}
+                  accent={ACCENT_COLORS[i % ACCENT_COLORS.length]} 
+                />
+              ))}
             </div>
 
             {/* Split Preview */}
-            {inputs.dualMode && (
-              <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-6 flex items-center gap-6">
-                <div className="flex-1">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                    <span className="text-sky-400">{inputs.funds[0].label} — {inputs.funds[0].splitPct}% ({fmt(inputs.monthlyInvestment * inputs.funds[0].splitPct / 100)})</span>
-                    <span className="text-violet-400">{inputs.funds[1].label} — {inputs.funds[1].splitPct}% ({fmt(inputs.monthlyInvestment * inputs.funds[1].splitPct / 100)})</span>
-                  </div>
-                  <div className="w-full h-3 rounded-full overflow-hidden flex">
-                    <div className="bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-300" style={{ width: `${inputs.funds[0].splitPct}%` }} />
-                    <div className="bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-300 flex-1" />
-                  </div>
+            {inputs.multiFundMode && inputs.funds.length > 1 && (
+              <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-6 space-y-3">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                  <span className="text-slate-500">Divisão do Investimento Total</span>
+                  <span className={inputs.funds.reduce((s, f) => s + f.splitPct, 0) === 100 ? 'text-emerald-400' : 'text-rose-400'}>
+                    Total: {inputs.funds.reduce((s, f) => s + f.splitPct, 0)}%
+                  </span>
+                </div>
+                <div className="w-full h-3 rounded-full overflow-hidden flex gap-0.5">
+                  {inputs.funds.map((f, i) => (
+                    <div key={i} title={`${f.label}: ${f.splitPct}%`}
+                      className={`h-full transition-all duration-500 ${ACCENT_COLORS[i % ACCENT_COLORS.length].bg}`}
+                      style={{ width: `${f.splitPct}%` }} />
+                  ))}
                 </div>
               </div>
             )}
@@ -701,28 +891,57 @@ const Investments: React.FC = () => {
               </button>
             </div>
 
-            {/* Results */}
-            {r0 && (
+            {/* Results Grid */}
+            {results.length > 0 && (
               <>
-                <div className={`grid gap-6 ${inputs.dualMode ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-                  <SummaryCard label={inputs.dualMode ? inputs.funds[0].label : 'Resultado'} result={r0} period={inputs.period} periodUnit={inputs.periodUnit} sharePrice={inputs.funds[0].sharePrice} lastDividend={inputs.funds[0].lastDividend} gradient="bg-gradient-to-br from-sky-600 to-indigo-700" />
-                  {inputs.dualMode && r1 && (
-                    <SummaryCard label={inputs.funds[1].label} result={r1} period={inputs.period} periodUnit={inputs.periodUnit} sharePrice={inputs.funds[1].sharePrice} lastDividend={inputs.funds[1].lastDividend} gradient="bg-gradient-to-br from-violet-600 to-purple-800" />
-                  )}
+                <div className={`grid gap-6 grid-cols-1 ${results.length > 1 ? 'md:grid-cols-2' : ''} ${results.length > 4 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+                  {results.map((res, i) => (
+                    <SummaryCard 
+                      key={i}
+                      label={inputs.funds[i].label} 
+                      result={res} 
+                      period={inputs.period} 
+                      periodUnit={inputs.periodUnit} 
+                      sharePrice={inputs.funds[i].sharePrice} 
+                      lastDividend={inputs.funds[i].lastDividend} 
+                      gradient={ACCENT_COLORS[i % ACCENT_COLORS.length].gradient} 
+                    />
+                  ))}
                 </div>
 
+                {/* Combined Card (Always show if > 1 fund) */}
+                {results.length > 1 && (
+                  <div className="glass-card bg-gradient-to-br from-emerald-900/30 to-[#0a111f]/60 border border-emerald-500/20 rounded-[40px] p-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="sm:col-span-3">
+                      <span className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em]">Total Combinado de Todos os Fundos</span>
+                    </div>
+                    {[
+                      { label: 'Total Investido', value: fmt(results.reduce((s, r) => s + r.totalInvested, 0)) },
+                      { label: 'Total Reinvestido', value: fmt(results.reduce((s, r) => s + r.totalReinvested, 0)) },
+                      { label: 'Dividendo Mensal Final', value: fmt(results.reduce((s, r) => s + r.finalMonthlyDividend, 0)) },
+                    ].map((item) => (
+                      <div key={item.label} className="flex flex-col gap-1">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{item.label}</span>
+                        <span className="text-xl font-black text-emerald-400 tracking-tight">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 {/* Dividend Goal Card */}
                 {inputs.dividendGoal > 0 && (() => {
-                  const combinedFinal = r0.finalMonthlyDividend + (inputs.dualMode && r1 ? r1.finalMonthlyDividend : 0);
+                  const combinedFinal = results.reduce((s, r) => s + r.finalMonthlyDividend, 0);
                   const pct = Math.min(100, (combinedFinal / inputs.dividendGoal) * 100);
-                  const goalHit = r0.goalMonthHit ?? (inputs.dualMode && r1 ? r1.goalMonthHit : null);
+                  // Approximate goal hit month by taking the best performing one or combined logic? 
+                  // For simplicity, we check if any reached it, or just show final status.
+                  const goalHit = results.find(r => r.goalMonthHit !== null)?.goalMonthHit;
                   const reached = pct >= 100;
                   return (
                     <div className={`rounded-[40px] p-8 border ${reached ? 'bg-gradient-to-br from-emerald-900/40 to-[#0a111f]/60 border-emerald-500/30' : 'bg-gradient-to-br from-amber-900/20 to-[#0a111f]/60 border-amber-500/20'}`}>
                       <div className="flex items-center justify-between mb-6">
                         <div>
                           <span className={`text-[11px] font-black uppercase tracking-[0.4em] ${reached ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            🎯 Meta de Dividendo Mensal
+                            🎯 Meta de Dividendo Mensal Combinado
                           </span>
                           <p className="text-slate-400 text-xs font-medium mt-1">Objetivo: {fmt(inputs.dividendGoal)}/mês</p>
                         </div>
@@ -732,7 +951,6 @@ const Investments: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Progress Bar */}
                       <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden mb-4">
                         <div
                           className={`h-full rounded-full transition-all duration-700 ${reached ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-gradient-to-r from-amber-500 to-amber-400'}`}
@@ -750,9 +968,9 @@ const Investments: React.FC = () => {
                           <span className="text-base font-black text-white">{fmt(inputs.dividendGoal)}</span>
                         </div>
                         <div>
-                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Mês que Atingiu</span>
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Status</span>
                           <span className={`text-base font-black ${reached ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {goalHit ? `${goalHit}º mês` : reached ? '—' : 'Não atingido'}
+                            {reached ? 'META ATINGIDA' : 'EM PROGRESSO'}
                           </span>
                         </div>
                       </div>
@@ -760,44 +978,25 @@ const Investments: React.FC = () => {
                   );
                 })()}
 
-                {/* Combined Card */}
-                {inputs.dualMode && r1 && (
-                  <div className="glass-card bg-gradient-to-br from-emerald-900/30 to-[#0a111f]/60 border border-emerald-500/20 rounded-[40px] p-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
-                    <div className="col-span-2 sm:col-span-4">
-                      <span className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em]">Total Combinado</span>
+                {/* Projections */}
+                <div className="space-y-10">
+                  {results.map((res, i) => (
+                    <div key={i} className="space-y-4">
+                      <h3 className={`text-[11px] font-black uppercase tracking-[0.4em] flex items-center gap-2 ${ACCENT_COLORS[i % ACCENT_COLORS.length].text}`}>
+                        <span className={`w-2 h-2 rounded-full ${ACCENT_COLORS[i % ACCENT_COLORS.length].bg}`} />
+                        {inputs.funds[i].label} — Projeções Mensais
+                      </h3>
+                      {res.years.map((rows, y) => (
+                        <YearTable key={y} year={y} rows={rows} color={ACCENT_COLORS[i % ACCENT_COLORS.length].text} />
+                      ))}
                     </div>
-                    {[
-                      { label: 'Total Investido', value: fmt(r0.totalInvested + r1.totalInvested) },
-                      { label: 'Total Reinvestido', value: fmt(r0.totalReinvested + r1.totalReinvested) },
-                      { label: 'Dividendo Mensal Final', value: fmt(r0.finalMonthlyDividend + r1.finalMonthlyDividend) },
-                    ].map((item) => (
-                      <div key={item.label} className="flex flex-col gap-1">
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{item.label}</span>
-                        <span className="text-xl font-black text-emerald-400 tracking-tight">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Tables */}
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    {inputs.dualMode && <h3 className="text-[11px] font-black text-sky-400 uppercase tracking-[0.4em] flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-sky-500" />{inputs.funds[0].label} — Projeção</h3>}
-                    {!inputs.dualMode && <h3 className="text-[11px] font-black text-sky-500 uppercase tracking-[0.4em] flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_10px_#0ea5e9]" />PROJEÇÃO DETALHADA</h3>}
-                    {r0.years.map((rows, y) => <YearTable key={y} year={y} rows={rows} color="text-sky-400" />)}
-                  </div>
-                  {inputs.dualMode && r1 && (
-                    <div className="space-y-4">
-                      <h3 className="text-[11px] font-black text-violet-400 uppercase tracking-[0.4em] flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-violet-500" />{inputs.funds[1].label} — Projeção</h3>
-                      {r1.years.map((rows, y) => <YearTable key={y} year={y} rows={rows} color="text-violet-400" />)}
-                    </div>
-                  )}
+                  ))}
                 </div>
               </>
             )}
           </>
         ) : (
-          <PortfolioView />
+          <PortfolioView settings={settings} onUpdateSettings={onUpdateSettings} />
         )}
       </div>
     </div>

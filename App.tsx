@@ -495,6 +495,7 @@ const App: React.FC = () => {
           onEditOrder={handleEditOrder}
           onDeleteOrder={handleDeleteOrder} 
           onReceivePayment={handleReceivePayment}
+          stock={stock}
         />;
       case 'sales':
         return <Sales 
@@ -504,7 +505,7 @@ const App: React.FC = () => {
           onDeleteOrder={handleDeleteOrder} 
         />;
       case 'investments':
-        return <Investments />;
+        return <Investments settings={settings} onUpdateSettings={(s) => { setSettings(s); dbService.saveSettings(s); }} />;
       case 'customers':
         return <Customers 
           customers={customers} 
@@ -554,6 +555,7 @@ const App: React.FC = () => {
           onEditOrder={handleEditOrder}
           onDeleteOrder={handleDeleteOrder} 
           onReceivePayment={handleReceivePayment}
+          stock={stock}
         />;
     }
   };

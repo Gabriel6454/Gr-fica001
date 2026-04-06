@@ -98,6 +98,7 @@ export interface StoreSettings {
   footerWarning?: string;
   menuOrder?: string[];
   systemScale?: number;
+  brapiToken?: string;
 }
 
 export interface Customer {
