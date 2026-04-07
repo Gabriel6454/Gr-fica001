@@ -924,12 +924,7 @@ const Orders: React.FC<OrdersProps> = ({
   const [selectedOrder, setSelectedOrder] = useState<Order | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'entrada' | 'producao' | 'logistica' | 'finalizados'>('entrada');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
-  const [expandedOrders, setExpandedOrders] = useState<string[]>([]);
 
-  const toggleExpanded = (id: string) => {
-    setExpandedOrders(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm);
@@ -979,348 +974,118 @@ const Orders: React.FC<OrdersProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 border-b border-white/5 mb-6 px-4 sm:px-6 md:px-8">
+    <div className="space-y-6 animate-in fade-in duration-700 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-8 border-b border-white/5 mb-6 px-4 sm:px-6 md:px-8">
         <div className="space-y-0.5">
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none uppercase">Gestão de <span className="text-sky-500">Pedidos</span></h1>
-          <p className="text-slate-500 text-xs sm:text-sm font-medium">Fluxo de produção e recebimentos financeiros</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none uppercase italic">Gestão de <span className="text-sky-500">Pedidos</span></h1>
+          <p className="text-slate-500 text-xs sm:text-sm font-medium">Fluxo de produção lateral (Kanban) em tempo real</p>
         </div>
-        <button onClick={handleNewOrder} className="flex items-center justify-center gap-2 px-6 py-3 bg-sky-500 text-white font-black uppercase rounded-2xl text-[10px] sm:text-[11px] tracking-widest shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto">
-          {ICONS.Plus} <span>Criar Novo Pedido</span>
+        <button onClick={handleNewOrder} className="flex items-center justify-center gap-2 px-8 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-2xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto">
+          {ICONS.Plus} <span>Abrir Novo Pedido</span>
         </button>
       </div>
 
-      {/* Tabs – scroll horizontal no mobile */}
-      <div className="tabs-scroll flex items-center gap-2 px-4 sm:px-6 md:px-8 pb-1">
-        {[
-          { id: 'entrada',    label: 'Novas Entradas',   icon: ICONS.Plus,     color: 'amber',   count: orders.filter(o => o.status === OrderStatus.QUOTATION || o.status === OrderStatus.WAITING_PAYMENT || o.status === OrderStatus.WAITING_FILE).length },
-          { id: 'producao',   label: 'Arte/Produção',    icon: ICONS.Settings, color: 'sky',     count: orders.filter(o => o.status === OrderStatus.ART || o.status === OrderStatus.WAITING_APPROVAL || o.status === OrderStatus.PRODUCTION || o.status === OrderStatus.READY_FOR_PICKUP).length },
-          { id: 'logistica',  label: 'Logística',         icon: ICONS.Shipping,  color: 'purple',  count: orders.filter(o => o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED).length },
-          { id: 'finalizados',label: 'Histórico',          icon: ICONS.Success,   color: 'emerald', count: orders.filter(o => o.status === OrderStatus.COMPLETED).length },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`shrink-0 px-4 sm:px-5 py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === tab.id
-                ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20`
-                : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-white/5'
-            }`}
-          >
-            {tab.icon}
-            <span className="hidden xs:inline">{tab.label}</span>
-            <span className="inline xs:hidden">{tab.label.split('/')[0]}</span>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-500'}`}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
-        <div className="flex items-center gap-3">
-           <button 
-             onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
-             className="px-4 py-3 bg-[#0a111f]/40 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
-           >
-             {viewMode === 'table' ? '🗺️ Ver Cards' : '📋 Ver Tabela'}
-           </button>
+      <div className="px-4 sm:px-6 md:px-8 mb-4">
+        <div className="relative group">
+          <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors">{ICONS.Search}</div>
+          <input 
+            type="text" 
+            placeholder="Buscar cliente, material ou ID do pedido..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="w-full bg-[#0a111f]/40 border border-white/5 rounded-[24px] py-4 sm:py-5 pl-14 pr-6 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700 shadow-xl backdrop-blur-md"
+          />
         </div>
       </div>
 
-      <div className="relative group px-4 sm:px-6 md:px-8">
-        <div className="absolute left-10 sm:left-14 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors">{ICONS.Search}</div>
-        <input type="text" placeholder="Buscar por cliente ou ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#0a111f]/40 border border-white/5 rounded-[24px] py-3.5 sm:py-4 pl-10 sm:pl-14 pr-5 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700 shadow-xl backdrop-blur-md" />
-      </div>
-
-      <div className="px-4 sm:px-8">
-        {/* Layout Switcher: Desktop Table */}
-        {viewMode === 'table' && (
-          <div className="hidden lg:block glass-card bg-[#0a111f]/40 border border-white/5 rounded-[40px] overflow-hidden shadow-3xl backdrop-blur-xl mb-6">
-            <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-b border-white/5 bg-white/5">
-                    <th className="py-8 px-10">ID</th>
-                    <th className="py-8 px-10">CLIENTE</th>
-                    {activeTab === 'entrada' && (
-                      <>
-                        <th className="py-8 px-10">DATA PEDIDO</th>
-                        <th className="py-8 px-10">TOTAL / PAGO</th>
-                        <th className="py-8 px-10">STATUS ENTRADA</th>
-                      </>
-                    )}
-                    {activeTab === 'producao' && (
-                      <>
-                        <th className="py-8 px-10">PRAZO ENTREGA</th>
-                        <th className="py-8 px-10">TOTAL / PENDENTE</th>
-                        <th className="py-8 px-10">STATUS PRODUÇÃO</th>
-                      </>
-                    )}
-                    {activeTab === 'logistica' && (
-                      <>
-                        <th className="py-8 px-10">TRANSPORTADORA</th>
-                        <th className="py-8 px-10">CÓDIGO RASTREIO</th>
-                        <th className="py-8 px-10">STATUS ENVIO</th>
-                      </>
-                    )}
-                    {activeTab === 'finalizados' && (
-                      <>
-                        <th className="py-8 px-10">DATA FINALIZAÇÃO</th>
-                        <th className="py-8 px-10">TOTAL PAGO</th>
-                        <th className="py-8 px-10">PAGAMENTO</th>
-                      </>
-                    )}
-                    <th className="py-8 px-10 text-right">AÇÕES</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.02]">
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} className="group hover:bg-white/[0.03] transition-all">
-                      <td className="py-6 px-10">
-                        <span className="text-[10px] font-black text-slate-600">#{order.id.substring(0,6)}</span>
-                      </td>
-                      <td className="py-6 px-10">
-                        <div className="flex flex-col gap-1">
-                          <h4 className="font-bold text-slate-100 text-[13px] uppercase tracking-tight">{order.customerName}</h4>
-                        </div>
-                      </td>
-
-                      {activeTab === 'entrada' && (
-                        <>
-                          <td className="py-6 px-10">
-                            <span className="text-[11px] text-slate-100 font-black">{order.date}</span>
-                          </td>
-                          <td className="py-6 px-10">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[13px] font-black text-white italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                              <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Pago R$ {(order.total - order.remainingAmount).toFixed(2).replace('.', ',')}</span>
-                            </div>
-                          </td>
-                          <td className="py-6 px-10">
-                            <button onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))} className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] ${getStatusBadgeClass(order.status)}`}>
-                              {order.status}
-                            </button>
-                          </td>
-                        </>
-                      )}
-
-                      {activeTab === 'producao' && (
-                        <>
-                          <td className="py-6 px-10">
-                            <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
-                          </td>
-                          <td className="py-6 px-10">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[13px] font-black text-white italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                              {order.remainingAmount > 0 && (
-                                <span className="text-[9px] text-rose-500 font-bold uppercase tracking-widest">Falta R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-6 px-10">
-                            <button onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))} className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] ${getStatusBadgeClass(order.status)}`}>
-                              {order.status}
-                            </button>
-                          </td>
-                        </>
-                      )}
-
-                      {activeTab === 'logistica' && (
-                        <>
-                          <td className="py-6 px-10">
-                            <span className="text-[11px] text-sky-500 font-black uppercase tracking-widest">{order.carrier || 'Correios'}</span>
-                          </td>
-                          <td className="py-6 px-10">
-                             <div className="flex items-center gap-3">
-                               <span className="text-[11px] text-slate-400 font-black font-mono">{order.trackingCode || 'Sem código'}</span>
-                               {order.trackingCode && <div className="w-5 h-5 bg-sky-500/10 rounded-md flex items-center justify-center text-sky-500 animate-pulse">{ICONS.Shipping}</div>}
-                             </div>
-                          </td>
-                          <td className="py-6 px-10">
-                            <button onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))} className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] ${getStatusBadgeClass(order.status)}`}>
-                              {order.status}
-                            </button>
-                          </td>
-                        </>
-                      )}
-
-                      {activeTab === 'finalizados' && (
-                        <>
-                          <td className="py-6 px-10">
-                            <span className="text-[11px] text-slate-100 font-black">{order.deliveryDate}</span>
-                          </td>
-                          <td className="py-6 px-10">
-                            <span className="text-[13px] font-black text-emerald-500 italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                          </td>
-                          <td className="py-6 px-10">
-                             <span className="bg-emerald-500/10 text-emerald-500 text-[9px] font-black px-4 py-1.5 rounded-full border border-emerald-500/20 uppercase tracking-widest">
-                               {order.paymentMethod || 'PIX'} - PAGO
-                             </span>
-                          </td>
-                        </>
-                      )}
-
-                      <td className="py-6 px-10 text-right">
-                        <div className="flex justify-end gap-2.5">
-                          <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center" title="Enviar WhatsApp com Link">{ICONS.Whatsapp}</button>
-                          <button 
-                            onClick={() => {
-                              const link = `${window.location.origin}?tracking=${order.id}`;
-                              navigator.clipboard.writeText(link);
-                              alert('Link de rastreamento copiado!');
-                            }}
-                            className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-sky-500 hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center"
-                            title="Copiar Link de Rastreio"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                          </button>
-                          <button onClick={() => handlePrintOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center" title="Imprimir">{ICONS.Print}</button>
-                          <button onClick={() => handleTrackOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center" title="Rastrear">{ICONS.Shipping}</button>
-                          <button onClick={() => handleEditOrder(order)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center" title="Editar">{ICONS.Edit}</button>
-                          <button onClick={() => handleDelete(order.id)} className="w-10 h-10 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-rose-500 transition-all flex items-center justify-center" title="Excluir">{ICONS.Trash}</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        <div className={`space-y-6 pb-20 ${viewMode === 'table' ? 'lg:hidden' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 space-y-0'}`}>
-          {filteredOrders.map((order) => {
-            const isExpanded = expandedOrders.includes(order.id);
-            return (
-              <div key={order.id} className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[32px] p-5 space-y-4 shadow-2xl backdrop-blur-xl">
-                {/* Card Header (Expand/Collapse Trigger) */}
-                <div 
-                  className="flex justify-between items-center cursor-pointer select-none group" 
-                  onClick={() => toggleExpanded(order.id)}
-                >
-                  <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black text-slate-600 leading-none tracking-widest uppercase italic">#{order.id.substring(0,6)}</span>
-                      {isExpanded && <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_#38bdf8]" />}
-                      {!isExpanded && (
-                        <span className="text-[8px] font-black py-0.5 px-2 bg-sky-500/10 text-sky-400 rounded-full uppercase tracking-widest group-hover:scale-105 transition-transform">
-                          RECOLHIDO
-                        </span>
-                      )}
-                    </div>
-                    <h4 className={`font-black uppercase leading-tight tracking-tight transition-all ${isExpanded ? 'text-white text-lg' : 'text-slate-300 text-sm group-hover:text-white'}`}>
-                      {order.customerName}
-                    </h4>
+      <div className="flex-1 min-h-0 overflow-x-auto no-scrollbar px-4 sm:px-6 md:px-8 pb-10">
+        <div className="flex gap-6 h-full min-w-max pb-4">
+          {[
+            { id: 'entrada', label: 'Entradas', color: 'amber', icon: ICONS.Plus, statuses: [OrderStatus.QUOTATION, OrderStatus.WAITING_PAYMENT, OrderStatus.WAITING_FILE] },
+            { id: 'producao', label: 'Produção', color: 'sky', icon: ICONS.Settings, statuses: [OrderStatus.ART, OrderStatus.WAITING_APPROVAL, OrderStatus.PRODUCTION, OrderStatus.READY_FOR_PICKUP] },
+            { id: 'logistica', label: 'Logística', color: 'purple', icon: ICONS.Shipping, statuses: [OrderStatus.SHIPPING, OrderStatus.DELIVERED] },
+            { id: 'finalizados', label: 'Concluídos', color: 'emerald', icon: ICONS.Success, statuses: [OrderStatus.COMPLETED] },
+          ].map((column) => (
+            <div key={column.id} className="w-[340px] sm:w-[380px] flex flex-col gap-5">
+              <div className={`p-5 rounded-[28px] bg-${column.color}-500/10 border border-${column.color}-500/20 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xl shadow-xl shadow-black/20`}>
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl bg-${column.color}-500 text-white flex items-center justify-center shadow-2xl shadow-${column.color}-500/30`}>
+                    <div className="scale-110">{column.icon}</div>
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                        <path d="M6 9l6 6 6-6"/>
-                      </svg>
-                    </div>
+                  <div>
+                    <h3 className="text-[13px] font-black text-white uppercase tracking-tighter italic leading-none">{column.label}</h3>
+                    <p className={`text-[10px] text-${column.color}-400 font-black uppercase tracking-[0.2em] mt-1.5`}>
+                      {orders.filter(o => {
+                        const matchesSearch = (o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm));
+                        return matchesSearch && column.statuses.includes(o.status);
+                      }).length} Pedidos
+                    </p>
                   </div>
                 </div>
+              </div>
 
-                {/* Status Badge (Always visible even if collapsed) */}
-                {!isExpanded && (
-                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                     <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusBadgeClass(order.status)}`}>
-                        {order.status}
-                     </span>
-                     <span className="text-[10px] font-black text-white italic">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                )}
-
-                {/* Expanded Details */}
-                {isExpanded && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
-                       <div className="space-y-1">
-                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Status Atual</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onUpdateStatus(order.id, getNextStatus(order.status));
-                            }}
-                            className={`px-6 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all shadow-lg ${getStatusBadgeClass(order.status)}`}
-                          >
-                            {order.status}
-                          </button>
-                       </div>
-                       {order.status === OrderStatus.COMPLETED && (
-                         <span className="px-6 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-500/30 bg-emerald-500/10 text-emerald-500">
-                           CONCLUÍDO
-                         </span>
-                       )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">
-                          {activeTab === 'logistica' ? 'Transporte' : 'Data Pedido'}
-                        </span>
-                        <p className="text-xs font-black text-white">
-                          {activeTab === 'logistica' ? (order.carrier || 'Correios') : order.date}
-                        </p>
-                      </div>
-                      <div className="space-y-1 text-right">
-                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block italic">Total Bruto</span>
-                        <p className="text-lg font-black text-sky-500 leading-none">
-                          R$ {order.total.toFixed(2).replace('.', ',')}
-                        </p>
-                      </div>
-                    </div>
-
-                    {order.remainingAmount > 0 && (
-                      <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex items-center justify-between">
-                        <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Saldo Pendente</span>
-                        <span className="text-sm font-black text-rose-500 italic">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); contactCustomer(order, customers.find(c => c.id === order.customerId)); }} 
-                        className="flex-1 min-w-[45%] h-12 bg-white/5 border border-white/5 rounded-2xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                      >
-                        {ICONS.Whatsapp} Zap
-                      </button>
-                      
-                      {order.remainingAmount > 0 && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handlePayOrder(order); }} 
-                          className="flex-1 min-w-[45%] h-12 bg-emerald-500 text-white rounded-2xl transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+              <div className="flex-1 space-y-6 overflow-y-auto no-scrollbar min-h-0 pb-12 px-1">
+                {orders
+                  .filter(o => {
+                    const matchesSearch = (o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm));
+                    return matchesSearch && column.statuses.includes(o.status);
+                  })
+                  .map((order) => (
+                    <div key={order.id} className={`glass-card bg-[#0a111f]/40 border border-t-2 border-white/5 rounded-[32px] p-6 space-y-6 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-500 hover:border-${column.color}-500/30 hover:scale-[1.02] transition-all group`}>
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-1 min-w-0">
+                          <span className="text-[10pt] font-black text-slate-600 tracking-widest uppercase italic">#{order.id.substring(0,8)}</span>
+                          <h4 className="text-[13pt] font-black text-white uppercase leading-tight tracking-tight truncate border-l-4 border-sky-500 pl-3 group-hover:border-white transition-all">
+                            {order.customerName}
+                          </h4>
+                        </div>
+                        <button
+                          onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
+                          className={`shrink-0 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-xl active:scale-90 ${getStatusBadgeClass(order.status)}`}
                         >
-                          $ Pagar
+                          {order.status}
                         </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 py-5 border-y border-white/5">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block italic opacity-60">Prazo / Retirada</span>
+                          <p className="text-[11px] font-black text-white">
+                            {order.deliveryDate}
+                          </p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block italic opacity-60">Investimento</span>
+                          <p className="text-sm font-black text-sky-500 italic">
+                            R$ {order.total.toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+                      </div>
+
+                      {order.remainingAmount > 0 && (
+                        <div className="bg-rose-500/10 border border-rose-500/20 rounded-[20px] p-4 flex items-center justify-between animate-pulse">
+                          <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Saldo Devedor</span>
+                          <span className="text-xs font-black text-rose-500 italic">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+                        </div>
                       )}
 
-                      <div className="flex gap-2 w-full">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleEditOrder(order); }} 
-                          className="flex-1 py-4 bg-white/5 border border-white/5 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center gap-2"
-                        >
-                          {ICONS.Edit} Editar
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }} 
-                          className="p-4 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all"
-                        >
-                          {ICONS.Print}
-                        </button>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-5 gap-2.5">
+                          <button onClick={() => { const link = `${window.location.origin}?tracking=${order.id}`; navigator.clipboard.writeText(link); alert('Link copiado!'); }} title="Copiando Link" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-sky-500 hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center shadow-lg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
+                          <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} title="WhatsApp" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-lg">{ICONS.Whatsapp}</button>
+                          <button onClick={() => handlePrintOrder(order)} title="Imprimir" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all flex items-center justify-center shadow-lg">{ICONS.Print}</button>
+                          <button onClick={() => handleEditOrder(order)} title="Editar" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center shadow-lg">{ICONS.Edit}</button>
+                          <button onClick={() => handleDelete(order.id)} title="Remover" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-rose-500 transition-all flex items-center justify-center shadow-lg">{ICONS.Trash}</button>
+                        </div>
+                        {order.remainingAmount > 0 && (
+                          <button onClick={() => handlePayOrder(order)} className="w-full h-12 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-emerald-500/30 active:scale-95 transition-all">QUITAR SALDO</button>
+                        )}
                       </div>
-
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }} 
-                        className="w-full h-12 bg-white/5 border border-white/5 rounded-2xl text-slate-600 hover:text-rose-500 transition-all flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest"
-                      >
-                        {ICONS.Trash} Excluir Pedido
-                      </button>
                     </div>
-                  </div>
-                )}
+                  ))}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 
