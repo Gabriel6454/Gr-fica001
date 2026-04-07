@@ -85,7 +85,15 @@ export const PaymentModal: React.FC<{
           </div>
 
           <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block px-1">Valor do Recebimento</label>
+            <div className="flex justify-between items-center gap-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block px-1">Valor do Recebimento</label>
+              <button 
+                onClick={() => setAmount(order.remainingAmount / 2)}
+                className="text-[9px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-400 transition-colors"
+              >
+                [ Pagar Metade ]
+              </button>
+            </div>
             <div className="relative">
               <span className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500 font-black text-xl">R$</span>
               <input
@@ -914,20 +922,23 @@ const Orders: React.FC<OrdersProps> = ({
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<'producao' | 'logistica' | 'finalizados'>('producao');
+  const [activeTab, setActiveTab] = useState<'entrada' | 'producao' | 'logistica' | 'finalizados'>('entrada');
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm);
     const isFinished = o.status === OrderStatus.COMPLETED;
     const isLogistic = o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED;
-    const isProduction = o.status === OrderStatus.ART || o.status === OrderStatus.PRODUCTION;
+    const isProduction = o.status === OrderStatus.ART || o.status === OrderStatus.WAITING_APPROVAL || o.status === OrderStatus.PRODUCTION || o.status === OrderStatus.READY_FOR_PICKUP;
+    const isEntrada = o.status === OrderStatus.QUOTATION || o.status === OrderStatus.WAITING_PAYMENT || o.status === OrderStatus.WAITING_FILE;
 
-    const matchesTab = activeTab === 'producao' 
-        ? isProduction 
-        : activeTab === 'logistica' 
-            ? isLogistic 
-            : isFinished;
+    const matchesTab = activeTab === 'entrada'
+        ? isEntrada
+        : activeTab === 'producao' 
+            ? isProduction 
+            : activeTab === 'logistica' 
+                ? isLogistic 
+                : isFinished;
 
     return matchesSearch && matchesTab;
   });
@@ -949,6 +960,9 @@ const Orders: React.FC<OrdersProps> = ({
 
   const getStatusBadgeClass = (status: OrderStatus) => {
     switch (status) {
+      case OrderStatus.QUOTATION: return 'bg-amber-500/10 text-amber-500 border-amber-500/30 shadow-amber-500/5';
+      case OrderStatus.WAITING_PAYMENT: return 'bg-rose-500/10 text-rose-500 border-rose-500/30 shadow-rose-500/5';
+      case OrderStatus.WAITING_FILE: return 'bg-sky-500/10 text-sky-500 border-sky-500/30 shadow-sky-500/5';
       case OrderStatus.ART: return 'bg-[#1a1410] text-[#f97316] border-[#f97316]/30 shadow-[#f97316]/5';
       case OrderStatus.PRODUCTION: return 'bg-[#10172a] text-[#0ea5e9] border-[#0ea5e9]/30 shadow-[#0ea5e9]/5';
       case OrderStatus.SHIPPING: return 'bg-[#1a102a] text-[#a855f7] border-[#a855f7]/30 shadow-[#a855f7]/5';
@@ -973,7 +987,8 @@ const Orders: React.FC<OrdersProps> = ({
       {/* Tabs – scroll horizontal no mobile */}
       <div className="tabs-scroll flex items-center gap-2 px-4 sm:px-6 md:px-8 pb-1">
         {[
-          { id: 'producao',   label: 'Arte/Produção',    icon: ICONS.Settings, color: 'sky',     count: orders.filter(o => o.status === OrderStatus.ART || o.status === OrderStatus.PRODUCTION).length },
+          { id: 'entrada',    label: 'Novas Entradas',   icon: ICONS.Plus,     color: 'amber',   count: orders.filter(o => o.status === OrderStatus.QUOTATION || o.status === OrderStatus.WAITING_PAYMENT || o.status === OrderStatus.WAITING_FILE).length },
+          { id: 'producao',   label: 'Arte/Produção',    icon: ICONS.Settings, color: 'sky',     count: orders.filter(o => o.status === OrderStatus.ART || o.status === OrderStatus.WAITING_APPROVAL || o.status === OrderStatus.PRODUCTION || o.status === OrderStatus.READY_FOR_PICKUP).length },
           { id: 'logistica',  label: 'Logística',         icon: ICONS.Shipping,  color: 'purple',  count: orders.filter(o => o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED).length },
           { id: 'finalizados',label: 'Histórico',          icon: ICONS.Success,   color: 'emerald', count: orders.filter(o => o.status === OrderStatus.COMPLETED).length },
         ].map((tab) => (
@@ -1011,6 +1026,14 @@ const Orders: React.FC<OrdersProps> = ({
                   <th className="py-8 px-10">ID</th>
                   <th className="py-8 px-10">CLIENTE</th>
                   
+                  {activeTab === 'entrada' && (
+                    <>
+                      <th className="py-8 px-10">DATA PEDIDO</th>
+                      <th className="py-8 px-10">TOTAL / PAGO</th>
+                      <th className="py-8 px-10">STATUS ENTRADA</th>
+                    </>
+                  )}
+
                   {activeTab === 'producao' && (
                     <>
                       <th className="py-8 px-10">PRAZO ENTREGA</th>
@@ -1049,6 +1072,25 @@ const Orders: React.FC<OrdersProps> = ({
                         <h4 className="font-bold text-slate-100 text-[13px] uppercase tracking-tight">{order.customerName}</h4>
                       </div>
                     </td>
+
+                    {activeTab === 'entrada' && (
+                      <>
+                        <td className="py-6 px-10">
+                          <span className="text-[11px] text-slate-100 font-black">{order.date}</span>
+                        </td>
+                        <td className="py-6 px-10">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[13px] font-black text-white italic uppercase">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                            <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Pago R$ {(order.total - order.remainingAmount).toFixed(2).replace('.', ',')}</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-10">
+                          <button onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))} className={`w-fit px-8 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg text-center min-w-[140px] ${getStatusBadgeClass(order.status)}`}>
+                            {order.status}
+                          </button>
+                        </td>
+                      </>
+                    )}
 
                     {activeTab === 'producao' && (
                       <>

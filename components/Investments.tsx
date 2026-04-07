@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { dbService } from '../services/dbService';
-import { fiiService } from '../services/fiiService';
+
 import { PortfolioFII, StoreSettings } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,12 +23,26 @@ interface SimulatorInputs {
   funds: FundConfig[];
 }
 
+interface PurchaseEntry {
+  ticker: string;
+  shares: number;
+  price: number;
+  date: string;
+}
+
+interface MonthHistory {
+  month: number;
+  purchases: PurchaseEntry[];
+  confirmed: boolean;
+}
+
 interface SavedSimulation {
   id: string;
   config: SimulatorInputs;
   currentMonth: number;
   startDate: string;
   lastUpdate: string;
+  history?: MonthHistory[];
 }
 
 interface MonthRow {
@@ -71,7 +85,7 @@ function simulateFund(
   const allMonths: MonthRow[] = [];
   let availableCash = 0;
   let goalMonthHit: number | null = null;
-  
+
   if (sharePrice <= 0) return { result: { totalInvested, totalReinvested, finalMonthlyDividend: 0, goalMonthHit: null, years: [] } };
 
   for (let m = 1; m <= totalMonths; m++) {
@@ -122,9 +136,10 @@ const parseNum = (val: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-const fmt = (val: number) => {
-  if (!isFinite(val)) return 'R$ 0,00';
-  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmt = (val: number | undefined | null) => {
+  const n = parseNum(val);
+  if (isNaN(n) || !isFinite(n)) return 'R$ 0,00';
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
 // ─── Input Field ─────────────────────────────────────────────────────────────
@@ -173,7 +188,7 @@ const YearTable: React.FC<{ year: number; rows: MonthRow[]; color?: string }> = 
               {rows.map((row, idx) => (
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-3 px-6 text-slate-400 font-bold">{year * 12 + row.month}º</td>
-                  <td className={`py-3 px-6 text-right font-black ${color}`}>{row.shares.toLocaleString('pt-BR')}</td>
+                  <td className={`py-3 px-6 text-right font-black ${color}`}>{(row.shares || 0).toLocaleString('pt-BR')}</td>
                   <td className="py-3 px-6 text-right text-white font-bold">{fmt(row.invested)}</td>
                   <td className="py-3 px-6 text-right text-emerald-400 font-bold">{fmt(row.reinvested)}</td>
                   <td className="py-3 px-6 text-right text-sky-300 font-black">{fmt(row.dividend)}</td>
@@ -226,16 +241,17 @@ const FundForm: React.FC<{
   fund: FundConfig;
   index: number;
   multiFundMode: boolean;
-  onChange: (field: keyof FundConfig, val: string) => void;
+  onChange: (field: keyof FundConfig, val: string | number) => void;
+  onBlurTicker?: (index: number, ticker: string) => void;
   onRemove?: () => void;
   accent: typeof ACCENT_COLORS[0];
-}> = ({ fund, index, multiFundMode, onChange, onRemove, accent }) => (
+}> = ({ fund, index, multiFundMode, onChange, onBlurTicker, onRemove, accent }) => (
   <div className={`glass-card bg-[#0a111f]/60 border rounded-[32px] p-6 space-y-4 backdrop-blur-xl ${accent.border} relative group`}>
     <div className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-3">
         <span className={`w-2 h-2 rounded-full ${accent.bg} ${accent.shadow}`} />
-        <input 
-          value={fund.label} 
+        <input
+          value={fund.label}
           onChange={(e) => onChange('label', e.target.value)}
           className={`bg-transparent border-none outline-none text-[11px] font-black uppercase tracking-[0.3em] ${accent.text} w-32`}
         />
@@ -249,7 +265,17 @@ const FundForm: React.FC<{
       <InputField label="Último rendimento" value={String(fund.lastDividend)} onChange={(v) => onChange('lastDividend', v)} />
     </div>
     <div className="grid grid-cols-2 gap-4">
-      <InputField label="Ticker do FII" value={fund.ticker || ''} onChange={(v) => onChange('ticker', v)} type="text" />
+      <div className="flex flex-col gap-1.5 flex-1">
+        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Ticker do FII</label>
+        <input 
+          type="text" 
+          value={fund.ticker || ''} 
+          onChange={(e) => onChange('ticker', e.target.value)} 
+          onBlur={() => onBlurTicker && fund.ticker && onBlurTicker(index, fund.ticker)}
+          placeholder="Ex: MXRF11"
+          className="w-full bg-[#030712]/60 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-sky-500/50 font-black rounded-2xl shadow-inner"
+        />
+      </div>
       <InputField label="Qtde de cotas inicial" value={String(fund.initialShares)} onChange={(v) => onChange('initialShares', v)} />
     </div>
     {multiFundMode && (
@@ -290,249 +316,299 @@ const SECTOR_COLORS: Record<string, string> = {
   'Agro': 'bg-lime-500/20 text-lime-400',
 };
 
-// ─── Progress Report ──────────────────────────────────────────────────────────
-const ProgressReport: React.FC<{ 
-  simulation: SavedSimulation; 
-  wallet: PortfolioFII[]; 
+// ─── Progress Report (Professional Version) ──────────────────────────────────
+const ProgressReport: React.FC<{
+  simulation: SavedSimulation;
+  wallet: PortfolioFII[];
   results: SimResult[];
   onUpdateMonth: (m: number) => void;
-  onConfirmPurchase: (ticker: string, shares: number) => void;
-}> = ({ simulation, wallet, results, onUpdateMonth, onConfirmPurchase }) => {
+  onConfirmPurchase: (ticker: string, shares: number, price: number) => void;
+  onToggleMonthStatus: (month: number, confirmed: boolean) => void;
+}> = ({ simulation, wallet, results, onUpdateMonth, onConfirmPurchase, onToggleMonthStatus }) => {
   const m = simulation.currentMonth || 1;
   const yearIdx = Math.floor((m - 1) / 12);
   const monthIdx = (m - 1) % 12;
+  const currentMonthHistory = simulation.history?.find(h => h.month === m);
+  const isMonthConfirmed = currentMonthHistory?.confirmed || false;
 
-  const fmt = (v: number) => 
+  const fmt = (v: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
   const monthTotalInvested = simulation.config.funds.reduce((s, f, i) => {
-    const targetPrevRow = monthIdx === 0 && yearIdx === 0 ? null : (monthIdx === 0 ? results[i]?.years[yearIdx-1]?.[11] : results[i]?.years[yearIdx]?.[monthIdx-1]);
+    const targetPrevRow = monthIdx === 0 && yearIdx === 0 ? null : (monthIdx === 0 ? results[i]?.years[yearIdx - 1]?.[11] : results[i]?.years[yearIdx]?.[monthIdx - 1]);
     const prevTarget = targetPrevRow ? targetPrevRow.shares : f.initialShares;
     const targetNow = results[i]?.years[yearIdx]?.[monthIdx]?.shares || 0;
     return s + (Math.max(0, targetNow - prevTarget) * f.sharePrice);
   }, 0);
 
-  const allAchiereved = simulation.config.funds.every((fund, i) => {
+  // Status calculation for each fund in the current month
+  const fundsProgress = simulation.config.funds.map((fund, i) => {
     const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
-    const actualShares = wallet.find(f => f.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase())?.shares || 0;
-    return actualShares >= (targetRow?.shares || 0);
+    const targetShares = targetRow ? targetRow.shares : 0;
+    
+    // Find actual current shares in the real wallet
+    const actualFii = wallet.find(f => f.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase());
+    const actualShares = actualFii ? actualFii.shares : 0;
+    
+    // Total needed according to simulation plan
+    const neededGap = Math.max(0, targetShares - actualShares);
+
+    // How many was confirmed IN THIS SELECTED MONTH (saved in history)
+    const boughtThisMonthFromHistory = currentMonthHistory?.purchases
+      .filter(p => p.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase())
+      .reduce((s, p) => s + p.shares, 0) || 0;
+    
+    // Status is complete if actual shares >= target
+    const isComplete = actualShares >= targetShares;
+    
+    return {
+      ...fund,
+      targetShares,
+      actualShares,
+      neededGap,
+      boughtThisMonth: boughtThisMonthFromHistory,
+      isComplete
+    };
   });
 
-  // Calculate current date based on start date
+  const allAchieved = fundsProgress.every(f => f.isComplete);
   const startDate = new Date(simulation.startDate);
   const targetDate = new Date(startDate.setMonth(startDate.getMonth() + (m - 1)));
   const dateStr = targetDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-  // Progress relative to current month's income goal
-  const currentIncome = wallet.reduce((s,f) => s + (f.shares * f.lastDividend), 0);
-  const targetIncome = results.reduce((s,r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0);
-  const incomeGoalPct = targetIncome > 0 ? Math.min(100, (currentIncome / targetIncome) * 100) : 0;
-
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Month Control */}
-      <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-8 flex flex-col lg:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-[24px] bg-sky-500/10 flex items-center justify-center text-2xl shadow-inner border border-sky-500/20">
-            {allAchiereved ? '✅' : '📅'}
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      {/* Professional Header */}
+      <div className="relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-r from-sky-600/10 to-indigo-600/10 opacity-50 blur-3xl -z-10" />
+        <div className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[40px] p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-10">
+          <div className="flex flex-col sm:flex-row items-center gap-8 text-center sm:text-left">
+            <div className={`w-24 h-24 rounded-[32px] flex items-center justify-center text-4xl shadow-2xl border transition-all duration-500 ${isMonthConfirmed ? 'bg-emerald-500 border-emerald-400 rotate-12 scale-110' : 'bg-[#030712] border-white/10 group-hover:border-sky-500/50'}`}>
+              {isMonthConfirmed ? '🏆' : '🎯'}
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">
+                Acompanhamento <span className={isMonthConfirmed ? 'text-emerald-400' : 'text-sky-500'}>{dateStr}</span>
+              </h3>
+              <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3">
+                <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">Controle de Carteira Virtual</span>
+                <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">Mês {m}</span>
+                {isMonthConfirmed && <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] font-black text-emerald-400 uppercase tracking-widest">Estágio Concluído</span>}
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-black text-white italic uppercase tracking-tight">
-              Progresso: <span className={allAchiereved ? 'text-emerald-400' : 'text-sky-500'}>Mês {m}</span> de {results[0]?.years.length * 12}
-            </h3>
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">
-              {allAchiereved ? 'Todas as compras deste mês foram concluídas!' : 'Siga sua meta mensal para atingir a independência'}
-            </p>
+
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3 bg-black/40 p-2 rounded-[28px] border border-white/5 shadow-inner">
+              <button
+                disabled={m <= 1}
+                onClick={() => onUpdateMonth(m - 1)}
+                className="w-14 h-14 flex items-center justify-center rounded-[20px] bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20 active:scale-95"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <div className="px-10 py-4 bg-gradient-to-br from-slate-800 to-slate-900 text-white font-black rounded-[20px] border border-white/10 text-base shadow-2xl min-w-[140px] text-center">
+                Mês {m}
+              </div>
+              <button
+                disabled={m >= results[0]?.years.length * 12}
+                onClick={() => onUpdateMonth(m + 1)}
+                className="w-14 h-14 flex items-center justify-center rounded-[20px] bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20 active:scale-95"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+            {allAchieved && !isMonthConfirmed && (
+              <button
+                onClick={() => onToggleMonthStatus(m, true)}
+                className="w-full py-4 bg-emerald-500 text-black font-black uppercase text-xs tracking-[0.2em] rounded-[24px] shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:brightness-110 active:scale-95 transition-all"
+              >
+                ✅ Finalizar Mês de Aporte
+              </button>
+            )}
+            {isMonthConfirmed && (
+              <button
+                onClick={() => onToggleMonthStatus(m, false)}
+                className="w-full py-4 bg-white/5 border border-white/10 text-slate-500 font-black uppercase text-[10px] tracking-widest rounded-[24px] hover:text-rose-500 hover:border-rose-500/30 transition-all"
+              >
+                Reabrir Mês
+              </button>
+            )}
           </div>
-        </div>
-        <div className="flex items-center gap-4 bg-black/40 p-2 rounded-[24px] border border-white/5">
-          <button 
-            disabled={m <= 1}
-            onClick={() => onUpdateMonth(m - 1)}
-            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20"
-          >
-            ←
-          </button>
-          <div className="px-8 py-3 bg-gradient-to-br from-slate-800 to-slate-900 text-white font-black rounded-2xl border border-white/10 text-sm shadow-xl">
-            {m}º Mês
-          </div>
-          <button 
-            disabled={m >= results[0]?.years.length * 12}
-            onClick={() => onUpdateMonth(m + 1)}
-            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20"
-          >
-            →
-          </button>
         </div>
       </div>
 
-      {/* Buy List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6 relative overflow-hidden">
-          {allAchiereved && (
-             <div className="absolute top-0 right-0 p-4">
-                <span className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
-                   <span className="text-xs">✔</span> Visto
-                </span>
-             </div>
-          )}
-          <h4 className="text-[11px] font-black text-sky-500 uppercase tracking-[0.4em] flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_10px_#0ea5e9]" />
-            Lista de Compras do Mês
-          </h4>
-          
-          <div className="space-y-4">
-            {simulation.config.funds.map((fund, i) => {
-              const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
-              const targetShares = targetRow ? targetRow.shares : 0;
-              const actualShares = wallet.find(f => f.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase())?.shares || 0;
-              const diff = Math.max(0, targetShares - actualShares);
-              const cost = diff * fund.sharePrice;
-              const hasTicker = !!fund.ticker;
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        {/* Checklist View */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="flex items-center justify-between px-4">
+            <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-sky-500 shadow-[0_0_15px_#0ea5e9]" />
+              Validação das Cotas
+            </h4>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Estimado: {fmt(monthTotalInvested)}</span>
+          </div>
 
+          <div className="grid gap-4">
+            {fundsProgress.map((fund, i) => {
+              const accent = ACCENT_COLORS[i % ACCENT_COLORS.length];
               return (
-                <div key={i} className={`flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 group ${diff === 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-[#030712]/40 border-white/5 hover:border-sky-500/30'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black transition-transform group-hover:scale-110 ${diff === 0 ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : ACCENT_COLORS[i % ACCENT_COLORS.length].bg} text-white text-xs`}>
-                      {diff === 0 ? '✔' : (fund.ticker?.substring(0, 4) || fund.label.substring(0, 1))}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-white flex items-center gap-2">
-                        {fund.ticker || fund.label}
-                        {!hasTicker && <span className="text-[8px] px-1.5 py-0.5 bg-rose-500/20 text-rose-500 rounded-md">Sem Ticker</span>}
-                      </p>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Alvo: {targetShares} cotas</p>
-                    </div>
-                  </div>
-                  <div className="text-right flex items-center gap-5">
-                    <div className="text-right">
-                      {diff > 0 ? (
-                        <>
-                          <p className={`text-sm font-black ${ACCENT_COLORS[i % ACCENT_COLORS.length].text}`}>+{diff} cotas</p>
-                          <p className="text-slate-500 text-[10px] font-bold tracking-tight">{fmt(cost)}</p>
-                        </>
-                      ) : (
-                        <div className="flex flex-col items-end">
-                          <span className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.2em]">ALCANÇADO</span>
-                          <span className="text-[9px] text-slate-600 font-bold uppercase">{actualShares} cotas em posse</span>
+                <div key={i} className={`group relative glass-card border transition-all duration-500 rounded-[32px] overflow-hidden ${fund.isComplete ? 'bg-emerald-500/5 border-emerald-500/20 scale-[0.98]' : 'bg-[#0a111f]/60 border-white/5 hover:border-white/10'}`}>
+                  <div className="p-6 sm:p-8 flex items-center justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black transition-all duration-500 shadow-2xl ${fund.isComplete ? 'bg-emerald-500 text-white rotate-6' : `${accent.bg} text-white animate-pulse-slow`}`}>
+                        {fund.isComplete ? <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg> : fund.ticker?.substring(0, 4) || 'FII'}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xl font-black text-white italic tracking-tighter uppercase">{fund.ticker || fund.label}</p>
+                        <div className="flex flex-wrap items-center gap-4">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Em Carteira</span>
+                            <span className="text-xs font-black text-white">{(fund.actualShares || 0).toLocaleString('pt-BR')} <span className="text-[9px] text-slate-600 font-normal opacity-50">cotas</span></span>
+                          </div>
+                          <div className="w-px h-6 bg-white/10" />
+                          <div className="flex flex-col">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Meta Mês {m}</span>
+                            <span className="text-xs font-black text-sky-400">{(fund.targetShares || 0).toLocaleString('pt-BR')} <span className="text-[9px] text-sky-600 font-normal opacity-50">cotas</span></span>
+                          </div>
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-right hidden sm:block">
+                        {fund.isComplete ? (
+                          <div className="space-y-0.5">
+                            <p className="text-emerald-400 font-black text-[9px] uppercase tracking-widest flex items-center justify-end gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Meta Atingida
+                            </p>
+                            <p className="text-[9px] text-slate-500 font-bold italic">Simulação em dia</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <p className="text-amber-500 font-black text-[9px] uppercase tracking-widest flex items-center justify-end gap-1.5 animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                              Pendente
+                            </p>
+                            <p className="text-[11px] text-slate-200 font-black tracking-widest">Faltam {fund.neededGap} cotas</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {!isMonthConfirmed && (
+                        <button
+                          onClick={() => onConfirmPurchase(fund.ticker!, fund.neededThisMonth - fund.boughtThisMonth, fund.sharePrice)}
+                          disabled={fund.isComplete || !fund.ticker}
+                          className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-xl border ${fund.isComplete ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 cursor-default' : 'bg-sky-500 text-white border-sky-400 hover:scale-110 active:scale-95 disabled:opacity-20'}`}
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                        </button>
                       )}
                     </div>
-                    {diff > 0 && hasTicker && (
-                       <button 
-                         onClick={() => onConfirmPurchase(fund.ticker!, diff)}
-                         className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all shadow-lg hover:shadow-sky-500/30 border border-sky-500/20"
-                         title="Confirmar compra"
-                       >
-                         ✔
-                       </button>
-                    )}
+                  </div>
+
+                  {/* Mini Progress Bar */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5">
+                    <div
+                      className={`h-full transition-all duration-1000 ${fund.isComplete ? 'bg-emerald-500' : accent.bg}`}
+                      style={{ width: `${Math.min(100, (fund.boughtThisMonth / fund.neededThisMonth) * 100 || 0)}%` }}
+                    />
                   </div>
                 </div>
               );
             })}
           </div>
-
-          <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Estimado</span>
-              <p className="text-xl font-black text-white leading-tight">{fmt(monthTotalInvested)}</p>
-            </div>
-            
-            {!allAchiereved && (
-              <button 
-                onClick={async () => {
-                   if (confirm("Confirmar a compra de TODAS as cotas pendentes para este mês?")) {
-                      for (const [i, fund] of simulation.config.funds.entries()) {
-                         const targetRow = results[i]?.years[yearIdx]?.[monthIdx];
-                         const actualShares = wallet.find(f => f.ticker.trim().toUpperCase() === fund.ticker?.trim().toUpperCase())?.shares || 0;
-                         const diff = Math.max(0, (targetRow?.shares || 0) - actualShares);
-                         if (diff > 0 && fund.ticker) {
-                            await onConfirmPurchase(fund.ticker, diff);
-                         }
-                      }
-                   }
-                }}
-                className="px-6 py-3 bg-emerald-500 text-black font-black uppercase tracking-widest rounded-xl text-[10px] hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20"
-              >
-                ✔ Confirmar Todas
-              </button>
-            )}
-            
-            {allAchiereved && m < results[0]?.years.length * 12 && (
-               <button 
-                 onClick={() => onUpdateMonth(m + 1)}
-                 className="px-6 py-3 bg-sky-500 text-white font-black uppercase tracking-widest rounded-xl text-[10px] hover:brightness-110 transition-all shadow-lg shadow-sky-500/20 animate-pulse"
-               >
-                 Próximo Mês →
-               </button>
-            )}
-          </div>
         </div>
 
-        <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6">
-           <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em] flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            Progresso Geral
-          </h4>
-          
-          <div className="space-y-6">
-            <div>
-               <div className="flex justify-between items-center mb-2">
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta de Renda do Mês</span>
-                 <span className={`text-xs font-black ${incomeGoalPct >= 100 ? 'text-emerald-400' : 'text-sky-400'}`}>
-                    {incomeGoalPct.toFixed(1)}%
-                 </span>
-               </div>
-               <div className="w-full h-2.5 bg-black/50 rounded-full overflow-hidden p-0.5 border border-white/5">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-1000 ${incomeGoalPct >= 100 ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]'}`} 
-                    style={{ width: `${incomeGoalPct}%` }} 
-                  />
-               </div>
-            </div>
+        {/* Analytics & History */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6">
+            <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em] flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-emerald-500" />
+              Resumo do Exercício
+            </h4>
 
-            <div className="grid grid-cols-2 gap-4">
-               {[
-                 { label: 'Renda Hoje', value: fmt(currentIncome), color: 'text-emerald-400', icon: '💰' },
-                 { label: 'Expectativa Mês', value: fmt(targetIncome), color: 'text-white', icon: '📈' },
-                 { label: 'Patrimônio FII', value: fmt(wallet.reduce((s,f) => s + (f.shares * f.currentPrice), 0)), color: 'text-sky-400', icon: '🏠' },
-                 { label: 'Próximo Aporte', value: fmt(monthTotalInvested), color: 'text-amber-400', icon: '⚡' },
-               ].map(item => (
-                 <div key={item.label} className="p-4 bg-[#030712]/60 rounded-2xl border border-white/5 flex flex-col gap-1 relative overflow-hidden group">
-                   <span className="absolute -right-2 -top-2 text-2xl opacity-10 group-hover:scale-125 transition-transform">{item.icon}</span>
-                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{item.label}</p>
-                   <p className={`text-sm font-black ${item.color} truncate`}>{item.value}</p>
-                 </div>
-               ))}
-            </div>
-
-            {/* Next Month Anticipation */}
-            {m < results[0]?.years.length * 12 && (
-              <div className="p-6 bg-gradient-to-br from-slate-900 to-[#0a111f] rounded-[32px] border border-white/5 mt-4">
-                 <h5 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                    Expectativa para o Próximo Mês
-                 </h5>
-                 <div className="flex justify-between items-end">
-                    <div>
-                       <p className="text-[10px] text-slate-400 font-bold">Renda Projetada</p>
-                       <p className="text-lg font-black text-white">
-                          {fmt(results.reduce((s,r) => s + (r.years[Math.floor(m / 12)]?.[m % 12]?.dividend || 0), 0))}
-                       </p>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-[10px] text-slate-400 font-bold">Investimento</p>
-                       <p className="text-sm font-black text-emerald-400">
-                          {fmt(simulation.config.funds.reduce((s, f, i) => {
-                             const targetPrev = results[i]?.years[yearIdx]?.[monthIdx];
-                             const targetNext = results[i]?.years[Math.floor(m / 12)]?.[m % 12];
-                             return s + (Math.max(0, (targetNext?.shares || 0) - (targetPrev?.shares || 0)) * f.sharePrice);
-                          }, 0))}
-                       </p>
-                    </div>
-                 </div>
+            <div className="space-y-6">
+              <div className="p-6 bg-black/40 rounded-3xl border border-white/5 space-y-4">
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Renda Passiva Local</span>
+                  <span className="text-2xl font-black text-emerald-400">{fmt(wallet.reduce((s, f) => s + (f.shares * f.lastDividend), 0))}</span>
+                </div>
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Rentabilidade Esperada</span>
+                  <span className="text-lg font-black text-white">{fmt(results.reduce((s, r) => s + (r.years[yearIdx]?.[monthIdx]?.dividend || 0), 0))}</span>
+                </div>
               </div>
+
+              {/* Purchases List in Current Month */}
+              <div className="space-y-4">
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest px-2">Log de Operações do Mês</p>
+                <div className="max-h-[300px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                  {currentMonthHistory?.purchases.length === 0 && (
+                    <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl text-slate-700 text-[10px] font-black uppercase">Nenhuma compra registrada</div>
+                  )}
+                  {currentMonthHistory?.purchases.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                        <span className="text-[11px] font-black text-white">{p.shares} cotas de {p.ticker}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-bold">{fmt(p.price * p.shares)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline Preview */}
+          <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[40px] p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[11px] font-black text-amber-400 uppercase tracking-[0.4em] flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]" />
+                Jornada Mensal
+              </h4>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                {simulation.history?.filter(h => h.confirmed).length || 0} de {results[0]?.years.length * 12} Meses
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-4 gap-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+              {Array.from({ length: results[0]?.years.length * 12 }).map((_, i) => {
+                const monthNum = i + 1;
+                const hist = simulation.history?.find(h => h.month === monthNum);
+                const isCurrent = monthNum === m;
+                const isPastDone = hist?.confirmed && monthNum < m;
+                const isFuture = monthNum > m;
+
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onUpdateMonth(monthNum)}
+                    className={`h-11 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all relative overflow-hidden group ${
+                      isCurrent 
+                        ? 'bg-sky-500 border-sky-400 text-white shadow-[0_0_20px_rgba(14,165,233,0.3)] z-10 scale-105' 
+                        : hist?.confirmed 
+                          ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+                          : 'bg-white/5 border-white/5 text-slate-700 hover:text-white hover:border-white/20'
+                    }`}
+                  >
+                    <span className="text-[9px] font-black">M{monthNum}</span>
+                    {hist?.confirmed && <span className="text-[8px] leading-none">✓</span>}
+                    {isCurrent && !isMonthConfirmed && <span className="absolute bottom-0 left-0 h-0.5 bg-white w-full animate-progress-fast" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {isMonthConfirmed && m < results[0]?.years.length * 12 && (
+              <button 
+                onClick={() => onUpdateMonth(m + 1)}
+                className="w-full py-4 bg-sky-500/10 border border-sky-500/30 text-sky-400 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl hover:bg-sky-500 hover:text-white transition-all animate-bounce-slow"
+              >
+                🚀 Ir para o Mês {m + 1}
+              </button>
             )}
           </div>
         </div>
@@ -542,8 +618,8 @@ const ProgressReport: React.FC<{
 };
 
 // ─── Portfolio View ───────────────────────────────────────────────────────────
-const PortfolioView: React.FC<{ 
-  settings: StoreSettings; 
+const PortfolioView: React.FC<{
+  settings: StoreSettings;
   onUpdateSettings: (s: StoreSettings) => void;
   fiis: PortfolioFII[];
   setFiis: React.Dispatch<React.SetStateAction<PortfolioFII[]>>;
@@ -552,39 +628,16 @@ const PortfolioView: React.FC<{
   const [sortBy, setSortBy] = useState<'ticker' | 'patrimony' | 'dividend' | 'dy' | 'result'>('patrimony');
   const [activeView, setActiveView] = useState<'lista' | 'dividendos'>('lista');
   const [loading, setLoading] = useState(true);
-  const [showApiConfig, setShowApiConfig] = useState(false);
-  const [tempToken, setTempToken] = useState(settings.brapiToken || localStorage.getItem('brapi_token') || '');
 
   useEffect(() => {
-    setTempToken(settings.brapiToken || localStorage.getItem('brapi_token') || '');
-  }, [settings.brapiToken]);
-
-  // Load from Supabase on mount
-  useEffect(() => {
-    const loadAndSync = async () => {
-      try {
-        setLoading(true);
-        const savedFiis = await dbService.getFiis();
-        setFiis(savedFiis);
-        
-        if (savedFiis.length > 0 && navigator.onLine && settings.brapiToken) {
-          try {
-            const updated = await fiiService.updateAll(savedFiis, settings.brapiToken);
-            setFiis(updated);
-            // Salvar atualizações no banco de fundo (sem travar se um falhar)
-            await Promise.allSettled(updated.map(f => dbService.saveFii(f)));
-          } catch (apiErr) {
-            console.error("Erro na atualização via Brapi:", apiErr);
-          }
-        }
-      } catch (err) {
-        console.error("Erro ao carregar e sincronizar:", err);
-      } finally {
-        setLoading(false);
-      }
+    const loadFiis = async () => {
+      setLoading(true);
+      const savedFiis = await dbService.getFiis();
+      setFiis(savedFiis);
+      setLoading(false);
     };
-    loadAndSync();
-  }, [settings.brapiToken]); // Keep this deps
+    loadFiis();
+  }, []);
 
   // Form state
   const [form, setForm] = useState({ ticker: '', sector: 'Papel', shares: '', avgPrice: '', currentPrice: '', lastDividend: '' });
@@ -593,38 +646,19 @@ const PortfolioView: React.FC<{
   const totalPatrimony = fiis.reduce((s, f) => s + (parseNum(f.shares) * parseNum(f.currentPrice)), 0);
   const totalCost = fiis.reduce((s, f) => s + (parseNum(f.shares) * parseNum(f.avgPrice)), 0);
   const totalMonthlyDiv = fiis.reduce((s, f) => s + (parseNum(f.shares) * parseNum(f.lastDividend)), 0);
-  
-  const avgDY = fiis.length > 0 
+
+  const avgDY = fiis.length > 0
     ? fiis.reduce((s, f) => {
-        const price = parseNum(f.currentPrice);
-        const div = parseNum(f.lastDividend);
-        return s + (price > 0 ? (div / price) * 100 : 0);
-      }, 0) / fiis.length 
+      const price = parseNum(f.currentPrice);
+      const div = parseNum(f.lastDividend);
+      return s + (price > 0 ? (div / price) * 100 : 0);
+    }, 0) / fiis.length
     : 0;
-    
+
   const totalResult = totalPatrimony - totalCost;
 
-  const fmt = (v: number) => 
+  const fmt = (v: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-
-  const handleRefreshAll = async () => {
-    if (!navigator.onLine || !settings.brapiToken) {
-       if (!settings.brapiToken) setShowApiConfig(true);
-       return;
-    }
-    try {
-      setLoading(true);
-      const updated = await fiiService.updateAll(fiis, settings.brapiToken);
-      setFiis(updated);
-      for (const f of updated) {
-        await dbService.saveFii(f);
-      }
-    } catch (e) {
-      console.error("Erro ao atualizar dados reais:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const addOrUpdate = async () => {
     if (!form.ticker || !form.shares || !form.avgPrice) return;
@@ -680,14 +714,14 @@ const PortfolioView: React.FC<{
     if (sortBy === 'patrimony') return (b.shares * b.currentPrice) - (a.shares * a.currentPrice);
     if (sortBy === 'dividend') return (b.shares * b.lastDividend) - (a.shares * a.lastDividend);
     if (sortBy === 'dy') {
-        const dyA = a.currentPrice > 0 ? (a.lastDividend / a.currentPrice) : 0;
-        const dyB = b.currentPrice > 0 ? (b.lastDividend / b.currentPrice) : 0;
-        return dyB - dyA;
+      const dyA = a.currentPrice > 0 ? (a.lastDividend / a.currentPrice) : 0;
+      const dyB = b.currentPrice > 0 ? (b.lastDividend / b.currentPrice) : 0;
+      return dyB - dyA;
     }
     if (sortBy === 'result') {
-        const resA = a.avgPrice > 0 ? (a.currentPrice - a.avgPrice) / a.avgPrice : 0;
-        const resB = b.avgPrice > 0 ? (b.currentPrice - b.avgPrice) / b.avgPrice : 0;
-        return resB - resA;
+      const resA = a.avgPrice > 0 ? (a.currentPrice - a.avgPrice) / a.avgPrice : 0;
+      const resB = b.avgPrice > 0 ? (b.currentPrice - b.avgPrice) / b.avgPrice : 0;
+      return resB - resA;
     }
     return 0;
   });
@@ -704,7 +738,7 @@ const PortfolioView: React.FC<{
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-4">
         <div className="w-8 h-8 border-2 border-sky-500/20 border-t-sky-500 rounded-full animate-spin" />
-        <p className="text-[10px] font-black uppercase tracking-widest">Carregando Carteira Cloud...</p>
+        <p className="text-[10px] font-black uppercase tracking-widest">Carregando Carteira...</p>
       </div>
     );
   }
@@ -763,20 +797,8 @@ const PortfolioView: React.FC<{
           ].map((f) => (
             <div key={f.key} className="flex flex-col gap-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{f.label}</label>
-              <input type={f.type} value={(form as any)[f.key]} 
-                onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))} 
-                onBlur={async () => {
-                  if (f.key === 'ticker' && form.ticker.length >= 5) {
-                    const data = await fiiService.getRealTimeData(form.ticker, settings.brapiToken);
-                    if (data) {
-                      setForm(p => ({
-                        ...p,
-                        currentPrice: String(data.currentPrice ?? p.currentPrice),
-                        lastDividend: String(data.lastDividend ?? p.lastDividend)
-                      }));
-                    }
-                  }
-                }}
+              <input type={f.type} value={(form as any)[f.key]}
+                onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
                 className="bg-[#030712]/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-sky-500/50 font-bold shadow-inner transition-all" />
             </div>
@@ -797,84 +819,35 @@ const PortfolioView: React.FC<{
         </div>
       </div>
 
-      {/* View Toggle + Sort */}
-      {/* API Configuration Button */}
-      {!settings.brapiToken && (
-        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-between gap-4">
-           <div className="flex items-center gap-3">
-              <span className="text-xl">⚠️</span>
-              <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest leading-relaxed">
-                As cotações automáticas estão desativadas. Obtenha seu token gratuito <a href="https://brapi.dev/register" target="_blank" className="underline">aqui</a>.
-              </p>
-           </div>
-           <button onClick={() => setShowApiConfig(true)} className="px-4 py-2 bg-amber-500 text-black text-[9px] font-black uppercase rounded-lg hover:brightness-110 transition-all">Configurar</button>
-        </div>
-      )}
-
-      {showApiConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
-           <div className="bg-[#0a111f] border border-white/10 p-8 rounded-[32px] w-full max-w-md shadow-2xl space-y-6">
-              <div className="flex items-center justify-between">
-                 <h3 className="text-sm font-black text-white uppercase tracking-widest">Configurar API Brapi</h3>
-                 <button onClick={() => setShowApiConfig(false)} className="text-slate-500 hover:text-white">✕</button>
-              </div>
-              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-                Para carregar cotações e dividendos em tempo real, crie uma conta gratuita no <a href="https://brapi.dev/" target="_blank" className="text-sky-400 underline">brapi.dev</a> e cole seu token abaixo.
-              </p>
-              <div className="space-y-2">
-                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Brapi Token</label>
-                 <input type="text" value={tempToken} onChange={(e) => setTempToken(e.target.value)} 
-                   className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-xs text-white" placeholder="Sua chave API..." />
-              </div>
-              <button 
-                onClick={() => {
-                  onUpdateSettings({ ...settings, brapiToken: tempToken });
-                  localStorage.setItem('brapi_token', tempToken);
-                  setShowApiConfig(false);
-                }}
-                className="w-full py-4 bg-sky-500 text-white font-black uppercase tracking-widest rounded-xl text-[10px]"
-              >
-                Salvar Configurações
-              </button>
-           </div>
-        </div>
-      )}
-
       {fiis.length > 0 && (
         <>
-            <div className="flex gap-4 items-center">
-              <div className="flex gap-2 bg-[#0a111f] rounded-2xl p-1.5 border border-white/5">
-                {[{ id: 'lista', label: 'Lista' }, { id: 'dividendos', label: 'Dividendos' }].map((t) => (
-                  <button key={t.id} onClick={() => setActiveView(t.id as any)}
-                    className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeView === t.id ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-white'}`}>
-                    {t.label}
-                  </button>
-                ))}
+          <div className="flex gap-4 items-center">
+            <div className="flex gap-2 bg-[#0a111f] rounded-2xl p-1.5 border border-white/5">
+              {[{ id: 'lista', label: 'Lista' }, { id: 'dividendos', label: 'Dividendos' }].map((t) => (
+                <button key={t.id} onClick={() => setActiveView(t.id as any)}
+                  className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeView === t.id ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-white'}`}>
+                  {t.label}
+                </button>
+              ))}
             </div>
-            
-            <button 
+
+            <button
               onClick={handleReset}
               className="px-5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-rose-500/20"
             >
               Redefinir Carteira
             </button>
           </div>
-            {activeView === 'lista' && (
-              <div className="flex items-center gap-2 text-[9px]">
-                <button 
-                  onClick={handleRefreshAll}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 rounded-lg font-black uppercase tracking-widest transition-all border border-sky-500/20 mr-2"
-                >
-                  <span className="text-xs">🔄</span> Atualizar Cotações
-                </button>
-                <span className="text-slate-600 font-black uppercase tracking-widest">Ordenar:</span>
-                <SortBtn field="patrimony" label="Patrimônio" />
-                <SortBtn field="dividend" label="Dividendo" />
-                <SortBtn field="dy" label="DY" />
-                <SortBtn field="result" label="Resultado" />
-                <SortBtn field="ticker" label="Ticker" />
-              </div>
-            )}
+          {activeView === 'lista' && (
+            <div className="flex items-center gap-2 text-[9px]">
+              <span className="text-slate-600 font-black uppercase tracking-widest">Ordenar:</span>
+              <SortBtn field="patrimony" label="Patrimônio" />
+              <SortBtn field="dividend" label="Dividendo" />
+              <SortBtn field="dy" label="DY" />
+              <SortBtn field="result" label="Resultado" />
+              <SortBtn field="ticker" label="Ticker" />
+            </div>
+          )}
 
           {/* Table View */}
           {activeView === 'lista' && (
@@ -914,9 +887,9 @@ const PortfolioView: React.FC<{
                             <span className={`text-[9px] font-black px-2 py-0.5 rounded-full w-fit ${SECTOR_COLORS[f.sector] ?? 'bg-slate-500/20 text-slate-400'}`}>{f.sector}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-6 text-right text-white font-bold">{f.shares.toLocaleString('pt-BR')}</td>
-                        <td className="py-4 px-6 text-right text-slate-400 font-bold">{fmt(f.avgPrice)}</td>
-                        <td className="py-4 px-6 text-right text-white font-bold">{fmt(f.currentPrice)}</td>
+                        <td className="py-4 px-6 text-right text-white font-bold">{shares.toLocaleString('pt-BR')}</td>
+                        <td className="py-4 px-6 text-right text-slate-400 font-bold">{fmt(avgPrice)}</td>
+                        <td className="py-4 px-6 text-right text-white font-bold">{fmt(currPrice)}</td>
                         <td className={`py-4 px-6 text-right font-black ${result >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{result >= 0 ? '+' : ''}{result.toFixed(2)}%</td>
                         <td className="py-4 px-6 text-right text-white font-black">{fmt(patrimony)}</td>
                         <td className="py-4 px-6 text-right text-emerald-400 font-black">{fmt(monthDiv)}</td>
@@ -998,12 +971,11 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
     reinvest: true,
     multiFundMode: true,
     funds: [
-      { label: 'Fundo A', sharePrice: 79.97, lastDividend: 1.21, initialShares: 0, splitPct: 17 },
-      { label: 'Fundo B', sharePrice: 100, lastDividend: 0.80, initialShares: 0, splitPct: 17 },
-      { label: 'Fundo C', sharePrice: 100, lastDividend: 1.10, initialShares: 0, splitPct: 17 },
-      { label: 'Fundo D', sharePrice: 10, lastDividend: 0.10, initialShares: 0, splitPct: 17 },
-      { label: 'Fundo E', sharePrice: 100, lastDividend: 1, initialShares: 0, splitPct: 16 },
-      { label: 'Fundo F', sharePrice: 100, lastDividend: 1, initialShares: 0, splitPct: 16 },
+      { label: 'MXRF11', ticker: 'MXRF11', sharePrice: 10.45, lastDividend: 0.09, initialShares: 0, splitPct: 20 },
+      { label: 'KNIP11', ticker: 'KNIP11', sharePrice: 94.60, lastDividend: 1.20, initialShares: 0, splitPct: 20 },
+      { label: 'HGLG11', ticker: 'HGLG11', sharePrice: 168.50, lastDividend: 1.10, initialShares: 0, splitPct: 20 },
+      { label: 'VISC11', ticker: 'VISC11', sharePrice: 112.30, lastDividend: 0.80, initialShares: 0, splitPct: 20 },
+      { label: 'XPML11', ticker: 'XPML11', sharePrice: 115.80, lastDividend: 0.90, initialShares: 0, splitPct: 20 },
     ],
   });
   const [activeTab, setActiveTab] = useState<'simulador' | 'carteira' | 'acompanhamento'>('simulador');
@@ -1024,13 +996,13 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
 
   useEffect(() => {
     if (savedSim && activeTab !== 'simulador') {
-       // Auto calculate if we have a saved sim and are tracking
-       const totalMonths = inputs.periodUnit === 'Anos' ? inputs.period * 12 : inputs.period;
-       const newResults = inputs.funds.map(fund => {
-          const inv = inputs.multiFundMode ? (inputs.monthlyInvestment * (fund.splitPct || 0) / 100) : inputs.monthlyInvestment;
-          return simulateFund(inv, fund.sharePrice || 0.01, fund.lastDividend || 0, fund.initialShares || 0, totalMonths, inputs.reinvest, inputs.dividendGoal).result;
-       });
-       setResults(newResults);
+      // Auto calculate if we have a saved sim and are tracking
+      const totalMonths = inputs.periodUnit === 'Anos' ? inputs.period * 12 : inputs.period;
+      const newResults = inputs.funds.map(fund => {
+        const inv = inputs.multiFundMode ? (inputs.monthlyInvestment * (fund.splitPct || 0) / 100) : inputs.monthlyInvestment;
+        return simulateFund(inv, fund.sharePrice || 0.01, fund.lastDividend || 0, fund.initialShares || 0, totalMonths, inputs.reinvest, inputs.dividendGoal).result;
+      });
+      setResults(newResults);
     }
   }, [savedSim, activeTab]);
 
@@ -1054,21 +1026,28 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
     });
   };
 
-  const updateFund = (index: number, field: keyof FundConfig, val: string) => {
+  const updateFund = (index: number, field: keyof FundConfig, val: string | number) => {
     setInputs((prev) => {
       const funds = [...prev.funds];
-      const numVal = field === 'label' ? val : Number(val);
-      funds[index] = { ...funds[index], [field]: numVal } as FundConfig;
+      let finalVal = val;
+      if (field === 'ticker' && typeof val === 'string') finalVal = val.toUpperCase().trim();
+      if (field === 'sharePrice' || field === 'lastDividend' || field === 'initialShares' || field === 'splitPct') {
+        finalVal = Number(val);
+      }
       
+      funds[index] = { ...funds[index], [field]: finalVal } as FundConfig;
+
       // Basic splitPct rebalancing if needed
       if (field === 'splitPct' && funds.length === 2) {
         const otherIdx = index === 0 ? 1 : 0;
-        funds[otherIdx].splitPct = 100 - (numVal as number);
+        funds[otherIdx].splitPct = 100 - (finalVal as number);
       }
-      
+
       return { ...prev, funds };
     });
   };
+
+
 
   const redistributeEqually = () => {
     setInputs(p => {
@@ -1078,9 +1057,9 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
       const remainder = 100 % count;
       return {
         ...p,
-        funds: p.funds.map((f, i) => ({ 
-          ...f, 
-          splitPct: i === 0 ? share + remainder : share 
+        funds: p.funds.map((f, i) => ({
+          ...f,
+          splitPct: i === 0 ? share + remainder : share
         }))
       };
     });
@@ -1089,7 +1068,7 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
   const handleCalc = useCallback(() => {
     const totalMonths = inputs.periodUnit === 'Anos' ? inputs.period * 12 : inputs.period;
     const totalSplit = inputs.funds.reduce((s, f) => s + f.splitPct, 0);
-    
+
     if (inputs.multiFundMode && totalSplit !== 100 && inputs.funds.length > 1) {
       alert(`A soma das porcentagens deve ser 100% (atual: ${totalSplit}%).\nUse o botão "Distribuir Igual" se desejar.`);
       return;
@@ -1127,46 +1106,86 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
     await dbService.saveSimulation(updated);
   };
 
-  const handleConfirmPurchase = async (ticker: string, addedShares: number) => {
+  const handleConfirmPurchase = async (ticker: string, addedShares: number, price: number) => {
     try {
+      if (!savedSim) return;
       const cleanTicker = ticker.trim().toUpperCase();
-      console.log(`[Investments] Confirming purchase: ${cleanTicker} +${addedShares}`);
       
-      let updatedFii: PortfolioFII | null = null;
+      // 1. Prepare FII Update
+      const existing = fiis.find(f => f.ticker.trim().toUpperCase() === cleanTicker);
+      let updatedFii: PortfolioFII;
 
-      setFiis(prevFiis => {
-        const existing = prevFiis.find(f => f.ticker.trim().toUpperCase() === cleanTicker);
-        
-        if (existing) {
-          updatedFii = { ...existing, shares: existing.shares + addedShares };
-          return prevFiis.map(f => f.id === existing.id ? updatedFii! : f);
-        } else {
-          // Find in simulation to get some defaults
-          const simFund = inputs.funds.find(f => f.ticker?.trim().toUpperCase() === cleanTicker);
-          updatedFii = {
-            id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(7),
-            ticker: cleanTicker,
-            shares: addedShares,
-            avgPrice: simFund?.sharePrice || 0,
-            currentPrice: simFund?.sharePrice || 0,
-            lastDividend: simFund?.lastDividend || 0,
-            sector: 'Híbrido'
-          };
-          return [...prevFiis, updatedFii];
-        }
+      if (existing) {
+        updatedFii = { ...existing, shares: existing.shares + addedShares };
+      } else {
+        const simFund = inputs.funds.find(f => f.ticker?.trim().toUpperCase() === cleanTicker);
+        updatedFii = {
+          id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(7),
+          ticker: cleanTicker,
+          shares: addedShares,
+          avgPrice: price || simFund?.sharePrice || 0,
+          currentPrice: price || simFund?.sharePrice || 0,
+          lastDividend: simFund?.lastDividend || 0,
+          sector: 'Híbrido'
+        };
+      }
+
+      // 2. Prepare Simulation History Update
+      const m = savedSim.currentMonth;
+      const newHistory = [...(savedSim.history || [])];
+      let monthHist = newHistory.find(h => h.month === m);
+
+      const purchaseEntry = {
+        ticker: cleanTicker,
+        shares: addedShares,
+        price: price,
+        date: new Date().toISOString()
+      };
+
+      if (monthHist) {
+        monthHist.purchases = [...monthHist.purchases, purchaseEntry];
+      } else {
+        monthHist = {
+          month: m,
+          purchases: [purchaseEntry],
+          confirmed: false
+        };
+        newHistory.push(monthHist);
+      }
+
+      const updatedSim = { ...savedSim, history: newHistory };
+
+      // 3. Update States and DB
+      setFiis(prev => {
+        if (existing) return prev.map(f => f.id === existing.id ? updatedFii : f);
+        return [...prev, updatedFii];
       });
+      setSavedSim(updatedSim);
 
-      // Wait for state to be ready to save to DB (we just need top updatedFii)
-      // Since updatedFii is assigned inside the setter, we can use it here
-      setTimeout(async () => {
-        if (updatedFii) {
-          await dbService.saveFii(updatedFii!);
-        }
-      }, 0);
+      await dbService.saveFii(updatedFii);
+      await dbService.saveSimulation(updatedSim);
+      
+      console.log(`[Investments] Purchase confirmed and persisted: ${cleanTicker}`);
     } catch (err) {
       console.error("[Investments] Confirm purchase error:", err);
-      alert("Erro ao confirmar compra no banco de dados.");
+      alert("Erro ao confirmar compra.");
     }
+  };
+
+  const handleToggleMonthStatus = async (month: number, confirmed: boolean) => {
+    if (!savedSim) return;
+    const newHistory = [...(savedSim.history || [])];
+    const monthHist = newHistory.find(h => h.month === month);
+
+    if (monthHist) {
+      monthHist.confirmed = confirmed;
+    } else {
+      newHistory.push({ month, purchases: [], confirmed });
+    }
+
+    const updatedSim = { ...savedSim, history: newHistory };
+    setSavedSim(updatedSim);
+    await dbService.saveSimulation(updatedSim);
   };
 
   // Use results.map for rendering instead of r0, r1
@@ -1181,7 +1200,7 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
         </div>
         <div className="flex gap-2 bg-[#0a111f] rounded-2xl p-1.5 border border-white/5">
           {[
-            { id: 'simulador', label: 'Simulador' }, 
+            { id: 'simulador', label: 'Simulador' },
             { id: 'acompanhamento', label: 'Acompanhamento' },
             { id: 'carteira', label: 'Minha Carteira' }
           ].map((t) => (
@@ -1224,36 +1243,36 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
                 />
               </div>
               <div className="flex flex-wrap gap-6">
-              <div className="flex flex-wrap gap-4 items-center">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={inputs.reinvest} onChange={(e) => setInputs((p) => ({ ...p, reinvest: e.target.checked }))} className="w-4 h-4 accent-sky-500" />
-                  <span className="text-xs text-slate-400 font-medium">Reinvestir dividendos</span>
-                </label>
-                <div className="h-6 w-px bg-white/10 hidden sm:block" />
-                <button onClick={addFund} disabled={inputs.funds.length >= 6} className="px-4 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-sky-500/20 disabled:opacity-30">
-                  + Adicionar Fundo
-                </button>
-                {inputs.funds.length > 1 && (
-                  <button onClick={redistributeEqually} className="px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-violet-500/20">
-                    Distribuir Igual (%)
+                <div className="flex flex-wrap gap-4 items-center">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={inputs.reinvest} onChange={(e) => setInputs((p) => ({ ...p, reinvest: e.target.checked }))} className="w-4 h-4 accent-sky-500" />
+                    <span className="text-xs text-slate-400 font-medium">Reinvestir dividendos</span>
+                  </label>
+                  <div className="h-6 w-px bg-white/10 hidden sm:block" />
+                  <button onClick={addFund} disabled={inputs.funds.length >= 6} className="px-4 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-sky-500/20 disabled:opacity-30">
+                    + Adicionar Fundo
                   </button>
-                )}
+                  {inputs.funds.length > 1 && (
+                    <button onClick={redistributeEqually} className="px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-violet-500/20">
+                      Distribuir Igual (%)
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-              </div>
+            </div>
 
             {/* Fund Forms */}
             <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 ${inputs.funds.length > 4 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
               {inputs.funds.map((f, i) => (
-                <FundForm 
-                  key={i} 
-                  fund={f} 
-                  index={i} 
-                  multiFundMode={inputs.multiFundMode} 
-                  onChange={(field, v) => updateFund(i, field, v)} 
+                <FundForm
+                  key={i}
+                  fund={f}
+                  index={i}
+                  multiFundMode={inputs.multiFundMode}
+                  onChange={(field, v) => updateFund(i, field, v)}
                   onRemove={inputs.funds.length > 1 ? () => removeFund(i) : undefined}
-                  accent={ACCENT_COLORS[i % ACCENT_COLORS.length]} 
+                  accent={ACCENT_COLORS[i % ACCENT_COLORS.length]}
                 />
               ))}
             </div>
@@ -1293,15 +1312,15 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
               <>
                 <div className={`grid gap-6 grid-cols-1 ${results.length > 1 ? 'md:grid-cols-2' : ''} ${results.length > 4 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
                   {results.map((res, i) => (
-                    <SummaryCard 
+                    <SummaryCard
                       key={i}
-                      label={inputs.funds[i].label} 
-                      result={res} 
-                      period={inputs.period} 
-                      periodUnit={inputs.periodUnit} 
-                      sharePrice={inputs.funds[i].sharePrice} 
-                      lastDividend={inputs.funds[i].lastDividend} 
-                      gradient={ACCENT_COLORS[i % ACCENT_COLORS.length].gradient} 
+                      label={inputs.funds[i].label}
+                      result={res}
+                      period={inputs.period}
+                      periodUnit={inputs.periodUnit}
+                      sharePrice={inputs.funds[i].sharePrice}
+                      lastDividend={inputs.funds[i].lastDividend}
+                      gradient={ACCENT_COLORS[i % ACCENT_COLORS.length].gradient}
                     />
                   ))}
                 </div>
@@ -1324,7 +1343,7 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
                     ))}
                   </div>
                 )}
-                
+
                 {/* Dividend Goal Card */}
                 {inputs.dividendGoal > 0 && (() => {
                   const combinedFinal = results.reduce((s, r) => s + r.finalMonthlyDividend, 0);
@@ -1394,12 +1413,13 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
           </>
         ) : activeTab === 'acompanhamento' ? (
           savedSim && results.length > 0 ? (
-            <ProgressReport 
-              simulation={savedSim} 
-              wallet={fiis} 
-              results={results} 
+            <ProgressReport
+              simulation={savedSim}
+              wallet={fiis}
+              results={results}
               onUpdateMonth={handleUpdateMonth}
               onConfirmPurchase={handleConfirmPurchase}
+              onToggleMonthStatus={handleToggleMonthStatus}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-6 glass-card bg-[#0a111f]/60 rounded-[40px] border border-white/5">
@@ -1412,11 +1432,11 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
             </div>
           )
         ) : (
-          <PortfolioView 
-            settings={settings} 
-            onUpdateSettings={onUpdateSettings} 
-            fiis={fiis} 
-            setFiis={setFiis} 
+          <PortfolioView
+            settings={settings}
+            onUpdateSettings={onUpdateSettings}
+            fiis={fiis}
+            setFiis={setFiis}
           />
         )}
       </div>

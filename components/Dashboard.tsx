@@ -407,13 +407,7 @@ const OrderCard: React.FC<{
   isDragging?: boolean;
   onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
   isCollapsed?: boolean;
-}> = ({ order, onDelete, onEdit, onPrint, onPay, onTrack, onFinalize, products, customers, isDragging, onStatusChange, isCollapsed: initialCollapsed }) => {
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed ?? true);
-
-  useEffect(() => {
-    if (initialCollapsed !== undefined) setIsCollapsed(initialCollapsed);
-  }, [initialCollapsed]);
-
+}> = ({ order, onDelete, onEdit, onPrint, onPay, onTrack, onFinalize, products, customers, isDragging, onStatusChange }) => {
   const getNextStatus = (current: OrderStatus): OrderStatus => {
     const statuses = [
       OrderStatus.QUOTATION, OrderStatus.WAITING_PAYMENT, OrderStatus.WAITING_FILE,
@@ -436,27 +430,78 @@ const OrderCard: React.FC<{
 
   const statusConfig = (status: OrderStatus) => {
     switch (status) {
-      case OrderStatus.QUOTATION: return { dot: '#94a3b8', badge: 'Orçamento' };
-      case OrderStatus.WAITING_PAYMENT: return { dot: '#fbbf24', badge: 'Aguard. Pagamento' };
-      case OrderStatus.WAITING_FILE: return { dot: '#818cf8', badge: 'AGUARD. ARQUIVO' };
-      case OrderStatus.ART: return { dot: '#fb923c', badge: 'Em Arte' };
-      case OrderStatus.WAITING_APPROVAL: return { dot: '#f472b6', badge: 'Aguard. Aprovação' };
-      case OrderStatus.PRODUCTION: return { dot: '#38bdf8', badge: 'Em Produção' };
-      case OrderStatus.READY_FOR_PICKUP: return { dot: '#34d399', badge: 'PRONTO RETIRADA' };
-      case OrderStatus.SHIPPING: return { dot: '#a78bfa', badge: 'LOGÍSTICA' };
-      case OrderStatus.DELIVERED: return { dot: '#22d3ee', badge: 'ENTREGUE' };
-      case OrderStatus.COMPLETED: return { dot: '#10b981', badge: 'CONCLUÍDO' };
-      default: return { dot: '#64748b', badge: status.toUpperCase() };
+      case OrderStatus.QUOTATION:
+      case OrderStatus.WAITING_PAYMENT:
+      case OrderStatus.WAITING_FILE:
+        return { 
+          badge: status === OrderStatus.WAITING_FILE ? 'AGUARD. ARQUIVO' : (status === OrderStatus.QUOTATION ? 'Orçamento' : 'Aguard. Pagamento'), 
+          borderClass: 'border-amber-500', 
+          shadowClass: 'shadow-[0_0_20px_rgba(245,158,11,0.15)]', 
+          bgClass: 'bg-amber-500', 
+          textClass: 'text-amber-500', 
+          hoverBgClass: 'hover:bg-amber-600', 
+          btnShadowClass: 'shadow-amber-500/20' 
+        };
+      case OrderStatus.ART:
+      case OrderStatus.WAITING_APPROVAL:
+        return { 
+          badge: status === OrderStatus.ART ? 'CRIANDO ARTE' : 'Aguard. Aprovação', 
+          borderClass: 'border-orange-500', 
+          shadowClass: 'shadow-[0_0_20px_rgba(249,115,22,0.15)]', 
+          bgClass: 'bg-orange-500', 
+          textClass: 'text-orange-500', 
+          hoverBgClass: 'hover:bg-orange-600', 
+          btnShadowClass: 'shadow-orange-500/20' 
+        };
+      case OrderStatus.PRODUCTION:
+      case OrderStatus.READY_FOR_PICKUP:
+        return { 
+          badge: status === OrderStatus.PRODUCTION ? 'PRODUÇÃO' : 'PRONTO RETIRADA', 
+          borderClass: 'border-sky-500', 
+          shadowClass: 'shadow-[0_0_20px_rgba(14,165,233,0.15)]', 
+          bgClass: 'bg-sky-500', 
+          textClass: 'text-sky-500', 
+          hoverBgClass: 'hover:bg-sky-600', 
+          btnShadowClass: 'shadow-sky-500/20' 
+        };
+      case OrderStatus.SHIPPING:
+      case OrderStatus.DELIVERED:
+        return { 
+          badge: status === OrderStatus.SHIPPING ? 'LOGÍSTICA' : 'ENTREGUE', 
+          borderClass: 'border-purple-500', 
+          shadowClass: 'shadow-[0_0_20px_rgba(168,85,247,0.15)]', 
+          bgClass: 'bg-purple-500', 
+          textClass: 'text-purple-500', 
+          hoverBgClass: 'hover:bg-purple-600', 
+          btnShadowClass: 'shadow-purple-500/20' 
+        };
+      case OrderStatus.COMPLETED:
+        return { 
+          badge: 'CONCLUÍDO', 
+          borderClass: 'border-emerald-500', 
+          shadowClass: 'shadow-[0_0_20px_rgba(16,185,129,0.15)]', 
+          bgClass: 'bg-emerald-500', 
+          textClass: 'text-emerald-500', 
+          hoverBgClass: 'hover:bg-emerald-600', 
+          btnShadowClass: 'shadow-emerald-500/20' 
+        };
+      default:
+        return { 
+          badge: status.toUpperCase(), 
+          borderClass: 'border-slate-500', 
+          shadowClass: 'shadow-[0_0_20px_rgba(100,116,139,0.15)]', 
+          bgClass: 'bg-slate-500', 
+          textClass: 'text-slate-500', 
+          hoverBgClass: 'hover:bg-slate-600', 
+          btnShadowClass: 'shadow-slate-500/20' 
+        };
     }
   };
 
   const cfg = statusConfig(order.status);
   const customer = customers.find(c => c.id === order.customerId || c.name === order.customerName);
   const whatsappNumber = customer?.phone?.replace(/\D/g, '');
-  const hasPendingBalance = (order.remainingAmount || 0) > 0;
-  const orderProfit = order.items.reduce((acc, item) => acc + (item.price - (item.cost || 0)), 0);
-  const profitMargin = order.total > 0 ? (orderProfit / order.total) * 100 : 0;
-
+  
   return (
     <motion.div
       layout
@@ -472,153 +517,89 @@ const OrderCard: React.FC<{
       onDragEnd={(e) => {
         (e.currentTarget as HTMLElement).classList.remove('opacity-40');
       }}
-      className={`group/card relative w-full box-border rounded-[24px] overflow-hidden border border-white/5 cursor-grab active:cursor-grabbing transition-all duration-300 ${isDragging ? 'opacity-40' : 'hover:border-white/10'}`}
-      style={{
-        background: '#0a1122',
-        padding: isCollapsed ? '16px 20px' : '20px 24px',
-      }}
+      className={`glass-card bg-[#030712]/40 border-2 ${cfg.borderClass} ${cfg.shadowClass} rounded-[32px] p-6 shadow-2xl transition-all cursor-grab active:cursor-grabbing group/card w-full box-border relative hover:bg-[#030712]/60 hover:brightness-110 ${isDragging ? 'opacity-40' : ''}`}
     >
-      {/* HEADER COMPACTO */}
-      <div className={`flex items-center justify-between mb-4`}>
-        <div className="flex items-center gap-3">
-           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cfg.dot, boxShadow: `0 0 6px ${cfg.dot}60` }} />
-           <button
-             onClick={handleStatusClick}
-             className="bg-[#121b33] border border-sky-500/10 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] text-sky-200 transition-all hover:bg-sky-500/10 active:scale-95"
-           >
-             {cfg.badge}
-           </button>
-           {!isCollapsed && (
-             <div className="bg-[#10192e] px-2 py-1 rounded-lg border border-white/5 hidden sm:block">
-                <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest leading-none">#{formatOrderId(order.id)}</span>
-             </div>
-           )}
-        </div>
-        <span className="text-emerald-500 text-xs">★</span>
-      </div>
-
-      {/* CUSTOMER NAME */}
-      <div className="space-y-2 mb-4">
-        <h3 className={`font-black text-white tracking-tight leading-none group-hover/card:text-sky-400 transition-colors uppercase truncate ${isCollapsed ? 'text-base' : 'text-lg'}`}>
-          {order.customerName}
-        </h3>
-        
-        {!isCollapsed && (
-          <div className="flex flex-wrap gap-1.5">
-            {order.items.map((it, i) => {
-              const p = products.find(prod => prod.id === it.productId);
-              return (
-                <span key={i} className="text-[8px] font-bold text-slate-500 uppercase tracking-widest bg-[#161f35] border border-white/5 px-2 py-1 rounded-lg">
-                  {it.quantity}X {p?.name || 'Item'}
-                </span>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {!isCollapsed && <div className="h-[1px] bg-white/5 w-full mb-4" />}
-
-      {/* FOOTER: PREÇO E EXPANDIR */}
-      <div className="flex items-end justify-between">
-        <div className="space-y-0.5">
-          <p className="text-[7px] font-black text-slate-700 uppercase tracking-[0.2em]">Investimento</p>
-          <div className="flex items-baseline gap-0.5">
-             <span className="text-[10px] font-black text-sky-600 italic uppercase">r$</span>
-             <span className={`${isCollapsed ? 'text-xl' : 'text-2xl'} font-black text-sky-200 tracking-tighter leading-none transition-all`}>
-               {order.total.toFixed(0)}
-               <span className="text-sm opacity-50">,{(order.total % 1).toFixed(2).split('.')[1] || '00'}</span>
-             </span>
-          </div>
-        </div>
-
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`group/expand flex items-center justify-center rounded-xl bg-[#161f35] border border-white/5 text-slate-500 hover:text-white transition-all shadow-lg ${isCollapsed ? 'w-8 h-8' : 'w-10 h-10 rotate-180 bg-sky-500/10 text-sky-400 border-sky-500/20'}`}
-        >
-          <div className="transition-transform group-hover/expand:scale-110">{ICONS.ChevronDown}</div>
-        </button>
-      </div>
-
-      {/* ÁREA EXPANDIDA (DRAWER INDUSTRIAL) */}
-      <AnimatePresence>
-        {!isCollapsed && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden mt-6 flex flex-col gap-4 border-t border-white/5 pt-6"
+      <div className="space-y-4">
+        <div className="flex justify-between items-start gap-2">
+          <h4 className="font-bold text-base text-white tracking-tight truncate">{order.customerName}</h4>
+          <button
+            onClick={handleStatusClick}
+            className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${cfg.bgClass} text-white shrink-0`}
           >
-            {/* GRID FINANCEIRO */}
-            <div className="grid grid-cols-2 gap-2">
-               <div className="bg-[#050a16] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 ring-1 ring-inset ring-white/[0.02]">
-                  <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em]">Pendente</span>
-                  <span className={`text-[13px] font-black ${hasPendingBalance ? 'text-rose-500' : 'text-emerald-500'}`}>R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-               </div>
-               <div className="bg-[#050a16] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 ring-1 ring-inset ring-white/[0.02]">
-                  <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em]">Margem</span>
-                  <span className="text-[13px] font-black text-sky-400">{profitMargin.toFixed(0)}%</span>
-               </div>
-            </div>
-
-            {/* BOTÕES DE AÇÃO PRIMÁRIA */}
-            <div className="flex gap-2">
-               <button 
-                 onClick={() => onPay(order)} 
-                 className={`flex-[2] py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${hasPendingBalance ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95' : 'bg-[#161f35] text-emerald-500 border border-emerald-500/10'}`}
-               >
-                 {hasPendingBalance ? 'RECEBER VALOR' : 'PAGAMENTO OK'}
-               </button>
-               <button 
-                 onClick={() => onPrint(order)} 
-                 className="flex-1 flex items-center justify-center rounded-2xl bg-[#161f35] border border-white/5 text-slate-400 hover:text-white hover:bg-sky-500/10 transition-all active:scale-95"
-               >
-                 {ICONS.Print}
-               </button>
-            </div>
-
-            {/* BARRA DE FERRAMENTAS (FOOTER) */}
-            <div className="flex items-center justify-between bg-[#080d1a] border border-white/5 p-2 rounded-2xl">
-               <div className="flex gap-1">
-                  <button 
-                    onClick={() => onEdit(order)} 
-                    className="p-3 bg-white/5 rounded-xl border border-white/5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 transition-all"
-                    title="Editar Pedido"
-                  >
-                    {ICONS.Edit}
-                  </button>
-                  {whatsappNumber && (
-                    <button 
-                      onClick={() => contactCustomer(order, customer)} 
-                      className="p-3 bg-white/5 rounded-xl border border-white/5 text-emerald-600 hover:bg-emerald-500/10 transition-all"
-                      title="Enviar WhatsApp"
-                    >
-                      {ICONS.Whatsapp}
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => {
-                      const link = `${window.location.origin}?tracking=${order.id}`;
-                      navigator.clipboard.writeText(link);
-                      alert('Link de rastreamento copiado!');
-                    }}
-                    className="p-3 bg-white/5 rounded-xl border border-white/5 text-sky-500 hover:bg-sky-500/10 transition-all"
-                    title="Copiar Link de Rastreio"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                  </button>
-               </div>
-               <button 
-                 onClick={() => onDelete(order.id)} 
-                 className="p-3 bg-rose-500/5 rounded-xl border border-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all"
-                 title="Excluir Pedido"
-               >
-                 {ICONS.Trash}
-               </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {cfg.badge}
+          </button>
+        </div>
+        <div className="flex justify-between items-center text-[10px] font-bold">
+          <span className="text-slate-500">#{formatOrderId(order.id)}</span>
+          <div className="flex items-center gap-1 text-slate-400">
+            <span className={`${cfg.textClass} uppercase text-[9px]`}>ENTREGA:</span>
+            <span>{order.deliveryDate}</span>
+          </div>
+        </div>
+        <div className="py-3 space-y-2 border-y border-slate-800/50">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TOTAL:</span>
+            <span className="text-sm font-black text-white">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RESTANTE:</span>
+            <span className="text-sm font-black text-rose-500">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+          </div>
+        </div>
+        <div className="pt-3 mt-1 border-t border-white/5 space-y-3">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onPay(order); }}
+            className={`w-full whitespace-nowrap ${cfg.bgClass} ${cfg.hoverBgClass} text-white text-[10px] font-black uppercase py-2.5 px-4 rounded-[14px] transition-all active:scale-95 shadow-lg ${cfg.btnShadowClass}`}
+          >
+            PAGAR SALDO
+          </button>
+          <div className="flex justify-center gap-1.5 text-slate-500">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                const trackingCode = order.trackingCode || order.id;
+                const link = `${window.location.origin}?tracking=${trackingCode}`;
+                navigator.clipboard.writeText(link);
+                alert('Link de rastreamento copiado com sucesso!');
+              }}
+              className="p-1.5 text-slate-500 hover:text-sky-400 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+              title="Copiar Link de Rastreio"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            </button>
+            {whatsappNumber && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); contactCustomer(order, customer); }} 
+                className="p-1.5 text-slate-500 hover:text-emerald-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5" 
+                title="Enviar WhatsApp"
+              >
+                {ICONS.Whatsapp}
+              </button>
+            )}
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPrint(order); }} 
+              className="p-1.5 text-slate-500 hover:text-white transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+              title="Imprimir"
+            >
+              {ICONS.Print}
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(order); }} 
+              className="p-1.5 text-slate-500 hover:text-sky-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+              title="Editar"
+            >
+              {ICONS.Edit}
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} 
+              className="p-1.5 text-slate-500 hover:text-rose-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+              title="Excluir"
+            >
+              {ICONS.Trash}
+            </button>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -942,13 +923,6 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
             <button onClick={() => setIsSalesModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-black uppercase rounded-2xl text-[9px] sm:text-[10px] tracking-widest shadow-xl transition-all active:scale-95">
               {ICONS.Eye}
               <span>Vendas</span>
-            </button>
-            <button
-              onClick={() => setIsProductionModalOpen(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-black uppercase rounded-2xl text-[9px] sm:text-[10px] tracking-widest shadow-xl shadow-sky-500/20 transition-all active:scale-95"
-            >
-              {ICONS.Settings}
-              <span>Produção</span>
             </button>
           </div>
         </div>
