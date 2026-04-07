@@ -321,11 +321,12 @@ const ProgressReport: React.FC<{
   simulation: SavedSimulation;
   wallet: PortfolioFII[];
   results: SimResult[];
+  m: number;
   onUpdateMonth: (m: number) => void;
   onConfirmPurchase: (ticker: string, shares: number, price: number) => void;
   onToggleMonthStatus: (month: number, confirmed: boolean) => void;
-}> = ({ simulation, wallet, results, onUpdateMonth, onConfirmPurchase, onToggleMonthStatus }) => {
-  const m = simulation.currentMonth || 1;
+  onResetTracking?: () => void;
+}> = ({ simulation, wallet, results, m, onUpdateMonth, onConfirmPurchase, onToggleMonthStatus, onResetTracking }) => {
   const yearIdx = Math.floor((m - 1) / 12);
   const monthIdx = (m - 1) % 12;
   const currentMonthHistory = simulation.history?.find(h => h.month === m);
@@ -421,7 +422,7 @@ const ProgressReport: React.FC<{
             {allAchieved && !isMonthConfirmed && (
               <button
                 onClick={() => onToggleMonthStatus(m, true)}
-                className="w-full py-4 bg-emerald-500 text-black font-black uppercase text-xs tracking-[0.2em] rounded-[24px] shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:brightness-110 active:scale-95 transition-all"
+                className="w-full py-4 bg-emerald-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[24px] shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:brightness-110 active:scale-95 transition-all"
               >
                 ✅ Finalizar Mês de Aporte
               </button>
@@ -498,7 +499,7 @@ const ProgressReport: React.FC<{
 
                       {!isMonthConfirmed && (
                         <button
-                          onClick={() => onConfirmPurchase(fund.ticker!, fund.neededThisMonth - fund.boughtThisMonth, fund.sharePrice)}
+                          onClick={() => onConfirmPurchase(fund.ticker!, fund.neededGap, fund.sharePrice)}
                           disabled={fund.isComplete || !fund.ticker}
                           className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-xl border ${fund.isComplete ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 cursor-default' : 'bg-sky-500 text-white border-sky-400 hover:scale-110 active:scale-95 disabled:opacity-20'}`}
                         >
@@ -512,7 +513,7 @@ const ProgressReport: React.FC<{
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5">
                     <div
                       className={`h-full transition-all duration-1000 ${fund.isComplete ? 'bg-emerald-500' : accent.bg}`}
-                      style={{ width: `${Math.min(100, (fund.boughtThisMonth / fund.neededThisMonth) * 100 || 0)}%` }}
+                      style={{ width: `${Math.min(100, (fund.boughtThisMonth / (fund.targetShares - (fund.actualShares - fund.boughtThisMonth))) * 100 || 0)}%` }}
                     />
                   </div>
                 </div>
@@ -569,9 +570,16 @@ const ProgressReport: React.FC<{
                 <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]" />
                 Jornada Mensal
               </h4>
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                {simulation.history?.filter(h => h.confirmed).length || 0} de {results[0]?.years.length * 12} Meses
-              </span>
+              <button 
+                onClick={() => {
+                  if (confirm("Tem certeza que deseja resetar todo o progresso do acompanhamento? Seus dados na carteira não serão alterados, mas todo o histórico da simulação será limpo.")) {
+                    onResetTracking && onResetTracking();
+                  }
+                }}
+                className="text-[9px] font-black text-rose-500 hover:text-rose-400 uppercase tracking-widest transition-colors"
+              >
+                Resetar Jornada
+              </button>
             </div>
             
             <div className="grid grid-cols-4 gap-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
@@ -579,8 +587,6 @@ const ProgressReport: React.FC<{
                 const monthNum = i + 1;
                 const hist = simulation.history?.find(h => h.month === monthNum);
                 const isCurrent = monthNum === m;
-                const isPastDone = hist?.confirmed && monthNum < m;
-                const isFuture = monthNum > m;
 
                 return (
                   <button
@@ -1188,6 +1194,13 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
     await dbService.saveSimulation(updatedSim);
   };
 
+  const handleResetTracking = async () => {
+    if (!savedSim) return;
+    const updated = { ...savedSim, history: [], currentMonth: 1 };
+    setSavedSim(updated);
+    await dbService.saveSimulation(updated);
+  };
+
   // Use results.map for rendering instead of r0, r1
 
   return (
@@ -1417,9 +1430,11 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
               simulation={savedSim}
               wallet={fiis}
               results={results}
+              m={savedSim.currentMonth}
               onUpdateMonth={handleUpdateMonth}
               onConfirmPurchase={handleConfirmPurchase}
               onToggleMonthStatus={handleToggleMonthStatus}
+              onResetTracking={handleResetTracking}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-6 glass-card bg-[#0a111f]/60 rounded-[40px] border border-white/5">

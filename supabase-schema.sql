@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS fii_simulations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     config JSONB NOT NULL,
+    history JSONB DEFAULT '[]'::jsonb,
     "currentMonth" INTEGER DEFAULT 1,
     "startDate" TIMESTAMPTZ DEFAULT now(),
     "lastUpdate" TIMESTAMPTZ DEFAULT now()
