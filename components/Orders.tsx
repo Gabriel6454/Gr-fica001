@@ -925,22 +925,18 @@ const Orders: React.FC<OrdersProps> = ({
   const [activeTab, setActiveTab] = useState<'entrada' | 'producao' | 'logistica' | 'finalizados'>('entrada');
   const [searchTerm, setSearchTerm] = useState('');
 
+  const isEntrada = (status: OrderStatus) => [OrderStatus.QUOTATION, OrderStatus.WAITING_PAYMENT, OrderStatus.WAITING_FILE].includes(status);
+  const isProduction = (status: OrderStatus) => [OrderStatus.ART, OrderStatus.WAITING_APPROVAL, OrderStatus.PRODUCTION, OrderStatus.READY_FOR_PICKUP].includes(status);
+  const isLogistic = (status: OrderStatus) => [OrderStatus.SHIPPING, OrderStatus.DELIVERED].includes(status);
+  const isFinished = (status: OrderStatus) => status === OrderStatus.COMPLETED;
 
   const filteredOrders = orders.filter(o => {
-    const matchesSearch = o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm);
-    const isFinished = o.status === OrderStatus.COMPLETED;
-    const isLogistic = o.status === OrderStatus.SHIPPING || o.status === OrderStatus.DELIVERED;
-    const isProduction = o.status === OrderStatus.ART || o.status === OrderStatus.WAITING_APPROVAL || o.status === OrderStatus.PRODUCTION || o.status === OrderStatus.READY_FOR_PICKUP;
-    const isEntrada = o.status === OrderStatus.QUOTATION || o.status === OrderStatus.WAITING_PAYMENT || o.status === OrderStatus.WAITING_FILE;
-
-    const matchesTab = activeTab === 'entrada'
-        ? isEntrada
-        : activeTab === 'producao' 
-            ? isProduction 
-            : activeTab === 'logistica' 
-                ? isLogistic 
-                : isFinished;
-
+    const idStr = String(o.id).toLowerCase();
+    const matchesSearch = o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || idStr.includes(searchTerm.toLowerCase());
+    const matchesTab = activeTab === 'entrada' ? isEntrada(o.status) :
+                        activeTab === 'producao' ? isProduction(o.status) :
+                        activeTab === 'logistica' ? isLogistic(o.status) :
+                        isFinished(o.status);
     return matchesSearch && matchesTab;
   });
 
@@ -953,7 +949,6 @@ const Orders: React.FC<OrdersProps> = ({
 
   const handleDelete = (orderId: string) => {
     const id = String(orderId).trim();
-    console.log('Orders.tsx: Botão excluir clicado para ID:', id);
     if (window.confirm(`Deseja realmente excluir permanentemente o pedido #${id}?`)) {
       onDeleteOrder(id);
     }
@@ -961,131 +956,135 @@ const Orders: React.FC<OrdersProps> = ({
 
   const getStatusBadgeClass = (status: OrderStatus) => {
     switch (status) {
-      case OrderStatus.QUOTATION: return 'bg-amber-500/10 text-amber-500 border-amber-500/30 shadow-amber-500/5';
-      case OrderStatus.WAITING_PAYMENT: return 'bg-rose-500/10 text-rose-500 border-rose-500/30 shadow-rose-500/5';
-      case OrderStatus.WAITING_FILE: return 'bg-sky-500/10 text-sky-500 border-sky-500/30 shadow-sky-500/5';
-      case OrderStatus.ART: return 'bg-[#1a1410] text-[#f97316] border-[#f97316]/30 shadow-[#f97316]/5';
-      case OrderStatus.PRODUCTION: return 'bg-[#10172a] text-[#0ea5e9] border-[#0ea5e9]/30 shadow-[#0ea5e9]/5';
-      case OrderStatus.SHIPPING: return 'bg-[#1a102a] text-[#a855f7] border-[#a855f7]/30 shadow-[#a855f7]/5';
-      case OrderStatus.DELIVERED: return 'bg-[#0f1a1a] text-[#14b8a6] border-[#14b8a6]/30 shadow-[#14b8a6]/5';
-      case OrderStatus.COMPLETED: return 'bg-[#0f2a1a] text-[#10b981] border-[#10b981]/30 shadow-[#10b981]/5';
+      case OrderStatus.QUOTATION: return 'bg-amber-500/10 text-amber-500 border-amber-500/30';
+      case OrderStatus.WAITING_PAYMENT: return 'bg-rose-500/10 text-rose-500 border-rose-500/30';
+      case OrderStatus.WAITING_FILE: return 'bg-sky-500/10 text-sky-500 border-sky-500/30';
+      case OrderStatus.ART: return 'bg-[#1a1410] text-[#f97316] border-[#f97316]/30';
+      case OrderStatus.PRODUCTION: return 'bg-[#10172a] text-[#0ea5e9] border-[#0ea5e9]/30';
+      case OrderStatus.SHIPPING: return 'bg-[#1a102a] text-[#a855f7] border-[#a855f7]/30';
+      case OrderStatus.DELIVERED: return 'bg-[#0f1a1a] text-[#14b8a6] border-[#14b8a6]/30';
+      case OrderStatus.COMPLETED: return 'bg-[#0f2a1a] text-[#10b981] border-[#10b981]/30';
       default: return 'bg-slate-900 text-slate-500 border-slate-800';
     }
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700 h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-8 border-b border-white/5 mb-6 px-4 sm:px-6 md:px-8">
-        <div className="space-y-0.5">
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none uppercase italic">Gestão de <span className="text-sky-500">Pedidos</span></h1>
-          <p className="text-slate-500 text-xs sm:text-sm font-medium">Fluxo de produção lateral (Kanban) em tempo real</p>
-        </div>
-        <button onClick={handleNewOrder} className="flex items-center justify-center gap-2 px-8 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest shadow-2xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto">
-          {ICONS.Plus} <span>Abrir Novo Pedido</span>
+    <div className="space-y-8 animate-in fade-in duration-700 h-full flex flex-col pt-4">
+      <div className="flex flex-wrap items-center gap-4 px-4 sm:px-8">
+        {[
+          { id: 'entrada', label: 'NOVAS ENTRADAS', count: orders.filter(o => isEntrada(o.status)).length },
+          { id: 'producao', label: 'ARTE', count: orders.filter(o => isProduction(o.status)).length },
+          { id: 'logistica', label: 'LOGÍSTICA', count: orders.filter(o => isLogistic(o.status)).length },
+          { id: 'finalizados', label: 'HISTÓRICO', count: orders.filter(o => isFinished(o.status)).length },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center gap-3 px-6 py-3.5 rounded-[22px] font-black uppercase text-[10px] tracking-[0.2em] transition-all duration-300 ${activeTab === tab.id
+                ? 'bg-amber-500 text-white shadow-[0_8px_30px_rgba(245,158,11,0.3)] scale-105'
+                : 'bg-[#0a111f]/60 text-slate-500 border border-white/5 hover:text-white hover:bg-white/5'
+              }`}
+          >
+            <span>{tab.label}</span>
+            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${activeTab === tab.id ? 'bg-black/20 text-white' : 'bg-white/5 text-slate-600'}`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+
+        <div className="flex-1" />
+
+        <button onClick={handleNewOrder} className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 text-white font-black uppercase rounded-2xl text-[10px] tracking-widest hover:bg-white/10 transition-all active:scale-95 shadow-xl">
+          {ICONS.Plus} <span>Cadastrar Pedido</span>
         </button>
       </div>
 
-      <div className="px-4 sm:px-6 md:px-8 mb-4">
+      <div className="px-4 sm:px-8">
         <div className="relative group">
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors">{ICONS.Search}</div>
-          <input 
-            type="text" 
-            placeholder="Buscar cliente, material ou ID do pedido..." 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-            className="w-full bg-[#0a111f]/40 border border-white/5 rounded-[24px] py-4 sm:py-5 pl-14 pr-6 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-slate-700 shadow-xl backdrop-blur-md"
+          <div className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-700 group-focus-within:text-sky-500 transition-colors pointer-events-none">
+            <div className="scale-125">{ICONS.Search}</div>
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por cliente ou ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#0a111f]/40 border border-white/5 rounded-[40px] py-6 pl-16 pr-8 text-sm text-white outline-none focus:border-white/10 transition-all font-bold placeholder:text-slate-800 shadow-2xl backdrop-blur-3xl"
           />
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-x-auto no-scrollbar px-4 sm:px-6 md:px-8 pb-10">
-        <div className="flex gap-6 h-full min-w-max pb-4">
-          {[
-            { id: 'entrada', label: 'Entradas', color: 'amber', icon: ICONS.Plus, statuses: [OrderStatus.QUOTATION, OrderStatus.WAITING_PAYMENT, OrderStatus.WAITING_FILE] },
-            { id: 'producao', label: 'Produção', color: 'sky', icon: ICONS.Settings, statuses: [OrderStatus.ART, OrderStatus.WAITING_APPROVAL, OrderStatus.PRODUCTION, OrderStatus.READY_FOR_PICKUP] },
-            { id: 'logistica', label: 'Logística', color: 'purple', icon: ICONS.Shipping, statuses: [OrderStatus.SHIPPING, OrderStatus.DELIVERED] },
-            { id: 'finalizados', label: 'Concluídos', color: 'emerald', icon: ICONS.Success, statuses: [OrderStatus.COMPLETED] },
-          ].map((column) => (
-            <div key={column.id} className="w-[340px] sm:w-[380px] flex flex-col gap-5">
-              <div className={`p-5 rounded-[28px] bg-${column.color}-500/10 border border-${column.color}-500/20 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xl shadow-xl shadow-black/20`}>
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl bg-${column.color}-500 text-white flex items-center justify-center shadow-2xl shadow-${column.color}-500/30`}>
-                    <div className="scale-110">{column.icon}</div>
+      <div className="flex-1 px-4 sm:px-8 pb-10 overflow-hidden flex flex-col">
+        <div className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[48px] overflow-hidden shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] flex flex-col flex-1">
+          <div className="grid grid-cols-12 gap-4 px-12 py-9 border-b border-white/5 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">
+            <div className="col-span-1">ID</div>
+            <div className="col-span-3">CLIENTE</div>
+            <div className="col-span-2 text-center">DATA PEDIDO</div>
+            <div className="col-span-2 text-center">TOTAL / PAGO</div>
+            <div className="col-span-2 text-center">STATUS ENTRADA</div>
+            <div className="col-span-2 text-right">AÇÕES</div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-white/5">
+            {filteredOrders.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center gap-4 opacity-20 py-20">
+                <div className="text-5xl">📭</div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em]">Lista Vazia</p>
+              </div>
+            ) : (
+                filteredOrders.map(order => (
+                <div key={order.id} className="grid grid-cols-12 gap-4 px-12 py-10 items-center hover:bg-white/[0.02] transition-colors group">
+                  <div className="col-span-1">
+                    <span className="text-[11px] font-black text-slate-700 tracking-widest uppercase">#{String(order.id).substring(0, 7)}</span>
                   </div>
-                  <div>
-                    <h3 className="text-[13px] font-black text-white uppercase tracking-tighter italic leading-none">{column.label}</h3>
-                    <p className={`text-[10px] text-${column.color}-400 font-black uppercase tracking-[0.2em] mt-1.5`}>
-                      {orders.filter(o => {
-                        const matchesSearch = (o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm));
-                        return matchesSearch && column.statuses.includes(o.status);
-                      }).length} Pedidos
-                    </p>
+                  <div className="col-span-3">
+                    <h4 className="text-base font-black text-white uppercase tracking-tight truncate group-hover:text-amber-500 transition-colors">
+                      {order.customerName}
+                    </h4>
+                  </div>
+                  <div className="col-span-2 text-center">
+                    <span className="text-[14px] font-black text-slate-400">{order.date}</span>
+                  </div>
+                  <div className="col-span-2 text-center">
+                    <div className="space-y-1.5">
+                      <p className="text-[16px] font-black text-white italic">R$ {order.total.toFixed(2).replace('.', ',')}</p>
+                      <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+                        PAGO R$ {(order.total - order.remainingAmount).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-span-2 flex justify-center">
+                    <button
+                      onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
+                      className={`px-8 py-3.5 rounded-[22px] text-[10px] font-black uppercase tracking-[0.2em] border transition-all shadow-xl active:scale-95 ${getStatusBadgeClass(order.status)}`}
+                    >
+                      {order.status}
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex justify-end items-center gap-3">
+                    <button 
+                      onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} 
+                      title="WhatsApp" 
+                      className="w-11 h-11 bg-white/5 border border-white/5 rounded-full text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-lg"
+                    >
+                      {ICONS.Whatsapp}
+                    </button>
+                    <button 
+                      onClick={() => { const link = `${window.location.origin}?tracking=${order.id}`; navigator.clipboard.writeText(link); alert('Link copiado!'); }} 
+                      title="Link Direto" 
+                      className="w-11 h-11 bg-white/5 border border-white/5 rounded-full text-sky-500 hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center shadow-lg"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    </button>
+                    <button onClick={() => handlePrintOrder(order)} title="Imprimir" className="w-11 h-11 bg-white/5 border border-white/5 rounded-full text-slate-500 hover:bg-white hover:text-black transition-all flex items-center justify-center shadow-lg">{ICONS.Print}</button>
+                    <button onClick={() => handleTrackOrder(order)} title="LOGÍSTICA" className="w-11 h-11 bg-white/5 border border-white/5 rounded-full text-slate-500 hover:bg-white hover:text-black transition-all flex items-center justify-center shadow-lg">{ICONS.Shipping}</button>
+                    <button onClick={() => handleEditOrder(order)} title="Editar" className="w-11 h-11 bg-white/5 border border-white/5 rounded-full text-slate-500 hover:bg-white hover:text-black transition-all flex items-center justify-center shadow-lg">{ICONS.Edit}</button>
+                    <button onClick={() => handleDelete(order.id)} title="Excluir" className="w-11 h-11 bg-white/5 border border-white/5 rounded-full text-slate-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shadow-lg">{ICONS.Trash}</button>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex-1 space-y-6 overflow-y-auto no-scrollbar min-h-0 pb-12 px-1">
-                {orders
-                  .filter(o => {
-                    const matchesSearch = (o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.includes(searchTerm));
-                    return matchesSearch && column.statuses.includes(o.status);
-                  })
-                  .map((order) => (
-                    <div key={order.id} className={`glass-card bg-[#0a111f]/40 border border-t-2 border-white/5 rounded-[32px] p-6 space-y-6 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-500 hover:border-${column.color}-500/30 hover:scale-[1.02] transition-all group`}>
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="space-y-1 min-w-0">
-                          <span className="text-[10pt] font-black text-slate-600 tracking-widest uppercase italic">#{order.id.substring(0,8)}</span>
-                          <h4 className="text-[13pt] font-black text-white uppercase leading-tight tracking-tight truncate border-l-4 border-sky-500 pl-3 group-hover:border-white transition-all">
-                            {order.customerName}
-                          </h4>
-                        </div>
-                        <button
-                          onClick={() => onUpdateStatus(order.id, getNextStatus(order.status))}
-                          className={`shrink-0 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-xl active:scale-90 ${getStatusBadgeClass(order.status)}`}
-                        >
-                          {order.status}
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 py-5 border-y border-white/5">
-                        <div className="space-y-1">
-                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block italic opacity-60">Prazo / Retirada</span>
-                          <p className="text-[11px] font-black text-white">
-                            {order.deliveryDate}
-                          </p>
-                        </div>
-                        <div className="space-y-1 text-right">
-                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block italic opacity-60">Investimento</span>
-                          <p className="text-sm font-black text-sky-500 italic">
-                            R$ {order.total.toFixed(2).replace('.', ',')}
-                          </p>
-                        </div>
-                      </div>
-
-                      {order.remainingAmount > 0 && (
-                        <div className="bg-rose-500/10 border border-rose-500/20 rounded-[20px] p-4 flex items-center justify-between animate-pulse">
-                          <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Saldo Devedor</span>
-                          <span className="text-xs font-black text-rose-500 italic">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                      )}
-
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-5 gap-2.5">
-                          <button onClick={() => { const link = `${window.location.origin}?tracking=${order.id}`; navigator.clipboard.writeText(link); alert('Link copiado!'); }} title="Copiando Link" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-sky-500 hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center shadow-lg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
-                          <button onClick={() => contactCustomer(order, customers.find(c => c.id === order.customerId))} title="WhatsApp" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-lg">{ICONS.Whatsapp}</button>
-                          <button onClick={() => handlePrintOrder(order)} title="Imprimir" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all flex items-center justify-center shadow-lg">{ICONS.Print}</button>
-                          <button onClick={() => handleEditOrder(order)} title="Editar" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-sky-500 transition-all flex items-center justify-center shadow-lg">{ICONS.Edit}</button>
-                          <button onClick={() => handleDelete(order.id)} title="Remover" className="h-11 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-rose-500 transition-all flex items-center justify-center shadow-lg">{ICONS.Trash}</button>
-                        </div>
-                        {order.remainingAmount > 0 && (
-                          <button onClick={() => handlePayOrder(order)} className="w-full h-12 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-emerald-500/30 active:scale-95 transition-all">QUITAR SALDO</button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))}
+              ))
+            )}
+          </div>
         </div>
       </div>
 
