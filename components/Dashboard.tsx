@@ -938,7 +938,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
         <KpiCard label="Finalizados" value={finishedOrdersCount.toString()} subtext="Entregues" icon={ICONS.Success} iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
       </div>
 
-      <div className="flex flex-col md:flex-row overflow-x-auto lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 items-start gap-6 -mx-4 px-4 md:mx-0 md:px-0 pb-10 no-scrollbar">
+      <div className="flex flex-col lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 items-start gap-4 sm:gap-6 -mx-4 px-4 md:mx-0 md:px-0 pb-10 no-scrollbar">
         {statusColumns.map(col => (
           <div
             key={col.id}
@@ -954,9 +954,9 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                 onUpdateOrderStatus(id, col.statuses[0]);
               }
             }}
-            className={`flex flex-col gap-4 min-h-[600px] w-[85vw] md:w-[320px] lg:w-full shrink-0 border-2 ${dragOverColumn === col.id ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 bg-[#050914]/30'} rounded-[36px] p-4 backdrop-blur-xl transition-all duration-500 box-border`}
+            className={`flex flex-col gap-4 h-fit min-h-[120px] md:min-h-[600px] w-full md:w-[320px] lg:w-full shrink-0 border-2 ${dragOverColumn === col.id ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 bg-[#050914]/30'} rounded-[36px] p-4 backdrop-blur-xl transition-all duration-500 box-border`}
           >
-            <div className="flex items-center justify-between px-4 shrink-0 mb-4 bg-white/5 py-3 rounded-[20px] backdrop-blur-md">
+            <div className="flex items-center justify-between px-4 shrink-0 mb-2 sm:mb-4 bg-white/5 py-3 rounded-[20px] backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <span className={`${col.textColor} scale-100`}>{col.icon}</span>
                 <h2 className={`text-[11px] font-black uppercase tracking-[0.2em] ${col.textColor}`}>{col.label}</h2>
@@ -966,7 +966,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-1 space-y-6 no-scrollbar pb-10">
+            <div className="flex-1 overflow-y-auto px-1 space-y-4 no-scrollbar pb-2 sm:pb-10">
               <AnimatePresence mode="popLayout">
                 {col.id !== 'finished' ? (
                   filteredOrders.filter(o => col.statuses.includes(o.status)).map(order => (
@@ -986,7 +986,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                     />
                   ))
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center p-8 opacity-40 border-2 border-dashed border-emerald-500/20 rounded-[40px]">
+                  <div className="h-full flex flex-col items-center justify-center py-6 sm:p-8 opacity-40 border-2 border-dashed border-emerald-500/20 rounded-[40px]">
                     <div className="text-emerald-500 mb-2">{ICONS.Success}</div>
                     <p className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest text-center leading-relaxed">
                       Solte para<br/>Arquivar
@@ -994,12 +994,12 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                   </div>
                 )}
 
-                {/* Drop Zone Visual quando a coluna está vazia (exceto concluído que já tem o placeholder) */}
+                {/* Drop Zone Visual quando a coluna está vazia */}
                 {col.id !== 'finished' && filteredOrders.filter(o => col.statuses.includes(o.status)).length === 0 && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 0.4 }}
-                    className="h-full min-h-[200px] flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[40px] p-8 text-center"
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[40px] py-8 text-center"
                   >
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
                       Livre

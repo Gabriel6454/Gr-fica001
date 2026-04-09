@@ -182,7 +182,9 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
                           <h4 className={`text-sm font-black uppercase tracking-tight ${isCurrent ? 'text-sky-400' : isCompleted ? 'text-white' : 'text-slate-500'}`}>
                             {step.label}
                           </h4>
-                          <p className="text-[10px] text-slate-500 font-bold mt-0.5">{step.sub}</p>
+                          <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                            {step.status === OrderStatus.SHIPPING && order.shippingDetail ? order.shippingDetail : step.sub}
+                          </p>
                         </div>
                       </div>
                     );

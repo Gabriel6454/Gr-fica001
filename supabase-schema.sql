@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS orders (
     "isRegistered" BOOLEAN,
     "trackingCode" TEXT,
     "carrier" TEXT,
+    "shippingDetail" TEXT,
     "trackingHistory" JSONB
 );
 
