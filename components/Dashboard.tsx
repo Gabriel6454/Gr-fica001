@@ -407,7 +407,13 @@ const OrderCard: React.FC<{
   isDragging?: boolean;
   onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
   isCollapsed?: boolean;
-}> = ({ order, onDelete, onEdit, onPrint, onPay, onTrack, onFinalize, products, customers, isDragging, onStatusChange }) => {
+}> = ({ order, onDelete, onEdit, onPrint, onPay, onTrack, onFinalize, products, customers, isDragging, onStatusChange, isCollapsed = false }) => {
+  const [isMinimized, setIsMinimized] = useState(isCollapsed);
+
+  useEffect(() => {
+    setIsMinimized(isCollapsed);
+  }, [isCollapsed]);
+
   const getNextStatus = (current: OrderStatus): OrderStatus => {
     const statuses = [
       OrderStatus.QUOTATION, OrderStatus.WAITING_PAYMENT, OrderStatus.WAITING_FILE,
@@ -521,7 +527,18 @@ const OrderCard: React.FC<{
     >
       <div className="space-y-4">
         <div className="flex justify-between items-start gap-2">
-          <h4 className="font-bold text-base text-white tracking-tight truncate">{order.customerName}</h4>
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
+              className="text-slate-500 hover:text-white p-1 -ml-1 rounded-full transition-colors flex-shrink-0"
+              title={isMinimized ? "Expandir" : "Recolher"}
+            >
+              <div className={`transition-transform duration-300 ${isMinimized ? '-rotate-90' : 'rotate-0'}`}>
+                {ICONS.ChevronDown}
+              </div>
+            </button>
+            <h4 className="font-bold text-base text-white tracking-tight truncate">{order.customerName}</h4>
+          </div>
           <button
             onClick={handleStatusClick}
             className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${cfg.bgClass} text-white shrink-0`}
@@ -530,75 +547,88 @@ const OrderCard: React.FC<{
           </button>
         </div>
         <div className="flex justify-between items-center text-[10px] font-bold">
-          <span className="text-slate-500">#{formatOrderId(order.id)}</span>
+          <span className="text-slate-500 pl-6">#{formatOrderId(order.id)}</span>
           <div className="flex items-center gap-1 text-slate-400">
             <span className={`${cfg.textClass} uppercase text-[9px]`}>ENTREGA:</span>
             <span>{order.deliveryDate}</span>
           </div>
         </div>
-        <div className="py-3 space-y-2 border-y border-slate-800/50">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TOTAL:</span>
-            <span className="text-sm font-black text-white">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RESTANTE:</span>
-            <span className="text-sm font-black text-rose-500">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-          </div>
-        </div>
-        <div className="pt-3 mt-1 border-t border-white/5 space-y-3">
-          <button 
-            onClick={(e) => { e.stopPropagation(); onPay(order); }}
-            className={`w-full whitespace-nowrap ${cfg.bgClass} ${cfg.hoverBgClass} text-white text-[10px] font-black uppercase py-2.5 px-4 rounded-[14px] transition-all active:scale-95 shadow-lg ${cfg.btnShadowClass}`}
-          >
-            PAGAR SALDO
-          </button>
-          <div className="flex justify-center gap-1.5 text-slate-500">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                const trackingCode = order.trackingCode || order.id;
-                const link = `${window.location.origin}?tracking=${trackingCode}`;
-                navigator.clipboard.writeText(link);
-                alert('Link de rastreamento copiado com sucesso!');
-              }}
-              className="p-1.5 text-slate-500 hover:text-sky-400 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-              title="Copiar Link de Rastreio"
+
+        <AnimatePresence>
+          {!isMinimized && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-            </button>
-            {whatsappNumber && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); contactCustomer(order, customer); }} 
-                className="p-1.5 text-slate-500 hover:text-emerald-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5" 
-                title="Enviar WhatsApp"
-              >
-                {ICONS.Whatsapp}
-              </button>
-            )}
-            <button 
-              onClick={(e) => { e.stopPropagation(); onPrint(order); }} 
-              className="p-1.5 text-slate-500 hover:text-white transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-              title="Imprimir"
-            >
-              {ICONS.Print}
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); onEdit(order); }} 
-              className="p-1.5 text-slate-500 hover:text-sky-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-              title="Editar"
-            >
-              {ICONS.Edit}
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} 
-              className="p-1.5 text-slate-500 hover:text-rose-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-              title="Excluir"
-            >
-              {ICONS.Trash}
-            </button>
-          </div>
-        </div>
+              <div className="py-3 space-y-2 border-y border-slate-800/50 mt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TOTAL:</span>
+                  <span className="text-sm font-black text-white">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RESTANTE:</span>
+                  <span className="text-sm font-black text-rose-500">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+              <div className="pt-3 mt-1 border-white/5 space-y-3">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onPay(order); }}
+                  className={`w-full whitespace-nowrap ${cfg.bgClass} ${cfg.hoverBgClass} text-white text-[10px] font-black uppercase py-2.5 px-4 rounded-[14px] transition-all active:scale-95 shadow-lg ${cfg.btnShadowClass}`}
+                >
+                  PAGAR SALDO
+                </button>
+                <div className="flex justify-center gap-1.5 text-slate-500">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const trackingCode = order.trackingCode || order.id;
+                      const link = `${window.location.origin}?tracking=${trackingCode}`;
+                      navigator.clipboard.writeText(link);
+                      alert('Link de rastreamento copiado com sucesso!');
+                    }}
+                    className="p-1.5 text-slate-500 hover:text-sky-400 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+                    title="Copiar Link de Rastreio"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  </button>
+                  {whatsappNumber && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); contactCustomer(order, customer); }} 
+                      className="p-1.5 text-slate-500 hover:text-emerald-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5" 
+                      title="Enviar WhatsApp"
+                    >
+                      {ICONS.Whatsapp}
+                    </button>
+                  )}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onPrint(order); }} 
+                    className="p-1.5 text-slate-500 hover:text-white transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+                    title="Imprimir"
+                  >
+                    {ICONS.Print}
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onEdit(order); }} 
+                    className="p-1.5 text-slate-500 hover:text-sky-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+                    title="Editar"
+                  >
+                    {ICONS.Edit}
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} 
+                    className="p-1.5 text-slate-500 hover:text-rose-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
+                    title="Excluir"
+                  >
+                    {ICONS.Trash}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
     </motion.div>
   );
@@ -938,7 +968,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
         <KpiCard label="Finalizados" value={finishedOrdersCount.toString()} subtext="Entregues" icon={ICONS.Success} iconBgClass="bg-[#10b981]" glowColor="#10b981" valueColorClass="text-[#10b981]" />
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 items-start gap-4 sm:gap-6 -mx-4 px-4 md:mx-0 md:px-0 pb-10 no-scrollbar">
+      <div className="flex flex-col lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 items-stretch gap-4 sm:gap-6 -mx-4 px-4 md:mx-0 md:px-0 pb-10 no-scrollbar">
         {statusColumns.map(col => (
           <div
             key={col.id}
@@ -954,19 +984,30 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                 onUpdateOrderStatus(id, col.statuses[0]);
               }
             }}
-            className={`flex flex-col gap-4 h-fit min-h-[120px] md:min-h-[600px] w-full md:w-[320px] lg:w-full shrink-0 border-2 ${dragOverColumn === col.id ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 bg-[#050914]/30'} rounded-[36px] p-4 backdrop-blur-xl transition-all duration-500 box-border`}
+            className={`flex flex-col gap-4 h-full min-h-[120px] max-h-[500px] w-full md:w-[320px] lg:w-full shrink-0 border-2 ${dragOverColumn === col.id ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 bg-[#050914]/30'} rounded-[36px] p-4 backdrop-blur-xl transition-all duration-500 box-border`}
           >
             <div className="flex items-center justify-between px-4 shrink-0 mb-2 sm:mb-4 bg-white/5 py-3 rounded-[20px] backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <span className={`${col.textColor} scale-100`}>{col.icon}</span>
                 <h2 className={`text-[11px] font-black uppercase tracking-[0.2em] ${col.textColor}`}>{col.label}</h2>
               </div>
-              <span className="text-[10px] font-black text-white bg-white/10 w-7 h-7 flex items-center justify-center rounded-xl border border-white/5 shadow-inner">
-                {filteredOrders.filter(o => col.statuses.includes(o.status)).length}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCollapsedCols(prev => ({ ...prev, [col.id]: !(prev[col.id] ?? true) }))}
+                  className="text-slate-500 hover:text-white p-1 hover:bg-white/5 rounded-lg transition-colors"
+                  title={(collapsedCols[col.id] ?? true) ? "Expandir Cartões" : "Recolher Cartões"}
+                >
+                  <div className={`transition-transform duration-300 ${(collapsedCols[col.id] ?? true) ? 'rotate-0' : 'rotate-180'}`}>
+                    {ICONS.ChevronDown}
+                  </div>
+                </button>
+                <span className="text-[10px] font-black text-white bg-white/10 w-7 h-7 flex items-center justify-center rounded-xl border border-white/5 shadow-inner">
+                  {filteredOrders.filter(o => col.statuses.includes(o.status)).length}
+                </span>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-1 space-y-4 no-scrollbar pb-2 sm:pb-10">
+            <div className="flex-1 overflow-y-auto px-1 space-y-4 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20 scrollbar-track-transparent pr-1 pb-2 sm:pb-10">
               <AnimatePresence mode="popLayout">
                 {col.id !== 'finished' ? (
                   filteredOrders.filter(o => col.statuses.includes(o.status)).map(order => (
