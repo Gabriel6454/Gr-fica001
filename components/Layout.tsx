@@ -92,14 +92,34 @@ const Layout: React.FC<LayoutProps> = ({
         </div>
       </header>
 
-      {/* ── Bottom Navigation (mobile only) ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[80] flex items-center justify-around bg-[#030712]/92 backdrop-blur-2xl border-t border-white/5 bottom-nav-safe" style={{ height: 'calc(3.75rem + env(safe-area-inset-bottom))' }}>
-        {bottomNavItems.map((item) => (
-          <button key={item.id} onClick={() => handleTabChange(item.id)} className={`flex flex-col items-center justify-center gap-1 flex-1 ${activeTab === item.id ? 'text-sky-400' : 'text-slate-500'}`}>
-            {item.icon}
-            <span className="text-[9px] font-black uppercase tracking-wider">{item.label}</span>
-          </button>
-        ))}
+      {/* ── Mobile Bottom Navigation (Floating Dock) ── */}
+      <nav className="md:hidden fixed z-[80] left-4 right-4 flex items-center justify-between px-2 bg-[#050914]/80 backdrop-blur-2xl border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] rounded-3xl" style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))', height: '4.5rem' }}>
+        {bottomNavItems.map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button 
+              key={item.id} 
+              onClick={() => handleTabChange(item.id)} 
+              className={`relative flex flex-col items-center justify-center flex-1 h-full rounded-2xl transition-all duration-300 ${isActive ? 'text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                {isActive && (
+                  <motion.div 
+                    layoutId="mob-nav-pill" 
+                    className="absolute inset-x-1.5 inset-y-2 bg-sky-500/10 rounded-2xl border border-sky-500/20" 
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </div>
+              <div className={`relative z-10 flex flex-col items-center transition-transform duration-300 ${isActive ? '-translate-y-0.5' : ''}`}>
+                <div className={`transition-all duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]' : 'scale-90 opacity-70'}`}>
+                  {item.icon}
+                </div>
+                <span className={`text-[8.5px] font-black uppercase tracking-[0.1em] mt-1.5 transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-50'}`}>{item.label}</span>
+              </div>
+            </button>
+          )
+        })}
       </nav>
 
       {/* ── Mobile Backdrop ── */}
@@ -147,7 +167,7 @@ const Layout: React.FC<LayoutProps> = ({
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 min-w-0 overflow-x-hidden" style={{ paddingTop: 'calc(3.75rem)', paddingBottom: 'calc(3.75rem + env(safe-area-inset-bottom))' }}>
+      <main className="flex-1 min-w-0 overflow-x-hidden" style={{ paddingTop: 'calc(4rem)', paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
         <style>{`@media (min-width: 768px) { main { padding-top: 1.5rem !important; padding-bottom: 2rem !important; } }`}</style>
         <div className="px-4 sm:px-6 md:px-8 lg:px-10 max-w-full">{children}</div>
       </main>
