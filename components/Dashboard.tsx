@@ -984,7 +984,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                 onUpdateOrderStatus(id, col.statuses[0]);
               }
             }}
-            className={`flex flex-col gap-4 h-full min-h-[120px] max-h-[500px] w-full md:w-[320px] lg:w-full shrink-0 border-2 ${dragOverColumn === col.id ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 bg-[#050914]/30'} rounded-[36px] p-4 backdrop-blur-xl transition-all duration-500 box-border`}
+            className={`flex flex-col gap-4 h-full min-h-[120px] max-h-[500px] w-full shrink-0 border-2 ${dragOverColumn === col.id ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 bg-[#050914]/30'} rounded-[36px] p-4 backdrop-blur-xl transition-all duration-500 box-border`}
           >
             <div className="flex items-center justify-between px-4 shrink-0 mb-2 sm:mb-4 bg-white/5 py-3 rounded-[20px] backdrop-blur-md">
               <div className="flex items-center gap-3">

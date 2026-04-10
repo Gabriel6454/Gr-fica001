@@ -79,7 +79,7 @@ const Layout: React.FC<LayoutProps> = ({
     <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-sky-500/30 flex flex-col md:flex-row overflow-x-hidden antialiased" style={{ zoom: settings.systemScale || 1 }}>
       
       {/* ── Mobile Top Bar ── */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-[80] flex items-center justify-between px-4 bg-[#020617]/85 backdrop-blur-xl border-b border-white/5" style={{ height: '3.75rem', paddingTop: 'env(safe-area-inset-top)' }}>
+      <header className="lg:hidden flex items-center justify-between px-4 bg-[#020617]/85 backdrop-blur-xl border-b border-white/5" style={{ height: '3.75rem', paddingTop: 'env(safe-area-inset-top)', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 80 }}>
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 bg-sky-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-sky-500/30 shrink-0">
             {settings.logoUrl && settings.logoUrl.length > 10 ? <img src={settings.logoUrl} className="w-full h-full object-cover rounded-xl" alt="Logo" /> : <DefaultLogo className="w-5 h-5" />}
@@ -93,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({
       </header>
 
       {/* ── Mobile Bottom Navigation (Floating Dock) ── */}
-      <nav className="md:hidden fixed z-[80] left-4 right-4 flex items-center justify-between px-2 bg-[#050914]/80 backdrop-blur-2xl border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] rounded-3xl" style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))', height: '4.5rem' }}>
+      <nav className="lg:hidden fixed z-[80] left-4 right-4 flex items-center justify-between px-2 bg-[#050914]/80 backdrop-blur-2xl border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] rounded-3xl" style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))', height: '4.5rem' }}>
         {bottomNavItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -123,15 +123,15 @@ const Layout: React.FC<LayoutProps> = ({
       </nav>
 
       {/* ── Mobile Backdrop ── */}
-      {isMobileMenuOpen && <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] md:hidden" onClick={() => setIsMobileMenuOpen(false)} />}
+      {isMobileMenuOpen && <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />}
 
       {/* ── Sidebar ── */}
-      <aside className={`fixed md:sticky top-0 left-0 bottom-0 h-screen z-[100] glass-card bg-[#030712]/70 flex flex-col transition-all duration-300 ${isMobileMenuOpen ? 'translate-x-0 w-72' : '-translate-x-full'} md:translate-x-0 ${isCollapsed ? 'md:w-[4.5rem]' : 'md:w-64'}`}>
-        <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden md:flex absolute -right-3 top-24 w-6 h-6 bg-sky-500 rounded-full border border-sky-400 items-center justify-center text-[#030712] shadow-xl z-[110] hover:scale-110 active:scale-95 transition-all">
+      <aside className={`fixed lg:sticky top-0 left-0 bottom-0 h-screen z-[100] glass-card bg-[#030712]/70 flex flex-col transition-all duration-300 ${isMobileMenuOpen ? 'translate-x-0 w-72' : '-translate-x-full'} lg:translate-x-0 ${isCollapsed ? 'lg:w-[4.5rem]' : 'lg:w-64'}`}>
+        <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:flex absolute -right-3 top-24 w-6 h-6 bg-sky-500 rounded-full border border-sky-400 items-center justify-center text-[#030712] shadow-xl z-[110] hover:scale-110 active:scale-95 transition-all">
           <div className={`transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`}>{ICONS.Chevron}</div>
         </button>
 
-        <div className={`px-5 pt-6 pb-4 flex items-center gap-4 shrink-0 ${isCollapsed && !isMobileMenuOpen ? 'md:justify-center' : ''}`}>
+        <div className={`px-5 pt-6 pb-4 flex items-center gap-4 shrink-0 ${isCollapsed && !isMobileMenuOpen ? 'lg:justify-center' : ''}`}>
           <div className="w-11 h-11 bg-sky-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-2xl shadow-sky-500/40 overflow-hidden">
             {settings.logoUrl && settings.logoUrl.length > 10 ? <img src={settings.logoUrl} className="w-full h-full object-cover" alt="Logo" /> : <DefaultLogo className="w-6 h-6" />}
           </div>
@@ -145,7 +145,7 @@ const Layout: React.FC<LayoutProps> = ({
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar py-2">
           {ALL_MENU_ITEMS.map((item) => (
-            <button key={item.id} onClick={() => handleTabChange(item.id)} className={`w-full flex items-center rounded-2xl transition-all duration-200 relative group ${isCollapsed && !isMobileMenuOpen ? 'md:justify-center px-0 py-3.5' : 'px-4 py-3 gap-3.5'} ${activeTab === item.id ? 'bg-sky-500/10 text-sky-400 font-black' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}>
+            <button key={item.id} onClick={() => handleTabChange(item.id)} className={`w-full flex items-center rounded-2xl transition-all duration-200 relative group ${isCollapsed && !isMobileMenuOpen ? 'lg:justify-center px-0 py-3.5' : 'px-4 py-3 gap-3.5'} ${activeTab === item.id ? 'bg-sky-500/10 text-sky-400 font-black' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}>
               <div className={activeTab === item.id ? 'text-sky-400' : 'group-hover:text-slate-300'}>{item.icon}</div>
               {(!isCollapsed || isMobileMenuOpen) && <span className="text-[13px] tracking-tight truncate font-semibold">{item.label}</span>}
               {activeTab === item.id && <div className="absolute left-0 w-1 h-6 bg-sky-500 rounded-r-full shadow-[0_0_12px_#0ea5e9]" />}
@@ -153,7 +153,7 @@ const Layout: React.FC<LayoutProps> = ({
           ))}
         </nav>
 
-        <div className={`px-3 pb-4 border-t border-white/5 pt-3 shrink-0 ${isCollapsed && !isMobileMenuOpen ? 'md:flex md:justify-center' : ''}`}>
+        <div className={`px-3 pb-4 border-t border-white/5 pt-3 shrink-0 ${isCollapsed && !isMobileMenuOpen ? 'lg:flex lg:justify-center' : ''}`}>
           <div className={`flex items-center bg-slate-900/40 rounded-2xl border border-slate-800/50 ${isCollapsed && !isMobileMenuOpen ? 'p-2' : 'p-2.5 gap-3 w-full'}`}>
             <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-[11px] font-black text-sky-500 shrink-0">{userInitials}</div>
             {(!isCollapsed || isMobileMenuOpen) && (
@@ -168,7 +168,7 @@ const Layout: React.FC<LayoutProps> = ({
 
       {/* ── Main Content ── */}
       <main className="flex-1 min-w-0 overflow-x-hidden" style={{ paddingTop: 'calc(4rem)', paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
-        <style>{`@media (min-width: 768px) { main { padding-top: 1.5rem !important; padding-bottom: 2rem !important; } }`}</style>
+        <style>{`@media (min-width: 1024px) { main { padding-top: 1.5rem !important; padding-bottom: 2rem !important; } }`}</style>
         <div className="px-4 sm:px-6 md:px-8 lg:px-10 max-w-full">{children}</div>
       </main>
     </div>
