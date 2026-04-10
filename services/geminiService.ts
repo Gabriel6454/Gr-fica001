@@ -59,7 +59,7 @@ export const sendChatMessage = async (
   ];
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash-lite',
+    model: 'gemini-1.5-flash',
     contents,
   });
 
@@ -85,7 +85,7 @@ export const streamChatMessage = async (
   ];
 
   const stream = await ai.models.generateContentStream({
-    model: 'gemini-2.0-flash-lite',
+    model: 'gemini-1.5-flash',
     contents,
   });
 
@@ -109,7 +109,7 @@ export const getBusinessInsights = async (products: Product[], orders: Order[]) 
     if (!ai) throw new Error("AI not configured");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -142,7 +142,7 @@ export const suggestDescription = async (productName: string, category: string) 
     if (!ai) throw new Error("AI not configured");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
+      model: 'gemini-1.5-flash',
       contents: prompt
     });
     return response.text || "Descrição personalizada para seus impressos de alta qualidade.";

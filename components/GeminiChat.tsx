@@ -131,7 +131,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${configured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                {configured ? 'Gemini 2.0 Flash · Grátis' : 'API Key necessária'}
+                {configured ? 'Gemini 1.5 Flash · Grátis' : 'API Key necessária'}
               </span>
             </div>
           </div>
@@ -259,7 +259,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
         <p className="text-center text-[10px] text-slate-700 mt-2 font-medium">
-          Gemini 2.0 Flash Lite · Grátis · Pressione Enter para enviar
+          Gemini 1.5 Flash · Grátis · Pressione Enter para enviar
         </p>
       </div>
     </div>
