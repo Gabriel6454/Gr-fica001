@@ -1,12 +1,31 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Product, Order } from "../types";
 
-// Lazy initialization of GoogleGenAI to prevent crashes when API key is missing
+// ─── Chat Types ───────────────────────────────────────────────────────────────
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
+
+const SYSTEM_PROMPT = `Você é o Atlas AI, assistente inteligente integrado ao sistema de gestão de gráfica Atlas.
+Você pode ajudar com:
+- Gerenciamento de pedidos e produção gráfica
+- Dicas sobre papéis, tintas e acabamentos gráficos
+- Análise de vendas e relatórios financeiros
+- Gestão de clientes e investimentos em FIIs
+- Dúvidas gerais sobre gestão de negócios
+
+Seja direto, simpático e responda sempre em português brasileiro.
+Use emojis moderadamente para deixar as respostas mais visuais.
+Mantenha respostas concisas (máximo 3-4 parágrafos) a menos que o usuário peça mais detalhes.`;
+
+// ─── Lazy AI instance ─────────────────────────────────────────────────────────
 let aiInstance: GoogleGenAI | null = null;
 
-const getAi = () => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+const getAi = (): GoogleGenAI | null => {
+  const apiKey =
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    (typeof process !== 'undefined' && (process.env.GEMINI_API_KEY || process.env.API_KEY));
   if (!apiKey) return null;
   if (!aiInstance) {
     aiInstance = new GoogleGenAI({ apiKey });
@@ -14,6 +33,69 @@ const getAi = () => {
   return aiInstance;
 };
 
+export const isGeminiConfigured = (): boolean => {
+  const apiKey =
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    (typeof process !== 'undefined' && (process.env.GEMINI_API_KEY || process.env.API_KEY));
+  return !!apiKey && String(apiKey).length > 10;
+};
+
+// ─── Chat API ─────────────────────────────────────────────────────────────────
+export const sendChatMessage = async (
+  userMessage: string,
+  history: ChatMessage[] = []
+): Promise<string> => {
+  const ai = getAi();
+  if (!ai) throw new Error('Chave de API Gemini não configurada. Adicione VITE_GEMINI_API_KEY no arquivo .env');
+
+  const contents: { role: 'user' | 'model'; parts: { text: string }[] }[] = [
+    { role: 'user', parts: [{ text: `[INSTRUÇÃO DO SISTEMA]\n${SYSTEM_PROMPT}\n[/INSTRUÇÃO]` }] },
+    { role: 'model', parts: [{ text: 'Entendido! Sou o Atlas AI, seu assistente de gestão. Como posso ajudar hoje? 🚀' }] },
+    ...history.map((msg) => ({
+      role: msg.role,
+      parts: [{ text: msg.text }],
+    })),
+    { role: 'user', parts: [{ text: userMessage }] },
+  ];
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash-lite',
+    contents,
+  });
+
+  return response.text ?? 'Sem resposta do modelo.';
+};
+
+export const streamChatMessage = async (
+  userMessage: string,
+  history: ChatMessage[],
+  onChunk: (chunk: string) => void
+): Promise<void> => {
+  const ai = getAi();
+  if (!ai) throw new Error('Chave de API Gemini não configurada. Adicione VITE_GEMINI_API_KEY no arquivo .env');
+
+  const contents: { role: 'user' | 'model'; parts: { text: string }[] }[] = [
+    { role: 'user', parts: [{ text: `[INSTRUÇÃO DO SISTEMA]\n${SYSTEM_PROMPT}\n[/INSTRUÇÃO]` }] },
+    { role: 'model', parts: [{ text: 'Entendido! Sou o Atlas AI, seu assistente de gestão. Como posso ajudar hoje? 🚀' }] },
+    ...history.map((msg) => ({
+      role: msg.role,
+      parts: [{ text: msg.text }],
+    })),
+    { role: 'user', parts: [{ text: userMessage }] },
+  ];
+
+  const stream = await ai.models.generateContentStream({
+    model: 'gemini-2.0-flash-lite',
+    contents,
+  });
+
+  for await (const chunk of stream) {
+    const text = chunk.text ?? '';
+    if (text) onChunk(text);
+  }
+};
+
+// ─── Business Insights (Dashboard) ───────────────────────────────────────────
 export const getBusinessInsights = async (products: Product[], orders: Order[]) => {
   try {
     const prompt = `Analise os seguintes dados de uma gráfica:
@@ -27,19 +109,16 @@ export const getBusinessInsights = async (products: Product[], orders: Order[]) 
     if (!ai) throw new Error("AI not configured");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        // Recommended way to handle JSON output with responseSchema
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             insights: {
               type: Type.ARRAY,
-              items: {
-                type: Type.STRING,
-              },
+              items: { type: Type.STRING },
             },
           },
           required: ["insights"],
@@ -47,7 +126,6 @@ export const getBusinessInsights = async (products: Product[], orders: Order[]) 
       }
     });
 
-    // Extracting text output from response.text property (not a method)
     const data = JSON.parse(response.text || '{"insights": []}');
     return data.insights as string[];
   } catch (error) {
@@ -56,6 +134,7 @@ export const getBusinessInsights = async (products: Product[], orders: Order[]) 
   }
 };
 
+// ─── Product Description ──────────────────────────────────────────────────────
 export const suggestDescription = async (productName: string, category: string) => {
   try {
     const prompt = `Gere uma descrição curta e profissional de vendas para o produto gráfico: "${productName}" da categoria "${category}".`;
@@ -63,10 +142,9 @@ export const suggestDescription = async (productName: string, category: string) 
     if (!ai) throw new Error("AI not configured");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash-lite',
       contents: prompt
     });
-    // Ensure text property is handled correctly
     return response.text || "Descrição personalizada para seus impressos de alta qualidade.";
   } catch (error) {
     return "Descrição personalizada para seus impressos de alta qualidade.";
