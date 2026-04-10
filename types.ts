@@ -117,7 +117,6 @@ export interface Customer {
   state: string;
   cep: string;
   loyaltyPoints?: number; // Novo v2.8
-  aiProfileNotes?: string;
 }
 
 export interface Category {

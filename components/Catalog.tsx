@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ICONS } from '../constants';
 import { Product, Category, PriceTier, StoreSettings } from '../types';
-import { suggestDescription } from '../services/geminiService';
 import PriceTableImage from './PriceTableImage';
 
 interface CategoryModalProps {
@@ -157,7 +156,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
     defaultGrammage: '150g',
     defaultFinishing: 'Nenhum'
   });
-  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -227,13 +225,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
     setFormData({ ...formData, priceTiers: newTiers });
   };
 
-  const handleAiSuggest = async () => {
-    if (!formData.name) return;
-    setIsGenerating(true);
-    const suggestion = await suggestDescription(formData.name, formData.category || '');
-    setFormData(prev => ({ ...prev, description: suggestion }));
-    setIsGenerating(false);
-  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -311,9 +302,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, ca
               <div className="space-y-2">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Descrição do Material</label>
-                  <button onClick={handleAiSuggest} disabled={isGenerating || !formData.name} className="flex items-center gap-1.5 text-[9px] font-black text-sky-500 uppercase bg-sky-500/10 px-3 py-1.5 rounded-full border border-sky-500/20 hover:bg-sky-500/20 transition-all">
-                    {isGenerating ? <div className="w-3 h-3 border-2 border-sky-500/50 border-t-sky-500 rounded-full animate-spin"></div> : 'IA Autocomplete'}
-                  </button>
                 </div>
                 <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} className="w-full bg-[#030712] border border-slate-800 rounded-2xl px-5 py-4 text-xs text-slate-300 outline-none focus:border-sky-500/50 transition-all resize-none leading-relaxed" placeholder="Descreva o papel, gramatura e acabamento..." />
               </div>
