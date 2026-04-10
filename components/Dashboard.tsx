@@ -169,10 +169,10 @@ const ProductionModal: React.FC<ProductionModalProps> = ({ isOpen, onClose, orde
   if (!isOpen) return null;
 
   const productionOrders = orders.filter(o => o.status === OrderStatus.PRODUCTION);
-  
+
   const productionSummary = useMemo(() => {
     const summary: Record<string, { product: Product; quantity: number; details: any[] }> = {};
-    
+
     productionOrders.forEach(order => {
       order.items.forEach(item => {
         if (!summary[item.productId]) {
@@ -257,19 +257,19 @@ const ProductionModal: React.FC<ProductionModalProps> = ({ isOpen, onClose, orde
 
         <div className="flex-1 overflow-auto p-4 sm:p-8 space-y-8 scrollbar-thin scrollbar-thumb-slate-800">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-             <div className="bg-[#10192e] border border-white/5 p-5 rounded-2xl">
-                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Pedidos Ativos</p>
-                <h4 className="text-2xl font-black text-white mt-1">{productionOrders.length}</h4>
-             </div>
-             <div className="bg-[#10192e] border border-white/5 p-5 rounded-2xl">
-                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Itens em Fila</p>
-                <h4 className="text-2xl font-black text-sky-400 mt-1">{productionSummary.reduce((acc, s) => acc + s.quantity, 0)}</h4>
-             </div>
-             <div className="sm:col-span-2 flex items-center justify-end gap-3">
-                <button onClick={handleExportText} className="px-6 py-3 bg-[#161f35] border border-white/5 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all flex items-center gap-2">
-                  {ICONS.Print} Gerar Lista TXT
-                </button>
-             </div>
+            <div className="bg-[#10192e] border border-white/5 p-5 rounded-2xl">
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Pedidos Ativos</p>
+              <h4 className="text-2xl font-black text-white mt-1">{productionOrders.length}</h4>
+            </div>
+            <div className="bg-[#10192e] border border-white/5 p-5 rounded-2xl">
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Itens em Fila</p>
+              <h4 className="text-2xl font-black text-sky-400 mt-1">{productionSummary.reduce((acc, s) => acc + s.quantity, 0)}</h4>
+            </div>
+            <div className="sm:col-span-2 flex items-center justify-end gap-3">
+              <button onClick={handleExportText} className="px-6 py-3 bg-[#161f35] border border-white/5 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all flex items-center gap-2">
+                {ICONS.Print} Gerar Lista TXT
+              </button>
+            </div>
           </div>
 
           {stockAlerts.length > 0 && (
@@ -315,7 +315,7 @@ const ProductionModal: React.FC<ProductionModalProps> = ({ isOpen, onClose, orde
                       <td className="py-5 px-6 border-b border-white/5">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center font-black text-sky-500">
-                             {s.product.name[0]}
+                            {s.product.name[0]}
                           </div>
                           <p className="text-xs font-black text-white uppercase pr-4">{s.product.name}</p>
                         </div>
@@ -324,26 +324,26 @@ const ProductionModal: React.FC<ProductionModalProps> = ({ isOpen, onClose, orde
                         <span className="text-lg font-black text-sky-400 font-mono tracking-tighter">{s.quantity}</span>
                       </td>
                       <td className="py-5 px-6 border-b border-white/5">
-                         <div className="flex flex-wrap gap-1">
-                            {Array.from(new Set(s.details.map(d => `${d.paperType || 'S/ Papel'} • ${d.finishing || 'S/ Acab.'}`))).map((detail, dIdx) => (
-                              <span key={dIdx} className="text-[9px] font-bold text-slate-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
-                                {detail}
-                              </span>
-                            ))}
-                         </div>
+                        <div className="flex flex-wrap gap-1">
+                          {Array.from(new Set(s.details.map(d => `${d.paperType || 'S/ Papel'} • ${d.finishing || 'S/ Acab.'}`))).map((detail, dIdx) => (
+                            <span key={dIdx} className="text-[9px] font-bold text-slate-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                              {detail}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="py-5 px-6 border-b border-white/5">
-                         <div className="space-y-1.5 max-h-24 overflow-y-auto no-scrollbar py-1">
-                            {s.details.map((d, dIdx) => (
-                              <div key={dIdx} className="flex items-center gap-2 text-[10px] text-slate-400">
-                                <span className="font-black text-sky-500/60 leading-none">#{formatOrderId(d.orderId)}</span>
-                                <span className="font-bold truncate max-w-[120px]">{d.customerName}</span>
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${new Date(d.deliveryDate) < new Date() ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-800 text-slate-500'}`}>
-                                  {d.deliveryDate}
-                                </span>
-                              </div>
-                            ))}
-                         </div>
+                        <div className="space-y-1.5 max-h-24 overflow-y-auto no-scrollbar py-1">
+                          {s.details.map((d, dIdx) => (
+                            <div key={dIdx} className="flex items-center gap-2 text-[10px] text-slate-400">
+                              <span className="font-black text-sky-500/60 leading-none">#{formatOrderId(d.orderId)}</span>
+                              <span className="font-bold truncate max-w-[120px]">{d.customerName}</span>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${new Date(d.deliveryDate) < new Date() ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-800 text-slate-500'}`}>
+                                {d.deliveryDate}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -439,67 +439,67 @@ const OrderCard: React.FC<{
       case OrderStatus.QUOTATION:
       case OrderStatus.WAITING_PAYMENT:
       case OrderStatus.WAITING_FILE:
-        return { 
-          badge: status === OrderStatus.WAITING_FILE ? 'AGUARD. ARQUIVO' : (status === OrderStatus.QUOTATION ? 'Orçamento' : 'Aguard. Pagamento'), 
-          borderClass: 'border-amber-500', 
-          shadowClass: 'shadow-[0_0_20px_rgba(245,158,11,0.15)]', 
-          bgClass: 'bg-amber-500', 
-          textClass: 'text-amber-500', 
-          hoverBgClass: 'hover:bg-amber-600', 
-          btnShadowClass: 'shadow-amber-500/20' 
+        return {
+          badge: status === OrderStatus.WAITING_FILE ? 'AGUARD. ARQUIVO' : (status === OrderStatus.QUOTATION ? 'Orçamento' : 'Aguard. Pagamento'),
+          borderClass: 'border-amber-500',
+          shadowClass: 'shadow-[0_0_20px_rgba(245,158,11,0.15)]',
+          bgClass: 'bg-amber-500',
+          textClass: 'text-amber-500',
+          hoverBgClass: 'hover:bg-amber-600',
+          btnShadowClass: 'shadow-amber-500/20'
         };
       case OrderStatus.ART:
       case OrderStatus.WAITING_APPROVAL:
-        return { 
-          badge: status === OrderStatus.ART ? 'CRIANDO ARTE' : 'Aguard. Aprovação', 
-          borderClass: 'border-orange-500', 
-          shadowClass: 'shadow-[0_0_20px_rgba(249,115,22,0.15)]', 
-          bgClass: 'bg-orange-500', 
-          textClass: 'text-orange-500', 
-          hoverBgClass: 'hover:bg-orange-600', 
-          btnShadowClass: 'shadow-orange-500/20' 
+        return {
+          badge: status === OrderStatus.ART ? 'CRIANDO ARTE' : 'Aguard. Aprovação',
+          borderClass: 'border-orange-500',
+          shadowClass: 'shadow-[0_0_20px_rgba(249,115,22,0.15)]',
+          bgClass: 'bg-orange-500',
+          textClass: 'text-orange-500',
+          hoverBgClass: 'hover:bg-orange-600',
+          btnShadowClass: 'shadow-orange-500/20'
         };
       case OrderStatus.PRODUCTION:
       case OrderStatus.READY_FOR_PICKUP:
-        return { 
-          badge: status === OrderStatus.PRODUCTION ? 'PRODUÇÃO' : 'PRONTO RETIRADA', 
-          borderClass: 'border-sky-500', 
-          shadowClass: 'shadow-[0_0_20px_rgba(14,165,233,0.15)]', 
-          bgClass: 'bg-sky-500', 
-          textClass: 'text-sky-500', 
-          hoverBgClass: 'hover:bg-sky-600', 
-          btnShadowClass: 'shadow-sky-500/20' 
+        return {
+          badge: status === OrderStatus.PRODUCTION ? 'PRODUÇÃO' : 'PRONTO RETIRADA',
+          borderClass: 'border-sky-500',
+          shadowClass: 'shadow-[0_0_20px_rgba(14,165,233,0.15)]',
+          bgClass: 'bg-sky-500',
+          textClass: 'text-sky-500',
+          hoverBgClass: 'hover:bg-sky-600',
+          btnShadowClass: 'shadow-sky-500/20'
         };
       case OrderStatus.SHIPPING:
       case OrderStatus.DELIVERED:
-        return { 
-          badge: status === OrderStatus.SHIPPING ? 'LOGÍSTICA' : 'ENTREGUE', 
-          borderClass: 'border-purple-500', 
-          shadowClass: 'shadow-[0_0_20px_rgba(168,85,247,0.15)]', 
-          bgClass: 'bg-purple-500', 
-          textClass: 'text-purple-500', 
-          hoverBgClass: 'hover:bg-purple-600', 
-          btnShadowClass: 'shadow-purple-500/20' 
+        return {
+          badge: status === OrderStatus.SHIPPING ? 'LOGÍSTICA' : 'ENTREGUE',
+          borderClass: 'border-purple-500',
+          shadowClass: 'shadow-[0_0_20px_rgba(168,85,247,0.15)]',
+          bgClass: 'bg-purple-500',
+          textClass: 'text-purple-500',
+          hoverBgClass: 'hover:bg-purple-600',
+          btnShadowClass: 'shadow-purple-500/20'
         };
       case OrderStatus.COMPLETED:
-        return { 
-          badge: 'CONCLUÍDO', 
-          borderClass: 'border-emerald-500', 
-          shadowClass: 'shadow-[0_0_20px_rgba(16,185,129,0.15)]', 
-          bgClass: 'bg-emerald-500', 
-          textClass: 'text-emerald-500', 
-          hoverBgClass: 'hover:bg-emerald-600', 
-          btnShadowClass: 'shadow-emerald-500/20' 
+        return {
+          badge: 'CONCLUÍDO',
+          borderClass: 'border-emerald-500',
+          shadowClass: 'shadow-[0_0_20px_rgba(16,185,129,0.15)]',
+          bgClass: 'bg-emerald-500',
+          textClass: 'text-emerald-500',
+          hoverBgClass: 'hover:bg-emerald-600',
+          btnShadowClass: 'shadow-emerald-500/20'
         };
       default:
-        return { 
-          badge: status.toUpperCase(), 
-          borderClass: 'border-slate-500', 
-          shadowClass: 'shadow-[0_0_20px_rgba(100,116,139,0.15)]', 
-          bgClass: 'bg-slate-500', 
-          textClass: 'text-slate-500', 
-          hoverBgClass: 'hover:bg-slate-600', 
-          btnShadowClass: 'shadow-slate-500/20' 
+        return {
+          badge: status.toUpperCase(),
+          borderClass: 'border-slate-500',
+          shadowClass: 'shadow-[0_0_20px_rgba(100,116,139,0.15)]',
+          bgClass: 'bg-slate-500',
+          textClass: 'text-slate-500',
+          hoverBgClass: 'hover:bg-slate-600',
+          btnShadowClass: 'shadow-slate-500/20'
         };
     }
   };
@@ -507,7 +507,7 @@ const OrderCard: React.FC<{
   const cfg = statusConfig(order.status);
   const customer = customers.find(c => c.id === order.customerId || c.name === order.customerName);
   const whatsappNumber = customer?.phone?.replace(/\D/g, '');
-  
+
   return (
     <motion.div
       layout
@@ -562,24 +562,41 @@ const OrderCard: React.FC<{
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="py-3 space-y-2 border-y border-slate-800/50 mt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TOTAL:</span>
-                  <span className="text-sm font-black text-white">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RESTANTE:</span>
-                  <span className="text-sm font-black text-rose-500">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
-                </div>
-              </div>
-              <div className="pt-3 mt-1 border-white/5 space-y-3">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onPay(order); }}
-                  className={`w-full whitespace-nowrap ${cfg.bgClass} ${cfg.hoverBgClass} text-white text-[10px] font-black uppercase py-2.5 px-4 rounded-[14px] transition-all active:scale-95 shadow-lg ${cfg.btnShadowClass}`}
-                >
-                  PAGAR SALDO
-                </button>
-                <div className="flex justify-center gap-1.5 text-slate-500">
+              <div className="mt-6 space-y-4">
+                {order.remainingAmount > 0 ? (
+                  <div className="flex justify-between items-center p-3 sm:p-4 bg-gradient-to-r from-rose-500/10 to-transparent border-l-4 border-rose-500 rounded-r-2xl">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Saldo Pendente</span>
+                      <span className="text-sm sm:text-base font-black text-rose-400 italic mt-0.5">R$ {order.remainingAmount.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onPay(order); }}
+                      className="flex items-center gap-1.5 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <span className="text-emerald-100">$</span> PAGAR
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center p-3 sm:p-4 bg-gradient-to-r from-emerald-500/10 to-transparent border-l-4 border-emerald-500 rounded-r-2xl">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Total Líquido</span>
+                      <span className="text-sm sm:text-base font-black text-emerald-400 italic mt-0.5">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center border border-emerald-500/30">
+                      {ICONS.Success}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-4 gap-2 sm:gap-3 pt-2">
+                  {whatsappNumber && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); contactCustomer(order, customer); }}
+                      className="col-span-2 flex items-center justify-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 rounded-2xl py-3.5 text-[10px] font-black uppercase tracking-widest transition-all"
+                    >
+                      <span className="scale-110">{ICONS.Whatsapp}</span> ZAP
+                    </button>
+                  )}
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
@@ -588,38 +605,28 @@ const OrderCard: React.FC<{
                       navigator.clipboard.writeText(link);
                       alert('Link de rastreamento copiado com sucesso!');
                     }}
-                    className="p-1.5 text-slate-500 hover:text-sky-400 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-                    title="Copiar Link de Rastreio"
+                    className={`${whatsappNumber ? 'col-span-2' : 'col-span-4'} flex items-center justify-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-2xl py-3.5 text-[10px] font-black uppercase tracking-widest transition-all`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    <span className="scale-90"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span> LINK
                   </button>
-                  {whatsappNumber && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); contactCustomer(order, customer); }} 
-                      className="p-1.5 text-slate-500 hover:text-emerald-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5" 
-                      title="Enviar WhatsApp"
-                    >
-                      {ICONS.Whatsapp}
-                    </button>
-                  )}
+                  
                   <button 
-                    onClick={(e) => { e.stopPropagation(); onPrint(order); }} 
-                    className="p-1.5 text-slate-500 hover:text-white transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-                    title="Imprimir"
+                    onClick={(e) => { e.stopPropagation(); onEdit(order); }}
+                    className="col-span-2 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 rounded-2xl py-3.5 text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    <span className="text-sky-400 opacity-80">{ICONS.Edit}</span> EDITAR
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onPrint(order); }}
+                    className="col-span-1 flex items-center justify-center bg-white/5 hover:bg-white/10 text-amber-500/80 hover:text-amber-400 border border-white/5 rounded-2xl py-3.5 transition-all"
+                    title="Imprimir Pedido"
                   >
                     {ICONS.Print}
                   </button>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); onEdit(order); }} 
-                    className="p-1.5 text-slate-500 hover:text-sky-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-                    title="Editar"
-                  >
-                    {ICONS.Edit}
-                  </button>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} 
-                    className="p-1.5 text-slate-500 hover:text-rose-500 transition-colors bg-[#0f172a]/50 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"
-                    title="Excluir"
+                    onClick={(e) => { e.stopPropagation(); onDelete(order.id); }}
+                    className="col-span-1 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-2xl py-3.5 transition-all"
+                    title="Excluir Pedido"
                   >
                     {ICONS.Trash}
                   </button>
@@ -716,20 +723,20 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
     return orders.filter(order => {
       // Se não há filtro de data, mostra tudo
       if (!startDate && !endDate) return true;
-      
+
       // Sanitização da data do pedido
       if (!order.date) return false;
 
       // Se o filtro for para "HOJE", usamos comparação direta de strings para evitar problemas de fuso horário
       const orderDateStr = order.date.includes('T') ? order.date.split('T')[0] : order.date;
-      
+
       if (startDate === endDate && startDate) {
-         // Filtro de um único dia (Hoje) com resiliência para drift de fuso horário UTC (manter compatibilidade)
-         const tomorrowUtc = new Date();
-         tomorrowUtc.setDate(tomorrowUtc.getDate() + 1);
-         const tomorrowUtcStr = tomorrowUtc.toISOString().split('T')[0];
-         
-         return orderDateStr === startDate || orderDateStr === tomorrowUtcStr;
+        // Filtro de um único dia (Hoje) com resiliência para drift de fuso horário UTC (manter compatibilidade)
+        const tomorrowUtc = new Date();
+        tomorrowUtc.setDate(tomorrowUtc.getDate() + 1);
+        const tomorrowUtcStr = tomorrowUtc.toISOString().split('T')[0];
+
+        return orderDateStr === startDate || orderDateStr === tomorrowUtcStr;
       }
 
       // Filtro de intervalo
@@ -738,7 +745,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
 
       if (startDate && orderDate < new Date(startDate + 'T00:00:00')) return false;
       if (endDate && orderDate > new Date(endDate + 'T23:59:59')) return false;
-      
+
       return true;
     });
   }, [orders, startDate, endDate]);
@@ -895,12 +902,12 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
       {activePrintOrder && <OrderPrintModal isOpen={isPrintModalOpen} onClose={() => setIsPrintModalOpen(false)} order={activePrintOrder} products={products} customers={customers} settings={settings} />}
       {activePaymentOrder && <PaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} order={activePaymentOrder} onConfirm={onReceivePayment} />}
       {activeTrackingOrder && <TrackingModal isOpen={isTrackingModalOpen} onClose={() => setIsTrackingModalOpen(false)} order={activeTrackingOrder} customers={customers} />}
-      <ProductionModal 
-        isOpen={isProductionModalOpen} 
-        onClose={() => setIsProductionModalOpen(false)} 
-        orders={orders} 
-        products={products} 
-        stock={stock} 
+      <ProductionModal
+        isOpen={isProductionModalOpen}
+        onClose={() => setIsProductionModalOpen(false)}
+        orders={orders}
+        products={products}
+        stock={stock}
       />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 border-b border-slate-800/50 mb-6 px-4 sm:px-6 md:px-8">
@@ -1030,7 +1037,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, orders, customers, sett
                   <div className="h-full flex flex-col items-center justify-center py-6 sm:p-8 opacity-40 border-2 border-dashed border-emerald-500/20 rounded-[40px]">
                     <div className="text-emerald-500 mb-2">{ICONS.Success}</div>
                     <p className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest text-center leading-relaxed">
-                      Solte para<br/>Arquivar
+                      Solte para<br />Arquivar
                     </p>
                   </div>
                 )}
