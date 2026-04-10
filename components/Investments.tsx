@@ -260,11 +260,11 @@ const FundForm: React.FC<{
         <button onClick={onRemove} className="text-slate-600 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100">✕</button>
       )}
     </div>
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <InputField label="Preço da cota" value={String(fund.sharePrice)} onChange={(v) => onChange('sharePrice', v)} />
       <InputField label="Último rendimento" value={String(fund.lastDividend)} onChange={(v) => onChange('lastDividend', v)} />
     </div>
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="flex flex-col gap-1.5 flex-1">
         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Ticker do FII</label>
         <input 
@@ -382,9 +382,9 @@ const ProgressReport: React.FC<{
       {/* Professional Header */}
       <div className="relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-r from-sky-600/10 to-indigo-600/10 opacity-50 blur-3xl -z-10" />
-        <div className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[40px] p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-10">
-          <div className="flex flex-col sm:flex-row items-center gap-8 text-center sm:text-left">
-            <div className={`w-24 h-24 rounded-[32px] flex items-center justify-center text-4xl shadow-2xl border transition-all duration-500 ${isMonthConfirmed ? 'bg-emerald-500 border-emerald-400 rotate-12 scale-110' : 'bg-[#030712] border-white/10 group-hover:border-sky-500/50'}`}>
+        <div className="glass-card bg-[#0a111f]/40 border border-white/5 rounded-[40px] p-5 sm:p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-10">
+          <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 text-center sm:text-left">
+            <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-[28px] sm:rounded-[32px] flex items-center justify-center text-3xl sm:text-4xl shadow-2xl border transition-all duration-500 ${isMonthConfirmed ? 'bg-emerald-500 border-emerald-400 rotate-12 scale-110' : 'bg-[#030712] border-white/10 group-hover:border-sky-500/50'}`}>
               {isMonthConfirmed ? '🏆' : '🎯'}
             </div>
             <div className="space-y-1">
@@ -455,9 +455,9 @@ const ProgressReport: React.FC<{
               const accent = ACCENT_COLORS[i % ACCENT_COLORS.length];
               return (
                 <div key={i} className={`group relative glass-card border transition-all duration-500 rounded-[32px] overflow-hidden ${fund.isComplete ? 'bg-emerald-500/5 border-emerald-500/20 scale-[0.98]' : 'bg-[#0a111f]/60 border-white/5 hover:border-white/10'}`}>
-                  <div className="p-6 sm:p-8 flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-6">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black transition-all duration-500 shadow-2xl ${fund.isComplete ? 'bg-emerald-500 text-white rotate-6' : `${accent.bg} text-white animate-pulse-slow`}`}>
+                  <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-between gap-4 sm:gap-6">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                      <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center font-black transition-all duration-500 shadow-2xl shrink-0 ${fund.isComplete ? 'bg-emerald-500 text-white rotate-6' : `${accent.bg} text-white animate-pulse-slow`}`}>
                         {fund.isComplete ? <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg> : fund.ticker?.substring(0, 4) || 'FII'}
                       </div>
                       <div className="space-y-1">
@@ -752,7 +752,7 @@ const PortfolioView: React.FC<{
   return (
     <div className="space-y-8">
       {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Patrimônio Total', value: fmt(totalPatrimony), sub: `custo ${fmt(totalCost)}`, color: 'text-sky-400' },
           { label: 'Resultado', value: fmt(totalResult), sub: `${totalCost > 0 ? ((totalResult / totalCost) * 100).toFixed(1) : 0}% valorização`, color: totalResult >= 0 ? 'text-emerald-400' : 'text-rose-400' },
@@ -793,7 +793,7 @@ const PortfolioView: React.FC<{
       {/* Add / Edit Form */}
       <div className="glass-card bg-[#0a111f]/60 border border-white/5 rounded-[32px] p-8">
         <h3 className="text-[11px] font-black text-sky-500 uppercase tracking-[0.4em] mb-6">{editingId ? '✏️ Editar FII' : '+ Adicionar FII'}</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           {[
             { label: 'Ticker', key: 'ticker', type: 'text', placeholder: 'MXRF11' },
             { label: 'Qtd. Cotas', key: 'shares', type: 'number', placeholder: '100' },
@@ -1204,11 +1204,11 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
   // Use results.map for rendering instead of r0, r1
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-40">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8 border-b border-white/5 px-4 sm:px-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 sm:py-8 border-b border-white/5 px-4 sm:px-8">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase italic break-words">Área de <span className="text-sky-500">Investimento</span></h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase italic break-words">Área de <span className="text-sky-500">Investimento</span></h1>
           <p className="text-slate-500 text-sm font-medium">Simule e gerencie seus Fundos Imobiliários</p>
         </div>
         <div className="flex gap-2 bg-[#0a111f] rounded-2xl p-1.5 border border-white/5 w-full sm:w-auto overflow-x-auto custom-scrollbar">
@@ -1235,7 +1235,7 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
                 SIMULADOR DE FUNDOS IMOBILIÁRIOS
               </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 <InputField label="Investimento Mensal Total" value={String(inputs.monthlyInvestment)} onChange={(v) => setInputs((p) => ({ ...p, monthlyInvestment: Number(v) }))} />
                 <InputField
                   label="Prazo"
@@ -1309,7 +1309,7 @@ const Investments: React.FC<{ settings: StoreSettings; onUpdateSettings: (s: Sto
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <button onClick={handleCalc}
                 className="w-full sm:w-auto px-6 sm:px-16 py-4 bg-gradient-to-br from-sky-500 to-indigo-600 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-sky-500/20 hover:brightness-110 transition-all active:scale-95 text-[11px]">
                 Calcular Simulação
