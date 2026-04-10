@@ -79,7 +79,7 @@ export const dbService = {
     
     th = th.filter((t: any) => t.__shippingDetail === undefined);
     if (shippingDetail) {
-        th.push({ __shippingDetail: shippingDetail });
+        th.push({ __shippingDetail: shippingDetail } as any);
     }
     orderToSave.trackingHistory = th;
 
