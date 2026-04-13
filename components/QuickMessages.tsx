@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ICONS } from '../constants';
 import { QuickMessage } from '../types';
 import { dbService } from '../services/dbService';
+import { generateMessageVariation } from '../services/geminiService';
 
 const QuickMessages: React.FC = () => {
   const [messages, setMessages] = useState<QuickMessage[]>([]);
@@ -60,45 +61,42 @@ const QuickMessages: React.FC = () => {
   };
 
   // Generate a variation of a quick message using AI (Gemini API)
-  const handleGenerateVariation = async (id: string) => {
-    const original = messages.find(m => m.id === id);
-    if (!original) return;
-    setGeneratingId(id);
+  const handleGenerateVariation = async (id: string | null = null, currentFormData: any = null) => {
+    // If id is provided, it's for an existing message. If not, it's for the current form.
+    const originalTitle = id ? messages.find(m => m.id === id)?.title : currentFormData?.title;
+    const originalContent = id ? messages.find(m => m.id === id)?.content : currentFormData?.content;
+    const originalAudio = id ? messages.find(m => m.id === id)?.audioUrl : currentFormData?.audioUrl;
+
+    if (!originalTitle) {
+      alert("Adicione pelo menos um título para gerar variações.");
+      return;
+    }
+
+    if (id) setGeneratingId(id);
+    else setGeneratingId('form');
+
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{
-                text: `Title: ${original.title}\nContent: ${original.content}`
-              }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 200,
-          },
-        }),
-      });
-      if (!response.ok) throw new Error('Gemini service error');
-      const data = await response.json();
-      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-      const [newTitle, ...contentLines] = aiText.split('\n');
-      const newContent = contentLines.join('\n').trim();
-      const variation: QuickMessage = {
-        id: crypto.randomUUID(),
-        title: newTitle || `${original.title} (variação)`,
-        content: newContent || `Variação: ${original.content}`,
-        audioUrl: original.audioUrl,
-      };
-      const updated = [...messages, variation];
-      setMessages(updated);
-      await dbService.saveQuickMessages(updated);
+      const variation = await generateMessageVariation(originalTitle, originalContent || '');
+      
+      if (id) {
+        // Create a new variation message
+        const newVariation: QuickMessage = {
+          id: crypto.randomUUID(),
+          title: variation.title,
+          content: variation.content,
+          audioUrl: originalAudio,
+        };
+        const updated = [...messages, newVariation];
+        setMessages(updated);
+        await dbService.saveQuickMessages(updated);
+      } else {
+        // Update the form data with the variation
+        setFormData(prev => ({
+          ...prev,
+          title: variation.title,
+          content: variation.content
+        }));
+      }
     } catch (err) {
       console.error('Error generating variation:', err);
       alert('Falha ao gerar variação com IA.');
@@ -228,6 +226,14 @@ const QuickMessages: React.FC = () => {
                     rows={4}
                     className="w-full bg-[#030712]/60 border border-white/5 rounded-2xl px-6 py-4 text-sm text-slate-300 outline-none focus:border-sky-500/50 font-medium resize-none"
                   />
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateVariation(null, formData)}
+                    disabled={generatingId === 'form' || !formData.title}
+                    className={`absolute right-4 bottom-4 p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20 ${generatingId === 'form' || !formData.title ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {generatingId === 'form' ? '⏳' : <>{ICONS.Sparkles || '✨'} Melhorar com IA</>}
+                  </button>
                 </div>
               </div>
 

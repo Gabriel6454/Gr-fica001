@@ -6,7 +6,8 @@ import { Product, Order } from "../types";
 let aiInstance: GoogleGenAI | null = null;
 
 const getAi = () => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  // Check both Vite and generic process.env for maximum compatibility
+  const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || process.env?.GEMINI_API_KEY || process.env?.API_KEY;
   if (!apiKey) return null;
   if (!aiInstance) {
     aiInstance = new GoogleGenAI({ apiKey });
@@ -27,11 +28,10 @@ export const getBusinessInsights = async (products: Product[], orders: Order[]) 
     if (!ai) throw new Error("AI not configured");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        // Recommended way to handle JSON output with responseSchema
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -47,7 +47,6 @@ export const getBusinessInsights = async (products: Product[], orders: Order[]) 
       }
     });
 
-    // Extracting text output from response.text property (not a method)
     const data = JSON.parse(response.text || '{"insights": []}');
     return data.insights as string[];
   } catch (error) {
@@ -63,12 +62,55 @@ export const suggestDescription = async (productName: string, category: string) 
     if (!ai) throw new Error("AI not configured");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: prompt
     });
-    // Ensure text property is handled correctly
     return response.text || "Descrição personalizada para seus impressos de alta qualidade.";
   } catch (error) {
     return "Descrição personalizada para seus impressos de alta qualidade.";
   }
 };
+
+export const generateMessageVariation = async (title: string, content: string) => {
+  try {
+    const prompt = `Atue como um especialista em atendimento ao cliente de uma gráfica.
+    Dada a seguinte "Mensagem Rápida" (Template):
+    Título Original: "${title}"
+    Conteúdo Original: "${content}"
+
+    Gere uma variação profissional, carismática e eficiente desta mensagem para ser enviada via WhatsApp. 
+    A variação deve manter o objetivo da mensagem original mas com palavras diferentes.
+    
+    Responda EXCLUSIVAMENTE em formato JSON com as seguintes chaves:
+    "title": Um novo título curto para esta variação.
+    "content": O novo conteúdo da mensagem.`;
+
+    const ai = getAi();
+    if (!ai) throw new Error("AI not configured");
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            content: { type: Type.STRING },
+          },
+          required: ["title", "content"],
+        },
+      }
+    });
+
+    return JSON.parse(response.text || '{}') as { title: string; content: string };
+  } catch (error) {
+    console.error("Error generating variation:", error);
+    return {
+      title: `${title} (Variação)`,
+      content: content ? `${content} (Estamos prontos para te atender!)` : "Olá! Como podemos ajudar hoje?"
+    };
+  }
+};
+
