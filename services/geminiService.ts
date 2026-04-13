@@ -73,17 +73,22 @@ export const suggestDescription = async (productName: string, category: string) 
 
 export const generateMessageVariation = async (title: string, content: string) => {
   try {
-    const prompt = `Atue como um especialista em atendimento ao cliente de uma gráfica.
-    Dada a seguinte "Mensagem Rápida" (Template):
-    Título Original: "${title}"
-    Conteúdo Original: "${content}"
+    const prompt = `Atue como um copywriter sênior especializado em atendimento ao cliente de alto nível para gráficas e design.
+    Sua tarefa é criar uma VARIAÇÃO CRIATIVA E DISTINTA de uma "Mensagem Rápida" de WhatsApp.
+    
+    Mensagem Original:
+    Título: "${title}"
+    Conteúdo: "${content}"
 
-    Gere uma variação profissional, carismática e eficiente desta mensagem para ser enviada via WhatsApp. 
-    A variação deve manter o objetivo da mensagem original mas com palavras diferentes.
+    INSTRUÇÕES CRÍTICAS:
+    1. REESCREVA COMPLETAMENTE: Não apenas troque sinônimos. Mude a estrutura das frases, a saudação e o fechamento.
+    2. ESTILO: A variação deve ser profissional, extremamente carismática e focada em conversão/atendimento de excelência.
+    3. FORMATO WHATSAPP: Use emojis de forma moderada e profissional, e quebras de linha para facilitar a leitura.
+    4. FOCO: Mantenha exatamente o mesmo objetivo da mensagem original, mas faça-a parecer uma nova forma de falar com o cliente.
     
     Responda EXCLUSIVAMENTE em formato JSON com as seguintes chaves:
-    "title": Um novo título curto para esta variação.
-    "content": O novo conteúdo da mensagem.`;
+    "title": Um novo título curto e chamativo que descreva esta versão.
+    "content": O novo corpo da mensagem reescrito.`;
 
     const ai = getAi();
     if (!ai) throw new Error("AI not configured");
@@ -92,6 +97,8 @@ export const generateMessageVariation = async (title: string, content: string) =
       model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
+        temperature: 0.9,
+        topP: 0.95,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -108,9 +115,10 @@ export const generateMessageVariation = async (title: string, content: string) =
   } catch (error) {
     console.error("Error generating variation:", error);
     return {
-      title: `${title} (Variação)`,
-      content: content ? `${content} (Estamos prontos para te atender!)` : "Olá! Como podemos ajudar hoje?"
+      title: `${title} (Nova Versão)`,
+      content: content ? `Olá! Passando para atualizar sobre ${title}. ${content}` : "Olá! Como podemos ajudar com seus impressos hoje?"
     };
   }
 };
+
 
