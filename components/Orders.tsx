@@ -172,7 +172,9 @@ export const TrackingModal: React.FC<{
                 </div>
                 <div className="space-y-0.5">
                   <h4 className="text-[13px] font-black uppercase tracking-widest text-white">{step.label}</h4>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{step.sub}</p>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                    {step.status === OrderStatus.SHIPPING && order.shippingDetail ? order.shippingDetail : step.sub}
+                  </p>
                 </div>
               </div>
             ))}
@@ -471,6 +473,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
     paymentMethod: 'pix',
     trackingCode: '',
     carrier: 'Correios',
+    shippingDetail: '',
     trackingHistory: [] as { date: string; status: string; location: string }[]
   });
 
@@ -491,6 +494,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
         paymentMethod: order.paymentMethod || 'pix',
         trackingCode: order.trackingCode || '',
         carrier: order.carrier || 'Correios',
+        shippingDetail: order.shippingDetail || '',
         trackingHistory: order.trackingHistory || []
       });
     } else if (isOpen) {
@@ -504,6 +508,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
         paymentMethod: 'pix', 
         trackingCode: '', 
         carrier: 'Correios', 
+        shippingDetail: '',
         trackingHistory: [] 
       });
     }
@@ -585,6 +590,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       paymentMethod: formData.paymentMethod,
       trackingCode: formData.trackingCode,
       carrier: formData.carrier,
+      shippingDetail: formData.shippingDetail,
       trackingHistory: formData.trackingHistory,
       statusHistory: order?.statusHistory || formData.statusHistory,
       items: formData.items
@@ -604,24 +610,24 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
 
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="glass-card bg-[#0a1224]/90 border border-white/10 w-full max-w-[1200px] rounded-[48px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col h-full sm:h-auto max-h-[98vh] sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200 relative">
+      <div className="glass-card bg-[#0a1224]/90 border border-white/10 w-full max-w-[1200px] rounded-[32px] sm:rounded-[48px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col h-[98vh] sm:h-auto sm:max-h-[92vh] animate-in zoom-in-95 duration-200 text-slate-200 relative">
               <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[40%] h-[30%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-        <div className="px-8 sm:px-12 py-8 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl relative z-10">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/20">{order ? ICONS.Edit : ICONS.Plus}</div>
+        <div className="px-6 sm:px-12 py-5 sm:py-8 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl relative z-10 shrink-0">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/20">{order ? ICONS.Edit : ICONS.Plus}</div>
             <div>
-              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{order ? 'Refinar' : 'Novo'} <span className="text-sky-500">Pedido</span></h2>
-              <div className="flex items-center gap-3 mt-1.5">
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">{order ? 'ATUALIZAÇÃO DE PEDIDO' : 'SISTEMA DE GESTÃO GRAPHIC'}</p>
+              <h2 className="text-xl sm:text-2xl font-black text-white italic uppercase tracking-tighter">{order ? 'Refinar' : 'Novo'} <span className="text-sky-500">Pedido</span></h2>
+              <div className="flex items-center gap-3 mt-1 sm:mt-1.5">
+                <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">{order ? 'ATUALIZAÇÃO DE PEDIDO' : 'SISTEMA DE GESTÃO GRAPHIC'}</p>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all border border-white/5">{ICONS.X}</button>
+          <button onClick={onClose} className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all border border-white/5">{ICONS.X}</button>
         </div>
 
-        <div className="flex-1 p-8 sm:p-12 grid grid-cols-1 lg:grid-cols-12 gap-10 overflow-y-auto no-scrollbar bg-gradient-to-b from-transparent to-white/[0.02] relative z-10">
+        <div className="flex-1 p-6 sm:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 overflow-y-auto no-scrollbar bg-gradient-to-b from-transparent to-white/[0.02] relative z-10">
 
           {/* Coluna Esquerda: Cliente e Prazos */}
           <div className="lg:col-span-3 space-y-8 lg:border-r border-white/5 lg:pr-10">
@@ -825,31 +831,64 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Transportadora</label>
+                <input 
+                  type="text" 
+                  value={formData.carrier} 
+                  onChange={e => setFormData({ ...formData, carrier: e.target.value })} 
+                  className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-6 py-4 text-[10px] text-white font-black outline-none focus:border-sky-500 transition-all shadow-xl" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Mensagem de Transporte (Localização)</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={formData.shippingDetail} 
+                    onChange={e => setFormData({ ...formData, shippingDetail: e.target.value })} 
+                    placeholder="Ex: Em trânsito para SP..." 
+                    className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-6 py-4 text-xs text-white font-bold outline-none focus:border-sky-500 transition-all shadow-xl" 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Código de Rastreio</label>
+                <input 
+                  type="text" 
+                  value={formData.trackingCode} 
+                  onChange={e => setFormData({ ...formData, trackingCode: e.target.value })} 
+                  className="w-full bg-[#030712]/60 border border-white/10 rounded-[24px] px-6 py-4 text-[10px] text-white font-black outline-none focus:border-sky-500 transition-all shadow-xl" 
+                />
+              </div>
+
             </div>
           </div>
         </div>
 
         {/* Footer com Totais */}
-        <div className="px-10 py-10 bg-white/5 border-t border-white/10 backdrop-blur-3xl flex flex-col sm:flex-row items-center justify-between gap-10 shadow-[0_-20px_80px_rgba(0,0,0,0.4)] relative z-20">
-          <div className="flex flex-wrap gap-12 w-full sm:w-auto justify-between sm:justify-start">
+        <div className="px-6 py-6 sm:px-10 sm:py-10 bg-white/5 border-t border-white/10 backdrop-blur-3xl flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-10 shadow-[0_-20px_80px_rgba(0,0,0,0.4)] relative z-20 shrink-0">
+          <div className="flex flex-wrap gap-6 sm:gap-12 w-full sm:w-auto justify-between sm:justify-start">
             <div className="space-y-1">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">MONTANTE TOTAL</span>
-              <p className="text-4xl font-black text-white tracking-tighter">
-                <span className="text-lg opacity-40 mr-1.5 not-italic">R$</span>
+              <span className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">MONTANTE TOTAL</span>
+              <p className="text-3xl sm:text-4xl font-black text-white tracking-tighter">
+                <span className="text-sm sm:text-lg opacity-40 mr-1.5 not-italic">R$</span>
                 {totalValue.toFixed(2).replace('.', ',')}
               </p>
             </div>
-            <div className="h-14 w-px bg-white/10 hidden sm:block"></div>
+            <div className="h-10 sm:h-14 w-px bg-white/10 hidden sm:block"></div>
             <div className="space-y-1">
-              <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] block">SALDO DEVEDOR</span>
-              <p className={`text-4xl font-black tracking-tighter ${remainingValue <= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
-                <span className="text-lg opacity-40 mr-1.5 not-italic">R$</span>
+              <span className="text-[9px] sm:text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] block">SALDO DEVEDOR</span>
+              <p className={`text-3xl sm:text-4xl font-black tracking-tighter ${remainingValue <= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+                <span className="text-sm sm:text-lg opacity-40 mr-1.5 not-italic">R$</span>
                 {Math.max(0, remainingValue).toFixed(2).replace('.', ',')}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
             {order && (
               <button 
                 onClick={handleModalDelete}
@@ -859,8 +898,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
                 {ICONS.Trash}
               </button>
             )}
-            <button onClick={onClose} className="flex-1 sm:flex-none px-10 py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl transition-all text-[11px] tracking-widest min-w-[140px]">Fechar</button>
-            <button onClick={handleSubmit} className="flex-[2] sm:flex-none px-16 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl hover:bg-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-all text-[11px] tracking-widest active:scale-95 min-w-[200px]">
+            <button onClick={onClose} className="flex-1 sm:flex-none px-6 sm:px-10 py-3 sm:py-4 bg-white/5 border border-white/10 text-slate-400 font-black uppercase rounded-2xl transition-all text-[10px] sm:text-[11px] tracking-widest min-w-0 sm:min-w-[140px]">Fechar</button>
+            <button onClick={handleSubmit} className="flex-[2] sm:flex-none px-8 sm:px-16 py-3 sm:py-4 bg-sky-500 text-white font-black uppercase rounded-2xl hover:bg-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-all text-[10px] sm:text-[11px] tracking-widest active:scale-95 min-w-0 sm:min-w-[200px]">
               {order ? 'Salvar Alterações' : 'Finalizar Pedido'}
             </button>
           </div>

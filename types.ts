@@ -54,6 +54,7 @@ export interface Order {
   blockchainHash?: string; // Novo v2.8
   co2Avoided?: number; // kg
   stockDeducted?: boolean; // Novo v2.9
+  shippingDetail?: string; // Novo v2.9.1 - Detalhes customizados de transporte
 }
 
 export enum OrderStatus {
@@ -116,7 +117,6 @@ export interface Customer {
   state: string;
   cep: string;
   loyaltyPoints?: number; // Novo v2.8
-  aiProfileNotes?: string;
 }
 
 export interface Category {

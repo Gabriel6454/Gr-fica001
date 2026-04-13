@@ -55,14 +55,35 @@ export const dbService = {
       console.error('Error fetching orders:', error);
       return [];
     }
-    return data || [];
+    
+    return (data || []).map(o => {
+      let sd = o.shippingDetail || '';
+      let th = o.trackingHistory || [];
+      if (!sd && Array.isArray(th)) {
+         const tag = th.find((t: any) => t.__shippingDetail !== undefined);
+         if (tag) sd = tag.__shippingDetail;
+         th = th.filter((t: any) => t.__shippingDetail === undefined);
+      }
+      return { ...o, shippingDetail: sd, trackingHistory: th };
+    });
   },
   async saveOrder(order: Order) {
     const user_id = await getUserId();
     if (!user_id) throw new Error('Usuário não autenticado');
     
     console.log('Salvando pedido no Supabase:', order.id);
-    const { error } = await supabase.from('orders').upsert({ ...order, user_id });
+    
+    // Bypass schema error by storing shippingDetail in trackingHistory JSONB
+    const { shippingDetail, ...orderToSave } = order;
+    let th = orderToSave.trackingHistory ? [...orderToSave.trackingHistory] : [];
+    
+    th = th.filter((t: any) => t.__shippingDetail === undefined);
+    if (shippingDetail) {
+        th.push({ __shippingDetail: shippingDetail } as any);
+    }
+    orderToSave.trackingHistory = th;
+
+    const { error } = await supabase.from('orders').upsert({ ...orderToSave, user_id });
     
     if (error) {
       console.error('Erro detalhado do Supabase ao salvar pedido:', error);
@@ -263,8 +284,6 @@ export const dbService = {
 
   // Public Tracking
   async getPublicOrder(id: string): Promise<Order | null> {
-    // Busca baseada no ID ou no Código de Rastreio (Tracking Code)
-    // Nota: Esta função ignora o RLS se configurado como público no Supabase
     const { data, error } = await supabase
       .from('orders')
       .select('*')
@@ -275,6 +294,15 @@ export const dbService = {
       console.error('Erro ao buscar pedido público:', error);
       return null;
     }
-    return data;
+    
+    let sd = data.shippingDetail || '';
+    let th = data.trackingHistory || [];
+    if (!sd && Array.isArray(th)) {
+       const tag = th.find((t: any) => t.__shippingDetail !== undefined);
+       if (tag) sd = tag.__shippingDetail;
+       th = th.filter((t: any) => t.__shippingDetail === undefined);
+    }
+    
+    return { ...data, shippingDetail: sd, trackingHistory: th };
   }
 };
