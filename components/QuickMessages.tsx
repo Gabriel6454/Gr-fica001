@@ -7,6 +7,7 @@ const QuickMessages: React.FC = () => {
   const [messages, setMessages] = useState<QuickMessage[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{title: string, content: string, audioUrl?: string}>({ title: '', content: '' });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
@@ -58,11 +59,67 @@ const QuickMessages: React.FC = () => {
     }
   };
 
+  // Generate a variation of a quick message using AI (Gemini API)
+  const handleGenerateVariation = async (id: string) => {
+    const original = messages.find(m => m.id === id);
+    if (!original) return;
+    setGeneratingId(id);
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{
+                text: `Title: ${original.title}\nContent: ${original.content}`
+              }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 200,
+          },
+        }),
+      });
+      if (!response.ok) throw new Error('Gemini service error');
+      const data = await response.json();
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      const [newTitle, ...contentLines] = aiText.split('\n');
+      const newContent = contentLines.join('\n').trim();
+      const variation: QuickMessage = {
+        id: crypto.randomUUID(),
+        title: newTitle || `${original.title} (variação)`,
+        content: newContent || `Variação: ${original.content}`,
+        audioUrl: original.audioUrl,
+      };
+      const updated = [...messages, variation];
+      setMessages(updated);
+      await dbService.saveQuickMessages(updated);
+    } catch (err) {
+      console.error('Error generating variation:', err);
+      alert('Falha ao gerar variação com IA.');
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
   const handleCopy = (content: string, id: string) => {
     if (!content) return;
     navigator.clipboard.writeText(content);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Bulk generate variations for all messages
+  const handleGenerateAllVariations = async () => {
+    if (messages.length === 0) return;
+    for (const msg of messages) {
+      await handleGenerateVariation(msg.id);
+    }
   };
 
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,12 +187,21 @@ const QuickMessages: React.FC = () => {
           <h1 className="text-3xl font-black text-white tracking-tight leading-none uppercase italic">Mensagens <span className="text-sky-500">Rápidas</span></h1>
           <p className="text-slate-500 text-sm font-medium">Templates e áudios para seu atendimento</p>
         </div>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="w-full sm:w-auto px-8 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest hover:bg-sky-400 transition-all active:scale-95 shadow-xl shadow-sky-500/20 flex items-center justify-center gap-2"
-        >
-          {ICONS.Plus} Nova Mensagem
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsAdding(true)}
+            className="px-8 py-4 bg-sky-500 text-white font-black uppercase rounded-2xl text-[11px] tracking-widest hover:bg-sky-400 transition-all active:scale-95 shadow-xl shadow-sky-500/20 flex items-center justify-center gap-2"
+          >
+            {ICONS.Plus} Nova Mensagem
+          </button>
+          <button
+            onClick={handleGenerateAllVariations}
+            disabled={generatingId !== null}
+            className={`px-6 py-3 bg-emerald-500 text-white font-black uppercase rounded-xl text-[11px] tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2 ${generatingId !== null ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {generatingId !== null ? '⏳' : ICONS.Copy} Gerar Variações
+          </button>
+        </div>
       </div>
 
       {(isAdding || editingId) && (
@@ -259,6 +325,13 @@ const QuickMessages: React.FC = () => {
                     className="p-2 text-slate-500 hover:text-rose-400 transition-colors"
                   >
                     {ICONS.Trash}
+                  </button>
+                  <button
+                    onClick={() => handleGenerateVariation(message.id)}
+                    disabled={generatingId === message.id}
+                    className={`p-2 text-slate-500 hover:text-emerald-400 transition-colors ${generatingId === message.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {generatingId === message.id ? '⏳' : ICONS.Copy}
                   </button>
                 </div>
               </div>
