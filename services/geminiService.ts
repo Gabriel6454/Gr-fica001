@@ -73,22 +73,25 @@ export const suggestDescription = async (productName: string, category: string) 
 
 export const generateMessageVariation = async (title: string, content: string) => {
   try {
-    const prompt = `Atue como um copywriter sênior especializado em atendimento ao cliente de alto nível para gráficas e design.
-    Sua tarefa é criar uma VARIAÇÃO CRIATIVA E DISTINTA de uma "Mensagem Rápida" de WhatsApp.
+    const prompt = `VOCÊ É UM EXPERT EM COPYWRITING E ATENDIMENTO PARA GRÁFICAS.
+    Sua missão é gerar uma REPLICA TOTALMENTE REESCRITA de uma mensagem, mantendo apenas a ESSÊNCIA (o que o cliente precisa saber).
     
-    Mensagem Original:
+    MENSAGEM BASE:
     Título: "${title}"
     Conteúdo: "${content}"
 
-    INSTRUÇÕES CRÍTICAS:
-    1. REESCREVA COMPLETAMENTE: Não apenas troque sinônimos. Mude a estrutura das frases, a saudação e o fechamento.
-    2. ESTILO: A variação deve ser profissional, extremamente carismática e focada em conversão/atendimento de excelência.
-    3. FORMATO WHATSAPP: Use emojis de forma moderada e profissional, e quebras de linha para facilitar a leitura.
-    4. FOCO: Mantenha exatamente o mesmo objetivo da mensagem original, mas faça-a parecer uma nova forma de falar com o cliente.
-    
-    Responda EXCLUSIVAMENTE em formato JSON com as seguintes chaves:
-    "title": Um novo título curto e chamativo que descreva esta versão.
-    "content": O novo corpo da mensagem reescrito.`;
+    REGRAS DE OURO PARA A VARIAÇÃO:
+    1. PROIBIDO REPETIR: Não use as mesmas frases da mensagem original. Mude o tom, a ordem e o vocabulário.
+    2. EMOJIS OBRIGATÓRIOS: Use emojis relacionados a gráficas (🖨️, 🎨, 📏, 📦, 🖼️) e cordialidade (🤝, ✨, ✅, 🚀).
+    3. ESTRUTURA IMPACTANTE: Use parágrafos curtos, tópicos se necessário, e uma chamada para ação clara.
+    4. PERSONALIDADE: Escolha um tom (Pode ser mais entusiasmado, ou mais técnico-elegante, ou super amigável) que seja DIFERENTE do original.
+    5. IDENTIDADE: Se o original for seco, faça a variação ser calorosa. Se o original for longo, faça a variação ser direta e eficiente.
+
+    SAÍDA ESPERADA (JSON):
+    {
+      "title": "Novo título criativo com emoji",
+      "content": "Novo texto 100% original, formatado para WhatsApp, rico em emojis e com estrutura moderna."
+    }`;
 
     const ai = getAi();
     if (!ai) throw new Error("AI not configured");
@@ -97,8 +100,8 @@ export const generateMessageVariation = async (title: string, content: string) =
       model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
-        temperature: 0.9,
-        topP: 0.95,
+        temperature: 1.0, // Máxima criatividade
+        topP: 1.0,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -111,14 +114,19 @@ export const generateMessageVariation = async (title: string, content: string) =
       }
     });
 
-    return JSON.parse(response.text || '{}') as { title: string; content: string };
+    const result = JSON.parse(response.text || '{}');
+    if (!result.content || result.content.length < 5) throw new Error("Invalid AI response");
+    
+    return result as { title: string; content: string };
   } catch (error) {
     console.error("Error generating variation:", error);
+    // Fallback mais inteligente
     return {
-      title: `${title} (Nova Versão)`,
-      content: content ? `Olá! Passando para atualizar sobre ${title}. ${content}` : "Olá! Como podemos ajudar com seus impressos hoje?"
+      title: `✨ Nova: ${title}`,
+      content: `Passei para deixar uma versão atualizada da nossa mensagem de ${title}! 🚀\n\nEstamos à disposição para garantir a melhor qualidade nos seus impressos. 🎨🖨️\n\nComo posso ajudar mais hoje? ✅`
     };
   }
 };
+
 
 
