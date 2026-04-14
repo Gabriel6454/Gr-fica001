@@ -288,11 +288,6 @@ const PublicTracking: React.FC<PublicTrackingProps> = ({ order, settings, onBack
              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">
                  {settings.name || 'Atlas'} System
              </p>
-             {onBackToAdmin && (
-               <button onClick={onBackToAdmin} className="mt-4 text-[9px] text-sky-500 underline uppercase tracking-widest">
-                 Acesso Administrativo
-               </button>
-             )}
         </div>
 
       </main>
