@@ -2,13 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ICONS } from '../constants';
 import { QuickMessage } from '../types';
 import { dbService } from '../services/dbService';
-import { generateMessageVariation } from '../services/geminiService';
 
 const QuickMessages: React.FC = () => {
   const [messages, setMessages] = useState<QuickMessage[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{title: string, content: string, audioUrl?: string}>({ title: '', content: '' });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
@@ -60,64 +58,11 @@ const QuickMessages: React.FC = () => {
     }
   };
 
-  // Generate a variation of a quick message using AI (Gemini API)
-  const handleGenerateVariation = async (id: string | null = null, currentFormData: any = null) => {
-    // If id is provided, it's for an existing message. If not, it's for the current form.
-    const originalTitle = id ? messages.find(m => m.id === id)?.title : currentFormData?.title;
-    const originalContent = id ? messages.find(m => m.id === id)?.content : currentFormData?.content;
-    const originalAudio = id ? messages.find(m => m.id === id)?.audioUrl : currentFormData?.audioUrl;
-
-    if (!originalTitle) {
-      alert("Adicione pelo menos um título para gerar variações.");
-      return;
-    }
-
-    if (id) setGeneratingId(id);
-    else setGeneratingId('form');
-
-    try {
-      const variation = await generateMessageVariation(originalTitle, originalContent || '');
-      
-      if (id) {
-        // Create a new variation message
-        const newVariation: QuickMessage = {
-          id: crypto.randomUUID(),
-          title: variation.title,
-          content: variation.content,
-          audioUrl: originalAudio,
-        };
-        const updated = [...messages, newVariation];
-        setMessages(updated);
-        await dbService.saveQuickMessages(updated);
-      } else {
-        // Update the form data with the variation
-        setFormData(prev => ({
-          ...prev,
-          title: variation.title,
-          content: variation.content
-        }));
-      }
-    } catch (err) {
-      console.error('Error generating variation:', err);
-      alert('Falha ao gerar variação com IA.');
-    } finally {
-      setGeneratingId(null);
-    }
-  };
-
   const handleCopy = (content: string, id: string) => {
     if (!content) return;
     navigator.clipboard.writeText(content);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  // Bulk generate variations for all messages
-  const handleGenerateAllVariations = async () => {
-    if (messages.length === 0) return;
-    for (const msg of messages) {
-      await handleGenerateVariation(msg.id);
-    }
   };
 
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,13 +137,6 @@ const QuickMessages: React.FC = () => {
           >
             {ICONS.Plus} Nova Mensagem
           </button>
-          <button
-            onClick={handleGenerateAllVariations}
-            disabled={generatingId !== null}
-            className={`px-6 py-3 bg-emerald-500 text-white font-black uppercase rounded-xl text-[11px] tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2 ${generatingId !== null ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {generatingId !== null ? '⏳' : ICONS.Copy} Gerar Variações
-          </button>
         </div>
       </div>
 
@@ -226,14 +164,6 @@ const QuickMessages: React.FC = () => {
                     rows={4}
                     className="w-full bg-[#030712]/60 border border-white/5 rounded-2xl px-6 py-4 text-sm text-slate-300 outline-none focus:border-sky-500/50 font-medium resize-none"
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleGenerateVariation(null, formData)}
-                    disabled={generatingId === 'form' || !formData.title}
-                    className={`absolute right-4 bottom-4 p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20 ${generatingId === 'form' || !formData.title ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {generatingId === 'form' ? '⏳' : <>{ICONS.Sparkles || '✨'} Melhorar com IA</>}
-                  </button>
                 </div>
               </div>
 
@@ -331,13 +261,6 @@ const QuickMessages: React.FC = () => {
                     className="p-2 text-slate-500 hover:text-rose-400 transition-colors"
                   >
                     {ICONS.Trash}
-                  </button>
-                  <button
-                    onClick={() => handleGenerateVariation(message.id)}
-                    disabled={generatingId === message.id}
-                    className={`p-2 text-slate-500 hover:text-emerald-400 transition-colors ${generatingId === message.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {generatingId === message.id ? '⏳' : ICONS.Copy}
                   </button>
                 </div>
               </div>
